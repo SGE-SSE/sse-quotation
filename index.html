@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SSE – Quotation Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:10px}
+.card{max-width:1200px;margin:auto;background:#fff;padding:15px;border-radius:6px}
+label{font-size:12px;font-weight:bold}
+input,select,textarea{width:100%;padding:6px;font-size:12px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+th,td{border:1px solid #000;padding:5px;text-align:center}
+th{background:#eee}
+.right{text-align:right}
+button{padding:5px 10px;font-size:12px}
+.header-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.no-print{}
+.entry-only{}
+.pdf-hide{display:none!important}
+@media print{
+  .no-print,.entry-only{display:none!important}
+  body{background:#fff}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="printArea">
+
+<h2>SAI GANESH ELECTRICALS – SSE</h2>
+<div>Suchitra</div>
+<div>Email: krishnadsge@gmail.com</div>
+
+<div class="header-grid" style="margin-top:10px">
+  <div>
+    <label>Quotation No</label>
+    <input type="text" id="qno">
+  </div>
+  <div>
+    <label>Quotation Date</label>
+    <input type="date" id="qdate">
+  </div>
+</div>
+
+<div class="customer-grid">
+  <div>
+    <label>Customer Name</label>
+    <input type="text" id="custName">
+  </div>
+  <div>
+    <label>Customer GSTIN</label>
+    <input type="text" id="custGST">
+  </div>
+  <div style="grid-column:span 2">
+    <label>Customer Address</label>
+    <textarea id="custAddr"></textarea>
+  </div>
+</div>
+
+<hr>
+
+<!-- ENTRY AREA -->
+<div class="entry-only no-print">
+
+<label>Brand</label>
+<select id="brand"></select>
+
+<label>Item</label>
+<select id="item"></select>
+
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px">
+  <div>
+    <label>Unit</label>
+    <select id="unit">
+      <option>NOS</option><option>MTRS</option><option>COIL</option>
+      <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+    </select>
+  </div>
+  <div><label>Qty</label><input type="number" id="qty" value="1"></div>
+  <div><label>MRP</label><input type="number" id="mrp" readonly></div>
+  <div><label>Discount %</label><input type="number" id="disc"></div>
+  <div><label>Net Rate</label><input type="number" id="net"></div>
+  <div><label>&nbsp;</label><button onclick="addItem()">ADD</button></div>
+</div>
+
+<div style="margin-top:8px">
+  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP & Discount</label>
+  <label style="margin-left:15px">
+    <input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%
+  </label>
+</div>
+
+</div>
+
+<table id="qt">
+<thead>
+<tr>
+  <th>S.No</th>
+  <th>Brand</th>
+  <th>Description</th>
+  <th>Unit</th>
+  <th>Qty</th>
+  <th class="mrpCol">MRP</th>
+  <th class="mrpCol">Disc%</th>
+  <th>Rate</th>
+  <th>Amount</th>
+  <th class="no-print">Action</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<table style="width:320px;margin-left:auto;margin-top:10px">
+<tr><td>Sub Total</td><td class="right" id="sub">0.00</td></tr>
+<tr><td>GST 18%</td><td class="right" id="gst">0.00</td></tr>
+<tr><td><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
+<tr><td>Freight</td><td class="right">As per policy</td></tr>
+</table>
+
+<div class="no-print" style="margin-top:10px">
+  <button onclick="window.print()">PRINT</button>
+  <button onclick="exportExcel()">EXCEL</button>
+  <button onclick="exportPDF()">PDF</button>
+</div>
+
+</div>
+
+<script>
+/* ==== INVENTORY (sample – extend freely) ==== */
+const items={
+  "GREATWHITE": [
+    { "name": "BLANK PLATE", "mrp": 72.0 },
+    { "name": "DOWN LIGHT 2M", "mrp": 478.0 },
+    { "name": "DOWN LIGHT 4M", "mrp": 602.0 },
+    { "name": "RJ-11 WITH SHUTTER SINGLE", "mrp": 157.0 },
+    { "name": "RJ-45 SINGLE CAT6", "mrp": 761.0 },
+    { "name": "6AMS 1WAY SWITCH", "mrp": 132.0 },
+    { "name": "6AMS 2WAY SWITCH", "mrp": 175.0 },
+    { "name": "BELL PUSH 1M", "mrp": 178.0 },
+    { "name": "BELL PUSH 2M", "mrp": 227.0 },
+    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 242.0 },
+    { "name": "6AMS SOCKET", "mrp": 192.0 },
+    { "name": "16AMS SOCKET", "mrp": 345.0 },
+    { "name": "FAN DIMMER 1M", "mrp": 511.0 },
+    { "name": "FAN DIMMER 2M", "mrp": 720.0 },
+    { "name": "18 MODULE PLATE", "mrp": 451.0 },
+    { "name": "16 MODULE PLATE", "mrp": 418.0 },
+    { "name": "12 MODULE PLATE", "mrp": 385.0 },
+    { "name": "9 MODULE PLATE", "mrp": 307.0 },
+    { "name": "8 MODULE PLATE", "mrp": 307.0 },
+    { "name": "6 MODULE PLATE", "mrp": 242.0 },
+    { "name": "4 MODULE PLATE", "mrp": 179.0 },
+    { "name": "3 MODULE PLATE", "mrp": 147.0 },
+    { "name": "2 MODULE PLATE", "mrp": 114.0 }
+  ],
+  "ANCHOR PENTA": [
+    { "name": "6AMS 2WAY SWITCH", "mrp": 91.0 },
+    { "name": "16AMS 1WAY SWITCH", "mrp": 112.0 },
+    { "name": "16AMS 2WAY SWITCH", "mrp": 147.0 },
+    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 124.0 },
+    { "name": "25AMS 1WAY SWITCH", "mrp": 161.0 },
+    { "name": "32AMS DP SWITCH IND", "mrp": 221.0 },
+    { "name": "6AMS BELL PUSH", "mrp": 95.0 },
+    { "name": "6AMS MEGA BELL PUSH", "mrp": 133.0 },
+    { "name": "1M STEP REGUATOR", "mrp": 359.0 },
+    { "name": "2M STEP REGUATOR", "mrp": 425.0 },
+    { "name": "3PIN SOCKET", "mrp": 125.0 },
+    { "name": "16A SOCKET", "mrp": 192.0 },
+    { "name": "INDICATOR", "mrp": 100.0 },
+    { "name": "TV SOCKET", "mrp": 119.0 },
+    { "name": "TP SOCKET", "mrp": 125.0 },
+    { "name": "RJ 45", "mrp": 194.0 },
+    { "name": "USB SOCKET", "mrp": 1145.0 },
+    { "name": "FOOT LAMP", "mrp": 676.0 },
+    { "name": "MINI MCB MODULAR", "mrp": 296.0 },
+    { "name": "BLANK PLATE 1M", "mrp": 28.0 },
+    { "name": "1 MODULE PLATE", "mrp": 102.0 },
+    { "name": "2 MODULE PLATE", "mrp": 102.0 },
+    { "name": "3 MODULE PLATE", "mrp": 149.0 },
+    { "name": "4 MODULE PLATE", "mrp": 158.0 },
+    { "name": "6 MODULE PLATE", "mrp": 239.0 },
+    { "name": "8 MODULE PLATE", "mrp": 308.0 },
+    { "name": "12 MODULE PLATE", "mrp": 372.0 },
+    { "name": "16 MODULE PLATE", "mrp": 391.0 },
+    { "name": "18 MODULE PLATE", "mrp": 420.0 }
+  ],
+  "ANCHOR ROMA": [
+    { "name": "6AMS 1WAY SWITCH", "mrp": 158.0 },
+    { "name": "16AMS 1WAY SWITCH", "mrp": 175.0 },
+    { "name": "16AMS 2WAY SWITCH", "mrp": 200.0 },
+    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 208.0 },
+    { "name": "25AMS 1WAY SWITCH", "mrp": 266.0 },
+    { "name": "32AMS DP SWITCH IND", "mrp": 345.0 },
+    { "name": "6AMS BELL PUSH", "mrp": 164.0 },
+    { "name": "6AMS MEGA BELL PUSH", "mrp": 188.0 },
+    { "name": "1M STEP REGUATOR", "mrp": 375.0 },
+    { "name": "2M STEP REGUATOR", "mrp": 523.0 },
+    { "name": "3PIN SOCKET", "mrp": 152.0 },
+    { "name": "16A SOCKET", "mrp": 271.0 },
+    { "name": "INDICATOR", "mrp": 119.0 },
+    { "name": "TV SOCKET", "mrp": 170.0 },
+    { "name": "TP SOCKET", "mrp": 170.0 },
+    { "name": "RJ 45", "mrp": 702.0 },
+    { "name": "USB SOCKET", "mrp": 1234.0 },
+    { "name": "FOOT LAMP", "mrp": 0.0 },
+    { "name": "MINI MCB MODULAR", "mrp": 365.0 },
+    { "name": "BLANK PLATE 1M", "mrp": 38.0 },
+    { "name": "1 MODULE PLATE", "mrp": 123.0 },
+    { "name": "2 MODULE PLATE", "mrp": 123.0 },
+    { "name": "3 MODULE PLATE", "mrp": 159.0 },
+    { "name": "4 MODULE PLATE", "mrp": 185.0 },
+    { "name": "6 MODULE PLATE", "mrp": 255.0 },
+    { "name": "8 MODULE PLATE", "mrp": 325.0 },
+    { "name": "12 MODULE PLATE", "mrp": 403.0 },
+    { "name": "16 MODULE PLATE", "mrp": 452.0 },
+    { "name": "18 MODULE PLATE", "mrp": 473.0 }
+  ],
+  "LEGRAND ARTEOR": [
+    { "name": "6A 1W SWITCH", "mrp": 216.0 },
+    { "name": "6A 2W SWITCH", "mrp": 342.0 },
+    { "name": "6A 1W SWITCH IND", "mrp": 386.0 },
+    { "name": "16A 1W SWITCH", "mrp": 464.0 },
+    { "name": "16A 2WAY", "mrp": 670.0 },
+    { "name": "16A 1W SWITCH W/I", "mrp": 478.0 },
+    { "name": "20A DP SWITCH W/I", "mrp": 1030.0 },
+    { "name": "32A DP SWITCH W/I", "mrp": 1470.0 },
+    { "name": "25A SP 1W 1M", "mrp": 622.0 },
+    { "name": "BELL PUSH", "mrp": 374.0 },
+    { "name": "BELL WITH IND (1M)", "mrp": 496.0 },
+    { "name": "BELL PUSH W/IN(2M)", "mrp": 708.0 },
+    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
+    { "name": "6A SOCKET 3 PIN ISI", "mrp": 306.0 },
+    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
+    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
+    { "name": "16A SOCKET (2M)", "mrp": 622.0 },
+    { "name": "16A SOCKET (3M)", "mrp": 744.0 },
+    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
+    { "name": "1M STEP REGULATOR", "mrp": 1220.0 },
+    { "name": "2M STEP REG(100W)", "mrp": 1506.0 },
+    { "name": "2M STEP REG(120W)", "mrp": 1610.0 },
+    { "name": "INDICATOR", "mrp": 916.0 },
+    { "name": "SKIRTING LIGHT 3M", "mrp": 1224.0 },
+    { "name": "T.V SOCKET", "mrp": 336.0 },
+    { "name": "TELEPHONE RJ11", "mrp": 322.0 },
+    { "name": "RJ 45 CAT 5e 1M", "mrp": 684.0 },
+    { "name": "RJ 45 CAT 6e 1M", "mrp": 1044.0 },
+    { "name": "25A MOTOR STARTER", "mrp": 0.0 },
+    { "name": "USB CHARGER ( 1M)", "mrp": 0.0 },
+    { "name": "Blanking Plate", "mrp": 62.0 },
+    { "name": "MCB16/25A Modular", "mrp": 5126.0 },
+    { "name": "1M PLATE", "mrp": 276.0 },
+    { "name": "2M PLATE", "mrp": 292.0 },
+    { "name": "3M PLATE", "mrp": 328.0 },
+    { "name": "4M PLATE", "mrp": 342.0 },
+    { "name": "6M PLATE", "mrp": 626.0 },
+    { "name": "8M PLATE", "mrp": 694.0 },
+    { "name": "8M SQ PLATE", "mrp": 876.0 },
+    { "name": "12M PLATE", "mrp": 1070.0 },
+    { "name": "16M PLATE", "mrp": 1284.0 },
+    { "name": "18M PLATE", "mrp": 1420.0 }
+  ],
+  "LEGRAND LYNCUS": [
+    { "name": "6A 1W SWITCH", "mrp": 92.0 },
+    { "name": "6A 2W SWITCH", "mrp": 182.0 },
+    { "name": "6A 1W SWITCH IND", "mrp": 182.0 },
+    { "name": "16A 1W SWITCH", "mrp": 210.0 },
+    { "name": "16A 2WAY", "mrp": 260.0 },
+    { "name": "16A 1W SWITCH W/I", "mrp": 268.0 },
+    { "name": "20A DP SWITCH W/I", "mrp": 458.0 },
+    { "name": "32A DP SWITCH W/I", "mrp": 618.0 },
+    { "name": "25A SP 1W 1M", "mrp": 320.0 },
+    { "name": "BELL PUSH", "mrp": 194.0 },
+    { "name": "BELL WITH IND (1M)", "mrp": 228.0 },
+    { "name": "BELL PUSH W/IN(2M)", "mrp": 260.0 },
+    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
+    { "name": "6A SOCKET 3 PIN ISI", "mrp": 172.0 },
+    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
+    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
+    { "name": "16A SOCKET (2M)", "mrp": 350.0 },
+    { "name": "16A SOCKET (3M)", "mrp": 416.0 },
+    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
+    { "name": "1M STEP REGULATOR", "mrp": 580.0 },
+    { "name": "2M STEP REG(100W)", "mrp": 718.0 },
+    { "name": "2M STEP REG(120W)", "mrp": 818.0 },
+    { "name": "INDICATOR", "mrp": 588.0 },
+    { "name": "SKIRTING LIGHT 3M", "mrp": 566.0 },
+    { "name": "T.V SOCKET", "mrp": 196.0 },
+    { "name": "TELEPHONE RJ11", "mrp": 184.0 },
+    { "name": "RJ 45 CAT 5e 1M", "mrp": 490.0 },
+    { "name": "RJ 45 CAT 6e 1M", "mrp": 684.0 },
+    { "name": "25A MOTOR STARTER", "mrp": 704.0 },
+    { "name": "USB CHARGER ( 1M)", "mrp": 1154.0 },
+    { "name": "Blanking Plate", "mrp": 46.0 },
+    { "name": "MCB16/25A Modular", "mrp": 464.0 },
+    { "name": "1M PLATE", "mrp": 144.0 },
+    { "name": "2M PLATE", "mrp": 144.0 },
+    { "name": "3M PLATE", "mrp": 184.0 },
+    { "name": "4M PLATE", "mrp": 214.0 },
+    { "name": "6M PLATE", "mrp": 260.0 },
+    { "name": "8M PLATE", "mrp": 332.0 },
+    { "name": "8M SQ PLATE", "mrp": 348.0 },
+    { "name": "12M PLATE", "mrp": 484.0 },
+    { "name": "16M PLATE", "mrp": 564.0 },
+    { "name": "18M PLATE", "mrp": 760.0 }
+  ],
+  "LEGRAND MYRIUS": [
+    { "name": "6A 1W SWITCH", "mrp": 158.0 },
+    { "name": "6A 2W SWITCH", "mrp": 268.0 },
+    { "name": "6A 1W SWITCH IND", "mrp": 248.0 },
+    { "name": "16A 1W SWITCH", "mrp": 362.0 },
+    { "name": "16A 2WAY", "mrp": 418.0 },
+    { "name": "16A 1W SWITCH W/I", "mrp": 438.0 },
+    { "name": "20A DP SWITCH W/I", "mrp": 766.0 },
+    { "name": "32A DP SWITCH W/I", "mrp": 1242.0 },
+    { "name": "25A SP 1W 1M", "mrp": 530.0 },
+    { "name": "BELL PUSH", "mrp": 298.0 },
+    { "name": "BELL WITH IND (1M)", "mrp": 392.0 },
+    { "name": "BELL PUSH W/IN(2M)", "mrp": 530.0 },
+    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
+    { "name": "6A SOCKET 3 PIN ISI", "mrp": 240.0 },
+    { "name": "6A SOCKET 2/3 PIN", "mrp": 380.0 },
+    { "name": "13A MULTI SOCKET", "mrp": 440.0 },
+    { "name": "16A SOCKET (2M)", "mrp": 544.0 },
+    { "name": "16A SOCKET (3M)", "mrp": 652.0 },
+    { "name": "25A SOCKET (2M)", "mrp": 674.0 },
+    { "name": "1M STEP REGULATOR", "mrp": 1024.0 },
+    { "name": "2M STEP REG(100W)", "mrp": 1178.0 },
+    { "name": "2M STEP REG(120W)", "mrp": 1266.0 },
+    { "name": "INDICATOR", "mrp": 0.0 },
+    { "name": "SKIRTING LIGHT 3M", "mrp": 1034.0 },
+    { "name": "T.V SOCKET", "mrp": 264.0 },
+    { "name": "TELEPHONE RJ11", "mrp": 262.0 },
+    { "name": "RJ 45 CAT 5e 1M", "mrp": 578.0 },
+    { "name": "RJ 45 CAT 6e 1M", "mrp": 904.0 },
+    { "name": "25A MOTOR STARTER", "mrp": 844.0 },
+    { "name": "USB CHARGER ( 1M)", "mrp": 1856.0 },
+    { "name": "Blanking Plate", "mrp": 66.0 },
+    { "name": "MCB16/25A Modular", "mrp": 502.0 },
+    { "name": "1M PLATE", "mrp": 248.0 },
+    { "name": "2M PLATE", "mrp": 264.0 },
+    { "name": "3M PLATE", "mrp": 286.0 },
+    { "name": "4M PLATE", "mrp": 302.0 },
+    { "name": "6M PLATE", "mrp": 592.0 },
+    { "name": "8M PLATE", "mrp": 632.0 },
+    { "name": "8M SQ PLATE", "mrp": 792.0 },
+    { "name": "12M PLATE", "mrp": 960.0 },
+    { "name": "16M PLATE", "mrp": 1118.0 },
+    { "name": "18M PLATE", "mrp": 1282.0 }
+  ],
+  "LEGRAND MYLINC": [
+    { "name": "6A 1W SWITCH", "mrp": 104.0 },
+    { "name": "6A 2W SWITCH", "mrp": 202.0 },
+    { "name": "6A 1W SWITCH IND", "mrp": 228.0 },
+    { "name": "16A 1W SWITCH", "mrp": 230.0 },
+    { "name": "16A 2WAY", "mrp": 288.0 },
+    { "name": "16A 1W SWITCH W/I", "mrp": 300.0 },
+    { "name": "20A DP SWITCH W/I", "mrp": 0.0 },
+    { "name": "32A DP SWITCH W/I", "mrp": 686.0 },
+    { "name": "25A SP 1W 1M", "mrp": 354.0 },
+    { "name": "BELL PUSH", "mrp": 212.0 },
+    { "name": "BELL WITH IND (1M)", "mrp": 1172.0 },
+    { "name": "BELL PUSH W/IN(2M)", "mrp": 420.0 },
+    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
+    { "name": "6A SOCKET 3 PIN ISI", "mrp": 266.0 },
+    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
+    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
+    { "name": "16A SOCKET (2M)", "mrp": 406.0 },
+    { "name": "16A SOCKET (3M)", "mrp": 0.0 },
+    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
+    { "name": "1M STEP REGULATOR", "mrp": 676.0 },
+    { "name": "2M STEP REG(100W)", "mrp": 904.0 },
+    { "name": "2M STEP REG(120W)", "mrp": 740.0 },
+    { "name": "INDICATOR", "mrp": 276.0 },
+    { "name": "SKIRTING LIGHT 3M", "mrp": 888.0 },
+    { "name": "T.V SOCKET", "mrp": 224.0 },
+    { "name": "TELEPHONE RJ11", "mrp": 212.0 },
+    { "name": "RJ 45 CAT 5e 1M", "mrp": 520.0 },
+    { "name": "RJ 45 CAT 6e 1M", "mrp": 756.0 },
+    { "name": "25A MOTOR STARTER", "mrp": 678.0 },
+    { "name": "USB CHARGER ( 1M)", "mrp": 1202.0 },
+    { "name": "Blanking Plate", "mrp": 54.0 },
+    { "name": "MCB16/25A Modular", "mrp": 480.0 },
+    { "name": "1M PLATE", "mrp": 156.0 },
+    { "name": "2M PLATE", "mrp": 156.0 },
+    { "name": "3M PLATE", "mrp": 214.0 },
+    { "name": "4M PLATE", "mrp": 238.0 },
+    { "name": "6M PLATE", "mrp": 296.0 },
+    { "name": "8M PLATE", "mrp": 380.0 },
+    { "name": "8M SQ PLATE", "mrp": 386.0 },
+    { "name": "12M PLATE", "mrp": 556.0 },
+    { "name": "16M PLATE", "mrp": 650.0 },
+    { "name": "18M PLATE", "mrp": 870.0 }
+  ],
+  "LEGRAND SPN DB D/D": [
+    { "name": "4 WAY SPN DB ", "mrp": 2558.0 },
+    { "name": "8WAY SPN DB", "mrp": 3128.0 },
+    { "name": "12WAY SPN DB", "mrp": 3758.0 },
+    { "name": "16WAY SPN DB", "mrp": 4792.0 },
+    { "name": "18WAY SPN DB", "mrp": 4948.0 },
+    { "name": "20WAY SPN DB", "mrp": 6030.0 }
+  ],
+  "LEGRAND ETPN HORIZONTAL DB D/D": [
+    { "name": "4 WAY ETPN DB ", "mrp": 6216.0 },
+    { "name": "6 WAY ETPN DB", "mrp": 7688.0 },
+    { "name": "8 WAY ETPN DB", "mrp": 9374.0 },
+    { "name": "12 WAY ETPN DB", "mrp": 13902.0 },
+    { "name": "16 WAY ETPN DB", "mrp": 17402.0 },
+    { "name": "18 WAY ETPN DB", "mrp": 25136.0 }
+  ],
+  "LEGRAND VTPN MCB DB D/D": [
+    { "name": "4 WAY VTPN MCB DB ", "mrp": 15354.0 },
+    { "name": "6 WAY VTPN MCB DB", "mrp": 17004.0 },
+    { "name": "8 WAY VTPN MCB DB", "mrp": 19792.0 },
+    { "name": "12 WAY VTPN MCB DB", "mrp": 26628.0 }
+  ],
+  "LEGRAND VTPN MCCB DB DPX160 D/D": [
+    { "name": "4 WAY VTPN MCCB DPX160 DB ", "mrp": 18748.0 },
+    { "name": "6 WAY VTPN MCCB DPX160 DB", "mrp": 21278.0 },
+    { "name": "8 WAY VTPN MCCB DPX160 DB", "mrp": 23442.0 },
+    { "name": "12 WAY VTPN MCCB DPX160 DB", "mrp": 31958.0 }
+  ],
+  "LEGRAND VTPN MCCB DB DPX250 D/D": [
+    { "name": "4 WAY VTPN MCCB DPX250 DB ", "mrp": 29812.0 },
+    { "name": "8 WAY VTPN MCCB DPX250 DB", "mrp": 34268.0 },
+    { "name": "12 WAY VTPN MCCB DPX250 DB", "mrp": 36190.0 }
+  ],
+  "LEGRAND METAL ENCLOSER BOX": [
+    { "name": "SP ", "mrp": 662.0 },
+    { "name": "DP", "mrp": 954.0 },
+    { "name": "TP", "mrp": 954.0 },
+    { "name": "FP", "mrp": 954.0 },
+    { "name": "ECBO(8M) FP", "mrp": 1596.0 }
+  ],
+  "LEGRAND MCCB ENCLOSER BOX": [
+    { "name": "DPX3 160A 3P-4P ", "mrp": 5428.0 },
+    { "name": "DPX3 250A 3P-4P", "mrp": 9544.0 },
+    { "name": "DPX3 630A", "mrp": 14826.0 },
+    { "name": "DRX 100A TP", "mrp": 2930.0 },
+    { "name": "DRX 100A FP", "mrp": 2930.0 }
+  ],
+  "LEGRAND MCB DX3 (C)": [
+    { "name": "6-32AMS DP MCB ", "mrp": 1280.0 },
+    { "name": "6-32AMS TP MCB", "mrp": 2076.0 },
+    { "name": "6-32AMS FP MCB", "mrp": 2820.0 },
+    { "name": "40-63AMS DP MCB", "mrp": 2014.0 },
+    { "name": "40-63AMS TP MCB", "mrp": 3150.0 },
+    { "name": "40-63AMS FP MCB", "mrp": 4012.0 },
+    { "name": "80AMS DP MCB", "mrp": 7664.0 },
+    { "name": "80AMS TP MCB", "mrp": 12316.0 },
+    { "name": "80AMS FP MCB", "mrp": 15882.0 },
+    { "name": "100AMS DP MCB", "mrp": 8168.0 },
+    { "name": "100AMS TP MCB", "mrp": 13118.0 },
+    { "name": "100AMS FP MCB", "mrp": 16548.0 },
+    { "name": "125AMS DP MCB", "mrp": 8894.0 },
+    { "name": "125AMS TP MCB", "mrp": 14418.0 },
+    { "name": "125AMS FP MCB", "mrp": 18538.0 }
+  ],
+  "LEGRAND ISOLATER DX3 ": [
+    { "name": "32AMS DP  ", "mrp": 678.0 },
+    { "name": "32AMS TP ", "mrp": 1222.0 },
+    { "name": "32AMS FP ", "mrp": 1340.0 },
+    { "name": "40AMS DP ", "mrp": 746.0 },
+    { "name": "40AMS TP ", "mrp": 1310.0 },
+    { "name": "40AMS FP ", "mrp": 1664.0 },
+    { "name": "63AMS DP", "mrp": 986.0 },
+    { "name": "63AMS TP ", "mrp": 1560.0 },
+    { "name": "63AMS FP ", "mrp": 1836.0 },
+    { "name": "100AMS DP ", "mrp": 1354.0 },
+    { "name": "100AMS TP ", "mrp": 1722.0 },
+    { "name": "100AMS FP ", "mrp": 2218.0 },
+    { "name": "125AMS DP", "mrp": 1540.0 },
+    { "name": "125AMS TP ", "mrp": 1986.0 },
+    { "name": "125AMS FP ", "mrp": 2444.0 }
+  ],
+  "KEI IND COPPER": [
+    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 2550.0 },
+    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 3810.0 },
+    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 6090.0 },
+    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 9040.0 },
+    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 13690.0 },
+    { "name": "1SQMM 180MTR IND COPPER WIRE ", "mrp": 5230.0 },
+    { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 7790.0 },
+    { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 12480.0 },
+    { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 18540.0 },
+    { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 28040.0 },
+    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 9240.0 },
+    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 13990.0 },
+    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 22680.0 },
+    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 22530.0 },
+    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 34360.0 }
+  ],
+"POLYCAB CU ARM": [
+    { "name": "4X2CORE COPPER ARMOURED CABLE", "mrp": 557 },
+    { "name": "4X3CORE COPPER ARMOURED CABLE", "mrp": 746 },
+    { "name": "4X4CORE COPPER ARMOURED CABLE", "mrp": 956 },
+    { "name": "4X5CORE COPPER ARMOURED CABLE", "mrp": 1402 },
+    { "name": "4X6CORE COPPER ARMOURED CABLE", "mrp": 1766 },
+    { "name": "4X7CORE COPPER ARMOURED CABLE", "mrp": 1946 },
+    { "name": "6X2CORE COPPER ARMOURED CABLE", "mrp": 784 },
+    { "name": "6X3CORE COPPER ARMOURED CABLE", "mrp": 1077 },
+    { "name": "6X4CORE COPPER ARMOURED CABLE", "mrp": 1407 },
+    { "name": "6X5CORE COPPER ARMOURED CABLE", "mrp": 2039 },
+    { "name": "6X6CORE COPPER ARMOURED CABLE", "mrp": 2491 },
+    { "name": "6X7CORE COPPER ARMOURED CABLE", "mrp": 2858 },
+    { "name": "10X2CORE COPPER ARMOURED CABLE", "mrp": 1247 },
+    { "name": "10X3CORE COPPER ARMOURED CABLE", "mrp": 1752 },
+    { "name": "10X4CORE COPPER ARMOURED CABLE", "mrp": 2287 },
+    { "name": "10X5CORE COPPER ARMOURED CABLE", "mrp": 3101 },
+    { "name": "16X1CORE COPPER ARMOURED CABLE", "mrp": 1041},
+    { "name": "16X2CORE COPPER ARMOURED CABLE", "mrp": 1807 },
+    { "name": "16X3CORE COPPER ARMOURED CABLE", "mrp": 2505 },
+    { "name": "16X4CORE COPPER ARMOURED CABLE", "mrp": 3308 },
+    { "name": "16X5CORE COPPER ARMOURED CABLE", "mrp": 4348 },
+    { "name": "1.5X2CORE COPPER ARMOURED CABLE", "mrp": 284 },
+    { "name": "1.5X3CORE COPPER ARMOURED CABLE", "mrp": 361 },
+    { "name": "1.5X4CORE COPPER ARMOURED CABLE", "mrp": 446 },
+    { "name": "1.5X5CORE COPPER ARMOURED CABLE", "mrp": 542 },
+    { "name": "1.5X6CORE COPPER ARMOURED CABLE", "mrp": 645 },
+    { "name": "1.5X7CORE COPPER ARMOURED CABLE", "mrp": 710 },
+    { "name": "1.5X8CORE COPPER ARMOURED CABLE", "mrp": 908 },
+    { "name": "1.5X10CORE COPPER ARMOURED CABLE", "mrp": 1034 },
+    { "name": "1.5X12CORE COPPER ARMOURED CABLE", "mrp": 1149 },
+    { "name": "1.5X14CORE COPPER ARMOURED CABLE", "mrp": 1351 },
+    { "name": "1.5X16CORE COPPER ARMOURED CABLE", "mrp": 1470 },
+    { "name": "1.5X19CORE COPPER ARMOURED CABLE", "mrp": 1744 },
+    { "name": "1.5X24CORE COPPER ARMOURED CABLE", "mrp": 2181 },
+    { "name": "1.5X27CORE COPPER ARMOURED CABLE", "mrp": 2426 },
+    { "name": "1.5X30CORE COPPER ARMOURED CABLE", "mrp": 2706 },
+    { "name": "1.5X37CORE COPPER ARMOURED CABLE", "mrp": 3510 },
+    { "name": "1.5X44CORE COPPER ARMOURED CABLE", "mrp": 4100 },
+    { "name": "1.5X61CORE COPPER ARMOURED CABLE", "mrp": 6035 },
+    { "name": "2.5X2CORE COPPER ARMOURED CABLE", "mrp": 401 },
+    { "name": "2.5X3CORE COPPER ARMOURED CABLE", "mrp": 518 },
+    { "name": "2.5X4CORE COPPER ARMOURED CABLE", "mrp": 668 },
+    { "name": "2.5X5CORE COPPER ARMOURED CABLE", "mrp": 820 },
+    { "name": "2.5X6CORE COPPER ARMOURED CABLE", "mrp": 965 },
+    { "name": "2.5X7CORE COPPER ARMOURED CABLE", "mrp": 1089 },
+    { "name": "2.5X8CORE COPPER ARMOURED CABLE", "mrp": 1329 },
+    { "name": "2.5X10CORE COPPER ARMOURED CABLE", "mrp": 1530 },
+    { "name": "2.5X12CORE COPPER ARMOURED CABLE", "mrp": 1778 },
+    { "name": "2.5X14CORE COPPER ARMOURED CABLE", "mrp": 2067 },
+    { "name": "2.5X16CORE COPPER ARMOURED CABLE", "mrp": 2348 },
+    { "name": "2.5X19CORE COPPER ARMOURED CABLE", "mrp": 2769 },
+    { "name": "2.5X24CORE COPPER ARMOURED CABLE", "mrp": 3461 },
+    { "name": "2.5X27CORE COPPER ARMOURED CABLE", "mrp": 3881 },
+    { "name": "2.5X30CORE COPPER ARMOURED CABLE", "mrp": 4668 },
+    { "name": "2.5X37CORE COPPER ARMOURED CABLE", "mrp": 5453 },
+    { "name": "2.5X44CORE COPPER ARMOURED CABLE", "mrp": 6368 },
+    { "name": "2.5X61CORE COPPER ARMOURED CABLE", "mrp": 9232 },
+    { "name": "25X1CORE COPPER ARMOURED CABLE", "mrp": 1574 },
+    { "name": "25X2CORE COPPER ARMOURED CABLE", "mrp": 3037 },
+    { "name": "25X3CORE COPPER ARMOURED CABLE", "mrp": 4146 },
+    { "name": "25X3.5CORE COPPER ARMOURED CABLE", "mrp": 4969 },
+    { "name": "25X4CORE COPPER ARMOURED CABLE", "mrp": 5465 },
+    { "name": "25X5CORE COPPER ARMOURED CABLE", "mrp": 7929 },
+    { "name": "35X1CORECOPPER ARMOURED CABLE", "mrp": 2138 }
+ ],
+  "POLYCAB IND COPPER": [
+    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 2435.0 },
+    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 3560.0 },
+    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 5630.0 },
+    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 8235.0 },
+    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 12035.0 },
+    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 9740.0 },
+    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 14265.0 },
+    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 23580.0 },
+    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 24375.0 },
+    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 36000.0 }
+  ]
+
+};
+/* ========================================== */
+
+const brandSel=document.getElementById("brand");
+const itemSel=document.getElementById("item");
+const tbody=document.querySelector("#qt tbody");
+
+function generateQuotationNo(){
+  const y=new Date().getFullYear();
+  const k="SSE_QTN_"+y;
+  let s=parseInt(localStorage.getItem(k)||"0")+1;
+  localStorage.setItem(k,s);
+  return `SSE/QTN/${y}/${String(s).padStart(3,"0")}`;
+}
+
+window.onload=()=>{
+  brandSel.innerHTML="<option value=''>Select Brand</option>";
+  Object.keys(items).forEach(b=>{
+    let o=document.createElement("option");
+    o.textContent=b;
+    brandSel.appendChild(o);
+  });
+  qdate.valueAsDate=new Date();
+  qno.value=generateQuotationNo();
+};
+
+brandSel.onchange=()=>{
+  itemSel.innerHTML="<option value=''>Select Item</option>";
+  mrp.value=net.value=disc.value="";
+  if(!brandSel.value) return;
+  items[brandSel.value].forEach(i=>{
+    let o=document.createElement("option");
+    o.textContent=i.name;
+    o.value=i.mrp;
+    itemSel.appendChild(o);
+  });
+};
+
+itemSel.onchange=()=>mrp.value=itemSel.value;
+
+function addItem(){
+  if(!itemSel.value||!brandSel.value) return;
+  let rate=net.value?+net.value:(disc.value?mrp.value-(mrp.value*disc.value/100):+mrp.value);
+  let amt=rate*qty.value;
+  let r=tbody.insertRow();
+  r.innerHTML=`
+    <td></td>
+    <td>${brandSel.value}</td>
+    <td>${itemSel.options[itemSel.selectedIndex].text}</td>
+    <td>${unit.value}</td>
+    <td>${qty.value}</td>
+    <td class="mrpCol">${mrp.value}</td>
+    <td class="mrpCol">${disc.value||0}</td>
+    <td>${rate.toFixed(2)}</td>
+    <td>${amt.toFixed(2)}</td>
+    <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  renumber(); calc();
+}
+
+function delRow(b){b.closest("tr").remove();renumber();calc();}
+function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
+
+function calc(){
+  let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[8].innerText);
+  sub.innerText=s.toFixed(2);
+  gst.innerText=gstToggle.checked?(s*0.18).toFixed(2):"0.00";
+  gt.innerText=(s+ +gst.innerText).toFixed(2);
+  document.querySelectorAll(".mrpCol")
+    .forEach(c=>c.style.display=showMRP.checked?"":"none");
+}
+
+function exportExcel(){
+  let data=[];
+  data.push(["SAI GANESH ELECTRICALS – SSE"]);
+  data.push(["Quotation No",qno.value,"Date",qdate.value]);
+  data.push(["Customer",custName.value,"GSTIN",custGST.value]);
+  data.push(["Address",custAddr.value]);
+  data.push([]);
+  data.push(["S.No","Brand","Description","Unit","Qty","MRP","Disc%","Rate","Amount"]);
+  [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,9).map(c=>c.innerText)));
+  data.push([]);
+  data.push(["Sub Total","","","","","","","",sub.innerText]);
+  data.push(["GST","","","","","","","",gst.innerText]);
+  data.push(["Grand Total","","","","","","","",gt.innerText]);
+  let wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
+  XLSX.writeFile(wb,"SSE_Quotation.xlsx");
+}
+
+function exportPDF(){
+  document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
+  html2pdf().from(document.getElementById("printArea")).set({
+    margin:[10,10,12,10],
+    filename:"SSE_Quotation.pdf",
+    html2canvas:{scale:2},
+    jsPDF:{unit:"mm",format:"a4"}
+  }).save().then(()=>{
+    document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.remove("pdf-hide"));
+  });
+}
+</script>
+
+</body>
+</html>
