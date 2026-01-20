@@ -66,9 +66,10 @@ button{padding:5px 10px;font-size:12px}
 
 <hr>
 
-<!-- ENTRY AREA -->
+<!-- ================= ENTRY AREA ================= -->
 <div class="entry-only no-print">
 
+<!-- EXISTING BRAND ITEM ENTRY (UNCHANGED) -->
 <label>Brand</label>
 <select id="brand"></select>
 
@@ -97,8 +98,53 @@ button{padding:5px 10px;font-size:12px}
   </label>
 </div>
 
+<hr>
+
+<!-- ================= CUSTOM ITEM FEATURE ================= -->
+<label>
+  <input type="checkbox" id="customToggle" onchange="toggleCustomItem()">
+  Add Custom Item (Unbranded / Misc)
+</label>
+
+<div id="customItemBox" style="display:none;margin-top:8px">
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+
+    <div>
+      <label>Brand</label>
+      <input type="text" id="c_brand" placeholder="Local / NA">
+    </div>
+
+    <div>
+      <label>Description</label>
+      <input type="text" id="c_item" placeholder="Nut Bolt / Spring Wire">
+    </div>
+
+    <div>
+      <label>Unit</label>
+      <input type="text" id="c_unit" placeholder="KG / NOS / MTR">
+    </div>
+
+    <div>
+      <label>Qty</label>
+      <input type="number" id="c_qty" value="1">
+    </div>
+
+    <div>
+      <label>Rate</label>
+      <input type="number" id="c_rate">
+    </div>
+
+    <div>
+      <label>&nbsp;</label>
+      <button onclick="addCustomItem()">ADD</button>
+    </div>
+
+  </div>
 </div>
 
+</div>
+
+<!-- ================= TABLE ================= -->
 <table id="qt">
 <thead>
 <tr>
@@ -133,7 +179,7 @@ button{padding:5px 10px;font-size:12px}
 </div>
 
 <script>
-/* ==== INVENTORY (sample – extend freely) ==== */
+/* ================= INVENTORY (UNCHANGED) ================= */
 const items={
   "GREATWHITE": [
     { "name": "BLANK PLATE", "mrp": 72.0 },
@@ -717,8 +763,8 @@ const items={
 ]
 
 };
-/* ========================================== */
 
+/* ================= CORE LOGIC ================= */
 const brandSel=document.getElementById("brand");
 const itemSel=document.getElementById("item");
 const tbody=document.querySelector("#qt tbody");
@@ -772,7 +818,36 @@ function addItem(){
     <td>${rate.toFixed(2)}</td>
     <td>${amt.toFixed(2)}</td>
     <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
-  renumber(); calc();
+  renumber();calc();
+}
+
+/* ================= CUSTOM ITEM ================= */
+function toggleCustomItem(){
+  customItemBox.style.display=customToggle.checked?"block":"none";
+}
+
+function addCustomItem(){
+  const brand=c_brand.value||"NA";
+  const item=c_item.value;
+  const unit=c_unit.value;
+  const qty=+c_qty.value;
+  const rate=+c_rate.value;
+  if(!item||!unit||!qty||!rate) return;
+  const amt=qty*rate;
+  const r=tbody.insertRow();
+  r.innerHTML=`
+    <td></td>
+    <td>${brand}</td>
+    <td>${item}</td>
+    <td>${unit}</td>
+    <td>${qty}</td>
+    <td class="mrpCol">-</td>
+    <td class="mrpCol">-</td>
+    <td>${rate.toFixed(2)}</td>
+    <td>${amt.toFixed(2)}</td>
+    <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  renumber();calc();
+  c_item.value=c_rate.value="";
 }
 
 function delRow(b){b.closest("tr").remove();renumber();calc();}
@@ -787,19 +862,14 @@ function calc(){
     .forEach(c=>c.style.display=showMRP.checked?"":"none");
 }
 
+/* ================= EXPORT ================= */
 function exportExcel(){
-  let data=[];
-  data.push(["SAI GANESH ELECTRICALS – SSE"]);
-  data.push(["Quotation No",qno.value,"Date",qdate.value]);
-  data.push(["Customer",custName.value,"GSTIN",custGST.value]);
-  data.push(["Address",custAddr.value]);
-  data.push([]);
+  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value]];
   data.push(["S.No","Brand","Description","Unit","Qty","MRP","Disc%","Rate","Amount"]);
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,9).map(c=>c.innerText)));
-  data.push([]);
-  data.push(["Sub Total","","","","","","","",sub.innerText]);
-  data.push(["GST","","","","","","","",gst.innerText]);
-  data.push(["Grand Total","","","","","","","",gt.innerText]);
+  data.push(["","","","","","","","Sub Total",sub.innerText]);
+  data.push(["","","","","","","","GST",gst.innerText]);
+  data.push(["","","","","","","","Grand Total",gt.innerText]);
   let wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
   XLSX.writeFile(wb,"SSE_Quotation.xlsx");
@@ -807,20 +877,11 @@ function exportExcel(){
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().from(document.getElementById("printArea")).set({
-    margin:[10,10,12,10],
-    filename:"SSE_Quotation.pdf",
-    html2canvas:{scale:2},
-    jsPDF:{unit:"mm",format:"a4"}
-  }).save().then(()=>{
-    document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.remove("pdf-hide"));
-  });
+  html2pdf().from(printArea).set({filename:"SSE_Quotation.pdf"}).save()
+  .then(()=>document.querySelectorAll(".entry-only,.no-print")
+  .forEach(e=>e.classList.remove("pdf-hide")));
 }
 </script>
 
 </body>
 </html>
-
-
-
-
