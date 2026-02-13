@@ -36,7 +36,7 @@ button{padding:5px 10px;font-size:12px}
 
 <h2>                       SAI GANESH ELECTRICALS – SSE                            </h2>
 <div>PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-<div>DASARI KRISHNA, PH: 9885750057,Email: krishnadsge@gmail.com</div>
+<div>DASARI KRISHNA, PH: 9885750057, Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
 <div>We Deal all Brand Wires ,Cables ,Switches,Lighting,Cable trays,and Metal boxes </div>
 
 
@@ -91,6 +91,29 @@ button{padding:5px 10px;font-size:12px}
   <div><label>Discount %</label><input type="number" id="disc"></div>
   <div><label>Net Rate</label><input type="number" id="net"></div>
   <div><label>&nbsp;</label><button onclick="addItem()">ADD</button></div>
+</div>
+
+
+<!-- POLYCAB CABLE INFO BOX -->
+<div id="indCopperBox" style="display:none;margin-top:6px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
+  <span id="cableBoxTitle" style="font-weight:bold;font-size:12px;color:#e65100">📦 POLYCAB CABLE INFO</span>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">
+    <div id="coilInfoRow" style="display:contents">
+      <div><label>Coil Length (Mtr)</label><input type="number" id="coilLen" readonly style="background:#fff9c4;font-weight:bold"></div>
+      <div><label>MRP per Mtr</label><input type="number" id="mrpPerMtr" readonly style="background:#e8f5e9;font-weight:bold"></div>
+      <div><label>Net Rate/Mtr</label><input type="number" id="netPerMtr" readonly style="background:#e3f2fd;font-weight:bold"></div>
+    </div>
+    <div id="frToggleBox">
+      <label>Wire Type</label>
+      <select id="frType" style="font-weight:bold;background:#fce4ec">
+        <option value="">— None —</option>
+        <option value="FR">FR</option>
+        <option value="FR-LSH">FR-LSH</option>
+        <option value="FRLS">FRLS</option>
+        <option value="ZHFR">ZHFR</option>
+      </select>
+    </div>
+  </div>
 </div>
 
 <div style="margin-top:8px">
@@ -153,11 +176,13 @@ button{padding:5px 10px;font-size:12px}
   <th>S.No</th>
   <th>Brand</th>
   <th>Description</th>
+  <th>HSN Code</th>
   <th>Unit</th>
   <th>Qty</th>
   <th class="mrpCol">MRP</th>
   <th class="mrpCol">Disc%</th>
-  <th>Rate</th>
+  <th>Net Rate</th>
+  <th id="perMtrHeader" style="display:none">Per Mtr Rate</th>
   <th>Amount</th>
   <th class="no-print">Action</th>
 </tr>
@@ -528,40 +553,40 @@ const items={
     { "name": "125AMS FP ", "mrp": 2444.0 }
   ],
   "KEI IND COPPER": [
-    { "name": "1SQMM 90MTR FR IND COPPER WIRE", "mrp": 2840.0 },
-    { "name": "1.5SQMM 90MTR FR IND COPPER WIRE", "mrp": 4240.0 },
-    { "name": "2.5SQMM 90MTR FR IND COPPER WIRE", "mrp": 6780.0 },
-    { "name": "4SQMM 90MTR  FR IND COPPER WIRE", "mrp": 10070.0 },
-    { "name": "6SQMM 90MTR FR IND COPPER WIRE", "mrp": 15250.0 },
-    { "name": "1SQMM 180MTR IND COPPER WIRE ", "mrp": 5230.0 },
+    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 2840.0 },
+    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 4240.0 },
+    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 6780.0 },
+    { "name": "4SQMM 90MTR  IND COPPER WIRE", "mrp": 10070.0 },
+    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 15250.0 },
+    { "name": "1SQMM 180MTR IND COPPER WIRE", "mrp": 5230.0 },
     { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 7790.0 },
     { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 12480.0 },
     { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 18540.0 },
     { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 28040.0 },
-    { "name": "1SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 10520.0 },
-    { "name": "1.5SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 15990.0 },
-    { "name": "2.5SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 25970.0 },
-    { "name": "4SQMM 200MTR FRLS-H IND COPPER WIRE", "mrp": 25840.0 },
-    { "name": "6SQMM 200MTR FRLS-H IND COPPER WIRE", "mrp": 39460.0 }
+    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 10520.0 },
+    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 15990.0 },
+    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 25970.0 },
+    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 25840.0 },
+    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 39460.0 }
   ],
-  "POLYCAB IND COPPER": [
+  "POLYCAB - IND COPPER WIRE": [
     { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 2505.0 },
     { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 3665.0 },
     { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 5800.0 },
     { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 8480.0 },
     { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 12675.0 },
-    { "name": "1SQMM 180MTR LF FR IND COPPER WIRE ", "mrp": 5010.0 },
-    { "name": "1.5SQMM 180MTR LF FR IND COPPER WIRE", "mrp": 7330.0 },
-    { "name": "2.5SQMM 180MTR LF FR IND COPPER WIRE", "mrp": 11600.0 },
-    { "name": "4SQMM 180MTR LF FR IND COPPER WIRE", "mrp": 16960.0 },
-    { "name": "6SQMM 180MTR LF FR IND COPPER WIRE", "mrp": 25350.0 },
-    { "name": "1SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 11115.0 },
-    { "name": "1.5SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 16280.0 },
-    { "name": "2.5SQMM 300MTR FRLS-H IND COPPER WIRE", "mrp": 26970.0 },
-    { "name": "4SQMM 200MTR FRLS-H IND COPPER WIRE", "mrp": 27610.0 },
-    { "name": "6SQMM 200MTR FRLS-H IND COPPER WIRE", "mrp": 41045.0 }
+    { "name": "1SQMM 180MTR LF IND COPPER WIRE", "mrp": 5010.0 },
+    { "name": "1.5SQMM 180MTR LF IND COPPER WIRE", "mrp": 7330.0 },
+    { "name": "2.5SQMM 180MTR LF IND COPPER WIRE", "mrp": 11600.0 },
+    { "name": "4SQMM 180MTR LF IND COPPER WIRE", "mrp": 16960.0 },
+    { "name": "6SQMM 180MTR LF IND COPPER WIRE", "mrp": 25350.0 },
+    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 11115.0 },
+    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 16280.0 },
+    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 26970.0 },
+    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 27610.0 },
+    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 41045.0 }
   ],
-  "POLYCAB CU ARM": [
+  "POLYCAB - COPPER ARMOURED": [
     { "name": "4X2CORE COPPER ARMOURED CABLE", "mrp": 557 },
     { "name": "4X3CORE COPPER ARMOURED CABLE", "mrp": 746 },
     { "name": "4X4CORE COPPER ARMOURED CABLE", "mrp": 956 },
@@ -677,7 +702,7 @@ const items={
     { "name": "1000X1CORECOPPER ARMOURED CABLE", "mrp": 54808 }
 
  ],
-  "POLYCAB ALU ARMUD": [
+  "POLYCAB - ALU ARMOURED": [
     { "name": "4X2CORE ALU ARMOURED CABLE", "mrp":242 },
     { "name": "4X3CORE ALU ARMOURED CABLE", "mrp": 260 },
     { "name": "4X4CORE ALU ARMOURED CABLE", "mrp": 303 },
@@ -763,7 +788,7 @@ const items={
     { "name": "1000X1COREALU ARMOURED CABLE", "mrp":5517 }
 
 ],
-  "POLYCAB COPPER FLEXIBLE": [
+  "POLYCAB - COPPER FLEXIBLE": [
      { "name": "0.5X1CORE COPPER FLEXIBLE CABLE", "mrp":20.30 },
  { "name": "0.5X2CORE COPPER FLEXIBLE CABLE", "mrp":53.00 },
  { "name": "0.5X3CORE COPPER FLEXIBLE CABLE", "mrp":74.10 },
@@ -912,6 +937,7 @@ window.onload=()=>{
 brandSel.onchange=()=>{
   itemSel.innerHTML="<option value=''>Select Item</option>";
   mrp.value=net.value=disc.value="";
+  document.getElementById("indCopperBox").style.display="none";
   if(!brandSel.value) return;
   items[brandSel.value].forEach(i=>{
     let o=document.createElement("option");
@@ -919,24 +945,214 @@ brandSel.onchange=()=>{
     o.value=i.mrp;
     itemSel.appendChild(o);
   });
+  // IND COPPER = sold by COIL, Armoured/Flexible = sold by MTRS
+  const b=brandSel.value.toUpperCase();
+  if(b.includes("IND COPPER")) unit.value="COIL";
+  else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
 };
 
-itemSel.onchange=()=>mrp.value=itemSel.value;
+/* ---- IND COPPER length map ---- */
+function getCoilLength(itemName){
+  const n=itemName.toUpperCase();
+  if(n.includes("90MTR"))  return 90;
+  if(n.includes("180MTR")) return 180;
+  if(n.includes("200MTR")) return 200;
+  if(n.includes("300MTR")) return 300;
+  return null;
+}
+
+function isIndCopperBrand(brandVal){
+  return brandVal && brandVal.toUpperCase().includes("IND COPPER");
+}
+
+function isPolycabCable(brandVal){
+  const b=(brandVal||"").toUpperCase();
+  return b.includes("POLYCAB - IND COPPER") ||
+         b.includes("POLYCAB - COPPER ARMOURED") ||
+         b.includes("POLYCAB - ALU ARMOURED") ||
+         b.includes("POLYCAB - COPPER FLEXIBLE");
+}
+
+function isKEIIndCopper(brandVal){
+  return (brandVal||"").toUpperCase().includes("KEI IND COPPER");
+}
+
+function updateIndCopperBox(){
+  const brand=brandSel.value;
+  const indBox=document.getElementById("indCopperBox");
+  const frBox=document.getElementById("frToggleBox");
+  const titleEl=document.getElementById("cableBoxTitle");
+
+  if(!isPolycabCable(brand) && !isKEIIndCopper(brand)){
+    indBox.style.display="none";
+    return;
+  }
+
+  const coilMRP=+mrp.value;
+  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
+  const len=getCoilLength(itemName);
+
+  // Update title
+  if(brand.includes("IND COPPER")) titleEl.innerText="📦 IND COPPER WIRE — COIL INFO";
+  else if(brand.includes("COPPER ARMOURED")) titleEl.innerText="📦 COPPER ARMOURED CABLE — INFO";
+  else if(brand.includes("ALU ARMOURED")) titleEl.innerText="📦 ALU ARMOURED CABLE — INFO";
+  else if(brand.includes("COPPER FLEXIBLE")) titleEl.innerText="📦 COPPER FLEXIBLE CABLE — INFO";
+
+  // Always show FR toggle for all cable brands
+  frBox.style.display="block";
+
+  // Show coil/per-mtr info only for IND COPPER (has fixed lengths)
+  const coilInfoRow=document.getElementById("coilInfoRow");
+  if(len && coilMRP){
+    document.getElementById("coilLen").value=len;
+    const mrpM=+(coilMRP/len).toFixed(2);
+    document.getElementById("mrpPerMtr").value=mrpM;
+    updateNetPerMtr();
+    if(coilInfoRow) coilInfoRow.style.display="";
+  } else {
+    if(coilInfoRow) coilInfoRow.style.display="none";
+  }
+
+  // Always show the box for cable brands
+  indBox.style.display="block";
+}
+
+function updateNetPerMtr(){
+  const coilMRP=+mrp.value;
+  const len=+document.getElementById("coilLen").value;
+  if(!len||!coilMRP) return;
+  let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+  document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2);
+}
+
+function updateIndModeDisplay(){
+  const mode=document.getElementById("indEntryMode").value;
+  if(mode==="mtr"){
+    unit.value="MTRS";
+  } else {
+    unit.value="COIL";
+  }
+}
+
+itemSel.onchange=()=>{
+  mrp.value=itemSel.value;
+  updateIndCopperBox();
+};
+
+/* Watch disc/net changes to update per-mtr */
+document.getElementById("disc").addEventListener("input",()=>{updateNetPerMtr();});
+document.getElementById("net").addEventListener("input",()=>{updateNetPerMtr();});
+
+/* ================= HSN CODE LOOKUP ================= */
+function getHSN(brand, itemName){
+  const b=brand.toUpperCase();
+  const n=itemName.toUpperCase();
+
+  // Cables & Wires (insulated copper/alu - Chapter 85)
+  if(b.includes("IND COPPER") || b.includes("POLYCAB COPPER") || b.includes("KEI"))
+    return "85446090";
+  if(n.includes("COPPER ARMOURED") || n.includes("CU ARM"))
+    return "85446090";
+  if(n.includes("ALU ARMOURED") || b.includes("ALU ARM"))
+    return "85446090";
+  if(n.includes("COPPER FLEXIBLE") || b.includes("COPPER FLEXIBLE"))
+    return "85446090";
+
+  // Switches, Sockets, Regulators, Bell Push, Indicators (8536)
+  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||
+     n.includes("BELL PUSH")||n.includes("INDICATOR")||n.includes("BELL WITH IND"))
+    return "85365020";
+
+  // MCB / MCCB / Isolators (8536)
+  if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT"))
+    return "85362000";
+
+  // Distribution Boards / DB / Panels (8537)
+  if(n.includes(" DB ")||n.includes("DB$")||n.endsWith("DB")||
+     n.includes("PANEL")||n.includes("ENCLOSER")||n.includes("ENCLOSURE"))
+    return "85371000";
+
+  // Modular Plates / Blank Plates (8538)
+  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")||n.includes("FRAME"))
+    return "85389000";
+
+  // Lighting (9405)
+  if(n.includes("DOWN LIGHT")||n.includes("SKIRTING LIGHT")||n.includes("FOOT LAMP"))
+    return "94051090";
+
+  // RJ45 / TV Socket / Telephone / USB / Data (8536)
+  if(n.includes("RJ")||n.includes("TV SOCKET")||n.includes("TELEPHONE")||n.includes("USB"))
+    return "85363090";
+
+  // Cable Tray (7308)
+  if(n.includes("CABLE TRAY")||n.includes("TRAY"))
+    return "73089090";
+
+  // Metal Box / Junction Box (8538)
+  if(n.includes("METAL BOX")||n.includes("JUNCTION BOX")||n.includes("BOX"))
+    return "85389000";
+
+  // Default for electrical items
+  return "85369090";
+}
 
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
-  let rate=net.value?+net.value:(disc.value?mrp.value-(mrp.value*disc.value/100):+mrp.value);
-  let amt=rate*qty.value;
+  const coilMRP=+mrp.value;
+  let coilRate, perMtrRate="-", displayUnit, displayMRP, description, displayBrand, showPerMtr=false;
+  const itemName=itemSel.options[itemSel.selectedIndex].text.trim();
+  const brand=brandSel.value;
+  const b=brand.toUpperCase();
+  const frType=document.getElementById("frType")?.value||"";
+
+  // Display brand — always POLYCAB for Polycab categories
+  displayBrand = brand.startsWith("POLYCAB") ? "POLYCAB" : brand;
+
+  const isIndCopper = b.includes("IND COPPER");
+  const isArmFlx = b.includes("ARMOURED") || b.includes("FLEXIBLE");
+
+  if(isIndCopper){
+    // Sold by COIL — has fixed length, show per mtr
+    const len=+document.getElementById("coilLen").value||1;
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    perMtrRate=(coilRate/len).toFixed(2);
+    displayUnit="COIL";
+    displayMRP=coilMRP;
+    showPerMtr=true;
+    description = frType ? `${itemName} ${frType}` : itemName;
+
+  } else if(isArmFlx){
+    // Sold by MTRS — MRP is per metre, no coil division needed
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    perMtrRate="-";
+    displayUnit="MTRS";
+    displayMRP=coilMRP;
+    showPerMtr=false;
+    description = frType ? `${itemName} ${frType}` : itemName;
+
+  } else {
+    // All other brands
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    perMtrRate="-";
+    displayUnit=unit.value;
+    displayMRP=coilMRP;
+    showPerMtr=false;
+    description=itemName;
+  }
+  const hsn=getHSN(brand, itemName);
+  let amt=coilRate*qty.value;
   let r=tbody.insertRow();
   r.innerHTML=`
     <td></td>
-    <td>${brandSel.value}</td>
-    <td>${itemSel.options[itemSel.selectedIndex].text}</td>
-    <td>${unit.value}</td>
+    <td>${displayBrand}</td>
+    <td>${description}</td>
+    <td>${hsn}</td>
+    <td>${displayUnit}</td>
     <td>${qty.value}</td>
-    <td class="mrpCol">${mrp.value}</td>
+    <td class="mrpCol">${displayMRP}</td>
     <td class="mrpCol">${disc.value||0}</td>
-    <td>${rate.toFixed(2)}</td>
+    <td>${coilRate.toFixed(2)}</td>
+    <td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td>
     <td>${amt.toFixed(2)}</td>
     <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
@@ -960,11 +1176,13 @@ function addCustomItem(){
     <td></td>
     <td>${brand}</td>
     <td>${item}</td>
+    <td>-</td>
     <td>${unit}</td>
     <td>${qty}</td>
     <td class="mrpCol">-</td>
     <td class="mrpCol">-</td>
     <td>${rate.toFixed(2)}</td>
+    <td class="perMtrCell" style="display:none">-</td>
     <td>${amt.toFixed(2)}</td>
     <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
@@ -975,41 +1193,41 @@ function delRow(b){b.closest("tr").remove();renumber();calc();}
 function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
 
 function calc(){
-  let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[8].innerText);
+  let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[10].innerText);
   sub.innerText=s.toFixed(2);
   gst.innerText=gstToggle.checked?(s*0.18).toFixed(2):"0.00";
   gt.innerText=(s+ +gst.innerText).toFixed(2);
   document.querySelectorAll(".mrpCol")
     .forEach(c=>c.style.display=showMRP.checked?"":"none");
+
+  // Show Per Mtr column only if any IND COPPER (coil) row exists
+  const hasIndCopper=[...tbody.rows].some(r=>
+    r.cells[4].innerText==="COIL" && r.cells[9].innerText!=="-"
+  );
+  document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
+  document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
 }
 
 /* ================= EXPORT ================= */
 function exportExcel(){
   let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value]];
-  data.push(["S.No","Brand","Description","Unit","Qty","MRP","Disc%","Rate","Amount"]);
-  [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,9).map(c=>c.innerText)));
-  data.push(["","","","","","","","Sub Total",sub.innerText]);
-  data.push(["","","","","","","","GST",gst.innerText]);
-  data.push(["","","","","","","","Grand Total",gt.innerText]);
+  data.push(["S.No","Brand","Description","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]);
+  [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,11).map(c=>c.innerText)));
+  data.push(["","","","","","","","","","Sub Total",sub.innerText]);
+  data.push(["","","","","","","","","","GST",gst.innerText]);
+  data.push(["","","","","","","","","","Grand Total",gt.innerText]);
   let wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
   XLSX.writeFile(wb,"SSE_Quotation.xlsx");
 }
 
+
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().from(printArea).set({filename:"SSE_Quotation.pdf"}).save()
-  .then(()=>document.querySelectorAll(".entry-only,.no-print")
-  .forEach(e=>e.classList.remove("pdf-hide")));
+  html2pdf().set({margin:5,filename:"SSE_Quotation.pdf",html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4"}})
+    .from(document.getElementById("printArea")).save()
+    .then(()=>{document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.remove("pdf-hide"));});
 }
 </script>
-
 </body>
 </html>
-
-
-
-
-
-
-
