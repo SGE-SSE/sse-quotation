@@ -9,23 +9,115 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f4f4;padding:10px}
-.card{max-width:1200px;margin:auto;background:#fff;padding:15px;border-radius:6px}
-label{font-size:12px;font-weight:bold}
-input,select,textarea{width:100%;padding:6px;font-size:12px}
-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
-th,td{border:1px solid #000;padding:5px;text-align:center}
-th{background:#eee}
-.right{text-align:right}
-button{padding:5px 10px;font-size:12px}
+:root{
+  --primary:#1a3c6e;
+  --primary-light:#2a5298;
+  --accent:#f0a500;
+  --bg:#eef2f7;
+  --card:#ffffff;
+  --section-bg:#f5f8fd;
+  --border:#c5d3e8;
+  --text:#1a1a2e;
+  --muted:#5a6a85;
+  --green:#1b7a4a;
+  --green-light:#e8f5ee;
+  --table-head:#1a3c6e;
+  --table-alt:#f0f4fb;
+}
+*{box-sizing:border-box}
+body{font-family:'Arial',sans-serif;background:var(--bg);padding:14px;color:var(--text)}
+.card{max-width:1200px;margin:auto;background:var(--card);border-radius:10px;
+      box-shadow:0 4px 18px rgba(26,60,110,0.13);overflow:hidden}
+.company-header{
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
+  color:#fff;text-align:center;padding:18px 20px 14px;
+  border-bottom:4px solid var(--accent)}
+.company-header h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:1.5px;
+  text-transform:uppercase;color:#fff}
+.company-header .tagline{font-size:11.5px;color:#c8d8f5;margin:2px 0}
+.company-header .contact{font-size:12px;color:#e0ecff;margin-top:6px}
+.company-header .contact a{color:var(--accent);text-decoration:none;font-weight:bold}
+.company-header .deal-line{margin-top:8px;font-size:11px;font-weight:600;letter-spacing:.8px;
+  background:rgba(255,255,255,0.12);display:inline-block;
+  padding:4px 18px;border-radius:20px;color:#d4e8ff}
+.section-panel{background:var(--section-bg);border:1px solid var(--border);
+               border-radius:7px;padding:12px 14px;margin:12px 14px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;
+               letter-spacing:.8px;color:var(--primary);margin-bottom:8px;
+               border-left:3px solid var(--accent);padding-left:8px}
+label{font-size:11.5px;font-weight:700;color:var(--primary);display:block;margin-bottom:2px}
+input,select,textarea{width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);
+  border-radius:4px;background:#fff;color:var(--text);transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary-light);
+  box-shadow:0 0 0 2px rgba(42,82,152,.12)}
+textarea{resize:vertical;min-height:44px}
 .header-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.entry-panel{background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:12px 14px;margin:0 14px 12px}
+table{width:100%;border-collapse:collapse;margin-top:0;font-size:12px}
+th{background:var(--table-head);color:#fff;padding:7px 5px;text-align:center;
+   font-size:11.5px;letter-spacing:.3px;border:1px solid #2a5298}
+td{border:1px solid #c5d3e8;padding:5px;text-align:center;color:var(--text)}
+tbody tr:nth-child(even){background:var(--table-alt)}
+tbody tr:hover{background:#dce8fb}
+.right{text-align:right}
+.totals-table{width:340px;margin-left:auto;margin-top:14px;
+              border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.totals-table td{padding:6px 12px;font-size:12.5px;border:1px solid var(--border)}
+.totals-table tr:first-child td{background:#f0f4fb}
+.totals-table .gst-row td{background:#fff8e1;color:#7a5000}
+.totals-table .grandtotal-row td{background:var(--primary);color:#fff;font-weight:700;font-size:13px}
+.totals-table .roundoff-row td{background:#fff3e0;color:#7a4000;font-style:italic}
+.totals-table .netpay-row td{background:var(--green);color:#fff;font-size:14px;font-weight:800}
+.totals-table .freight-row td{background:#f5f8fd;color:var(--muted);font-style:italic;font-size:11px}
+button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;
+       cursor:pointer;transition:all .15s}
+.btn-add{background:var(--primary);color:#fff}
+.btn-add:hover{background:var(--primary-light)}
+.btn-print{background:#1a3c6e;color:#fff}
+.btn-excel{background:#1b7a4a;color:#fff}
+.btn-pdf{background:#c0392b;color:#fff}
+.btn-print:hover{background:#2a5298}
+.btn-excel:hover{background:#156038}
+.btn-pdf:hover{background:#a93226}
+.table-wrapper{margin:0 14px 0}
 .no-print{}
 .entry-only{}
 .pdf-hide{display:none!important}
 @media print{
   .no-print,.entry-only{display:none!important}
-  body{background:#fff}
+  body{background:#fff!important;padding:0}
+  .card{box-shadow:none!important;border-radius:0!important}
+
+  /* Force background colors to print */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+
+  .company-header{
+    background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;
+    color:#fff!important;border-bottom:4px solid #f0a500!important;
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important
+  }
+  .company-header h2{color:#fff!important}
+  .company-header .tagline{color:#c8d8f5!important}
+  .company-header .contact{color:#e0ecff!important}
+  .company-header .contact a{color:#f0a500!important}
+  .company-header .deal-line{background:rgba(255,255,255,0.12)!important;color:#d4e8ff!important}
+
+  .section-panel{background:#f5f8fd!important;border:1px solid #c5d3e8!important}
+  .section-title{color:#1a3c6e!important;border-left:3px solid #f0a500!important}
+
+  th{background:#1a3c6e!important;color:#fff!important;border:1px solid #2a5298!important}
+  tbody tr:nth-child(even){background:#f0f4fb!important}
+  td{border:1px solid #c5d3e8!important}
+
+  .totals-table .gst-row td{background:#fff8e1!important;color:#7a5000!important}
+  .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#fff!important}
+  .totals-table .roundoff-row td{background:#fff3e0!important;color:#7a4000!important}
+  .totals-table .netpay-row td{background:#1b7a4a!important;color:#fff!important}
+  .totals-table .freight-row td{background:#f5f8fd!important;color:#5a6a85!important}
+
+  .table-wrapper{margin:0 14px!important}
+  .section-panel{margin:8px 14px!important}
 }
 </style>
 </head>
@@ -34,42 +126,50 @@ button{padding:5px 10px;font-size:12px}
 
 <div class="card" id="printArea">
 
-<h2>                       SAI GANESH ELECTRICALS – SSE                            </h2>
-<div>PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-<div>DASARI KRISHNA, PH: 9885750057, Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
-<div>We Deal all Brand Wires ,Cables ,Switches,Lighting,Cable trays,and Metal boxes </div>
+<div class="company-header">
+  <h2>⚡ SAI GANESH ELECTRICALS – SSE</h2>
+  <div class="tagline">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
+  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
+  <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
+</div>
 
 
-<div class="header-grid" style="margin-top:10px">
-  <div>
-    <label>Quotation No</label>
-    <input type="text" id="qno">
-  </div>
-  <div>
-    <label>Quotation Date</label>
-    <input type="date" id="qdate">
+<div class="section-panel">
+  <div class="section-title">Quotation Details</div>
+  <div class="header-grid">
+    <div>
+      <label>Quotation No</label>
+      <input type="text" id="qno">
+    </div>
+    <div>
+      <label>Quotation Date</label>
+      <input type="date" id="qdate">
+    </div>
   </div>
 </div>
 
-<div class="customer-grid">
-  <div>
-    <label>Customer Name</label>
-    <input type="text" id="custName">
-  </div>
-  <div>
-    <label>Customer GSTIN</label>
-    <input type="text" id="custGST">
-  </div>
-  <div style="grid-column:span 2">
-    <label>Customer Address</label>
-    <textarea id="custAddr"></textarea>
+<div class="section-panel" style="margin-top:0">
+  <div class="section-title">Customer Details</div>
+  <div class="customer-grid">
+    <div>
+      <label>Customer Name</label>
+      <input type="text" id="custName">
+    </div>
+    <div>
+      <label>Customer GSTIN</label>
+      <input type="text" id="custGST">
+    </div>
+    <div style="grid-column:span 2">
+      <label>Customer Address</label>
+      <textarea id="custAddr"></textarea>
+    </div>
   </div>
 </div>
-
-<hr>
 
 <!-- ================= ENTRY AREA ================= -->
 <div class="entry-only no-print">
+<div class="entry-panel">
+<div class="section-title">Add Item to Quotation</div>
 
 <!-- EXISTING BRAND ITEM ENTRY (UNCHANGED) -->
 <label>Brand</label>
@@ -90,7 +190,7 @@ button{padding:5px 10px;font-size:12px}
   <div><label>MRP</label><input type="number" id="mrp" readonly></div>
   <div><label>Discount %</label><input type="number" id="disc"></div>
   <div><label>Net Rate</label><input type="number" id="net"></div>
-  <div><label>&nbsp;</label><button onclick="addItem()">ADD</button></div>
+  <div><label>&nbsp;</label><button class="btn-add" onclick="addItem()">➕ ADD</button></div>
 </div>
 
 
@@ -117,13 +217,12 @@ button{padding:5px 10px;font-size:12px}
 </div>
 
 <div style="margin-top:8px">
-  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP & Discount</label>
+  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount</label>
   <label style="margin-left:15px">
     <input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%
   </label>
 </div>
-
-<hr>
+</div>
 
 <!-- ================= CUSTOM ITEM FEATURE ================= -->
 <label>
@@ -131,7 +230,7 @@ button{padding:5px 10px;font-size:12px}
   Add Custom Item (Unbranded / Misc)
 </label>
 
-<div id="customItemBox" style="display:none;margin-top:8px">
+<div id="customItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
 
     <div>
@@ -161,7 +260,7 @@ button{padding:5px 10px;font-size:12px}
 
     <div>
       <label>&nbsp;</label>
-      <button onclick="addCustomItem()">ADD</button>
+      <button class="btn-add" onclick="addCustomItem()">➕ ADD</button>
     </div>
 
   </div>
@@ -170,6 +269,8 @@ button{padding:5px 10px;font-size:12px}
 </div>
 
 <!-- ================= TABLE ================= -->
+<div class="table-wrapper">
+<div class="section-title" style="margin-bottom:6px">Quotation Items</div>
 <table id="qt">
 <thead>
 <tr>
@@ -189,18 +290,21 @@ button{padding:5px 10px;font-size:12px}
 </thead>
 <tbody></tbody>
 </table>
+</div>
 
-<table style="width:320px;margin-left:auto;margin-top:10px">
+<table class="totals-table" style="width:340px;margin-left:auto;margin-top:10px">
 <tr><td>Sub Total</td><td class="right" id="sub">0.00</td></tr>
-<tr><td>GST 18%</td><td class="right" id="gst">0.00</td></tr>
-<tr><td><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
-<tr><td>Freight</td><td class="right">As per policy</td></tr>
+<tr class="gst-row"><td>GST 18%</td><td class="right" id="gst">0.00</td></tr>
+<tr class="grandtotal-row"><td><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
+<tr class="roundoff-row"><td>Round Off</td><td class="right" id="roundOff">0.00</td></tr>
+<tr class="netpay-row"><td><b>Net Payable</b></td><td class="right" id="netPayable"><b>0</b></td></tr>
+<tr class="freight-row"><td>Freight</td><td class="right">As per policy</td></tr>
 </table>
 
-<div class="no-print" style="margin-top:10px">
-  <button onclick="window.print()">PRINT</button>
-  <button onclick="exportExcel()">EXCEL</button>
-  <button onclick="exportPDF()">PDF</button>
+<div class="no-print" style="margin-top:14px;padding:0 14px 14px;display:flex;gap:8px">
+  <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
+  <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
+  <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
 </div>
 
 </div>
@@ -949,7 +1053,7 @@ brandSel.onchange=()=>{
   });
   // IND COPPER = sold by COIL, Armoured/Flexible = sold by MTRS
   const b=brandSel.value.toUpperCase();
-  if(b.includes("IND COPPER")) unit.value="COIL";
+  if(b.includes("IND COPPER") || b==="KEI FR" || b==="KEI FRLS") unit.value="COIL";
   else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
 };
 
@@ -976,7 +1080,8 @@ function isPolycabCable(brandVal){
 }
 
 function isKEIIndCopper(brandVal){
-  return (brandVal||"").toUpperCase().includes("KEI IND COPPER");
+  const b=(brandVal||"").toUpperCase().trim();
+  return b.includes("KEI IND COPPER") || b==="KEI FR" || b==="KEI FRLS";
 }
 
 function updateIndCopperBox(){
@@ -995,7 +1100,8 @@ function updateIndCopperBox(){
   const len=getCoilLength(itemName);
 
   // Update title
-  if(brand.includes("IND COPPER")) titleEl.innerText="📦 IND COPPER WIRE — COIL INFO";
+  if(brand.includes("IND COPPER") || brand.toUpperCase()==="KEI FR" || brand.toUpperCase()==="KEI FRLS")
+    titleEl.innerText="📦 IND COPPER WIRE — COIL INFO";
   else if(brand.includes("COPPER ARMOURED")) titleEl.innerText="📦 COPPER ARMOURED CABLE — INFO";
   else if(brand.includes("ALU ARMOURED")) titleEl.innerText="📦 ALU ARMOURED CABLE — INFO";
   else if(brand.includes("COPPER FLEXIBLE")) titleEl.innerText="📦 COPPER FLEXIBLE CABLE — INFO";
@@ -1110,7 +1216,7 @@ function addItem(){
   // Display brand — always POLYCAB for Polycab categories
   displayBrand = brand.startsWith("POLYCAB") ? "POLYCAB" : brand;
 
-  const isIndCopper = b.includes("IND COPPER");
+  const isIndCopper = b.includes("IND COPPER") || b==="KEI FR" || b==="KEI FRLS";
   const isArmFlx = b.includes("ARMOURED") || b.includes("FLEXIBLE");
 
   if(isIndCopper){
@@ -1198,7 +1304,12 @@ function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[10].innerText);
   sub.innerText=s.toFixed(2);
   gst.innerText=gstToggle.checked?(s*0.18).toFixed(2):"0.00";
-  gt.innerText=(s+ +gst.innerText).toFixed(2);
+  const grandTotal = s + +gst.innerText;
+  gt.innerText=grandTotal.toFixed(2);
+  const rounded = Math.round(grandTotal);
+  const roundOff = rounded - grandTotal;
+  document.getElementById("roundOff").innerText = (roundOff >= 0 ? "+" : "") + roundOff.toFixed(2);
+  document.getElementById("netPayable").innerHTML = "<b>₹ " + rounded.toLocaleString("en-IN") + "</b>";
   document.querySelectorAll(".mrpCol")
     .forEach(c=>c.style.display=showMRP.checked?"":"none");
 
@@ -1226,13 +1337,15 @@ function exportExcel(){
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:"SSE_Quotation.pdf",html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4"}})
-    .from(document.getElementById("printArea")).save()
-    .then(()=>{document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.remove("pdf-hide"));});
+  html2pdf().set({
+    margin:5,
+    filename:"SSE_Quotation.pdf",
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{orientation:"portrait",unit:"mm",format:"a4"}
+  }).from(document.getElementById("printArea")).save().then(()=>{
+    document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.remove("pdf-hide"));
+  });
 }
 </script>
 </body>
 </html>
-
-
-
