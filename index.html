@@ -129,7 +129,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <div class="company-header">
   <h2>⚡ SAI GANESH ELECTRICALS – SSE</h2>
   <div class="tagline">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:bold">krishnadsge@gmail.com</a></div>
+  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com" style="color:#f0a500;text-decoration:none;font-weight:bold">krishnadsge@gmail.com</a></div>
   <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
 </div>
 
@@ -309,7 +309,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 /* ================= INVENTORY (UNCHANGED) ================= */
 const items={
   "GREATWHITE": [
@@ -683,7 +683,7 @@ const items={
     { "name": "4SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 10900 },
     { "name": "6SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 16500 },
     
-    { "name": "1SQMM 180MTRGREEN PLUS IND COPPER WIRE", "mrp": 5990.0 },
+    { "name": "1SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 5990.0 },
     { "name": "1.5SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp":8940.0 },
     { "name": "2.5SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 14320.0 },
     { "name": "4SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 21260.0 },
@@ -1262,9 +1262,9 @@ brandSel.onchange=()=>{
     o.value=i.mrp;
     itemSel.appendChild(o);
   });
-  // IND COPPER = sold by COIL, Armoured/Flexible = sold by MTRS
+  // IND COPPER / GREEN PLUS = sold by COIL, Armoured/Flexible = sold by MTRS
   const b=brandSel.value.toUpperCase();
-  if(b.includes("IND COPPER")) unit.value="COIL";
+  if(b.includes("IND COPPER") || b.includes("GREEN PLUS")) unit.value="COIL";
   else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
 };
 
@@ -1292,7 +1292,7 @@ function isPolycabCable(brandVal){
 
 function isKEIIndCopper(brandVal){
   const b=(brandVal||"").toUpperCase().trim();
-  return b==="KEI - IND COPPER WIRE";
+  return b==="KEI - IND COPPER WIRE" || b==="KEI - GREEN PLUS WIRE";
 }
 
 function isKEICable(brandVal){
@@ -1316,7 +1316,9 @@ function updateIndCopperBox(){
   const len=getCoilLength(itemName);
 
   // Update title
-  if(brand.toUpperCase().includes("IND COPPER"))
+  if(brand.toUpperCase().includes("GREEN PLUS"))
+    titleEl.innerText="📦 KEI GREEN PLUS WIRE — COIL INFO";
+  else if(brand.toUpperCase().includes("IND COPPER"))
     titleEl.innerText="📦 IND COPPER WIRE — COIL INFO";
   else if(brand.toUpperCase().includes("COPPER ARMOURED")) titleEl.innerText="📦 COPPER ARMOURED CABLE — INFO";
   else if(brand.toUpperCase().includes("ALU ARMOURED")) titleEl.innerText="📦 ALU ARMOURED CABLE — INFO";
@@ -1433,7 +1435,7 @@ function addItem(){
   displayBrand = brand.startsWith("POLYCAB") ? "POLYCAB" :
                  brand.startsWith("KEI") ? "KEI" : brand;
 
-  const isIndCopper = b.includes("IND COPPER");
+  const isIndCopper = b.includes("IND COPPER") || b.includes("GREEN PLUS");
   const isArmFlx = b.includes("ARMOURED") || b.includes("FLEXIBLE");
 
   if(isIndCopper){
@@ -1566,4 +1568,3 @@ function exportPDF(){
 </script>
 </body>
 </html>
-
