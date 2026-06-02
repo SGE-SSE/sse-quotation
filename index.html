@@ -4,74 +4,49 @@
 <meta charset="UTF-8">
 <title>SSE – Quotation Builder</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <style>
 :root{
-  --primary:#1a3c6e;
-  --primary-light:#2a5298;
-  --accent:#f0a500;
-  --bg:#eef2f7;
-  --card:#ffffff;
-  --section-bg:#f5f8fd;
-  --border:#c5d3e8;
-  --text:#1a1a2e;
-  --muted:#5a6a85;
-  --green:#1b7a4a;
-  --green-light:#e8f5ee;
-  --table-head:#1a3c6e;
-  --table-alt:#f0f4fb;
+  --primary:#1a3c6e;--primary-light:#2a5298;--accent:#f0a500;--bg:#eef2f7;
+  --card:#ffffff;--section-bg:#f5f8fd;--border:#c5d3e8;--text:#1a1a2e;
+  --muted:#5a6a85;--green:#1b7a4a;--green-light:#e8f5ee;
+  --table-head:#1a3c6e;--table-alt:#f0f4fb;
 }
 *{box-sizing:border-box}
 body{font-family:'Arial',sans-serif;background:var(--bg);padding:14px;color:var(--text)}
-.card{max-width:1200px;margin:auto;background:var(--card);border-radius:10px;
-      box-shadow:0 4px 18px rgba(26,60,110,0.13);overflow:hidden}
-.company-header{
-  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
-  color:#fff;text-align:center;padding:18px 20px 14px;
-  border-bottom:4px solid var(--accent)}
-.company-header h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:1.5px;
-  text-transform:uppercase;color:#fff}
+.card{max-width:1200px;margin:auto;background:var(--card);border-radius:10px;box-shadow:0 4px 18px rgba(26,60,110,0.13);overflow:hidden}
+.company-header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;text-align:center;padding:18px 20px 14px;border-bottom:4px solid var(--accent)}
+.company-header h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff}
 .company-header .tagline{font-size:11.5px;color:#c8d8f5;margin:2px 0}
 .company-header .contact{font-size:12px;color:#e0ecff;margin-top:6px}
 .company-header .contact a{color:var(--accent);text-decoration:none;font-weight:bold}
-.company-header .deal-line{margin-top:8px;font-size:11px;font-weight:600;letter-spacing:.8px;
-  background:rgba(255,255,255,0.12);display:inline-block;
-  padding:4px 18px;border-radius:20px;color:#d4e8ff}
-.section-panel{background:var(--section-bg);border:1px solid var(--border);
-               border-radius:7px;padding:12px 14px;margin:12px 14px}
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;
-               letter-spacing:.8px;color:var(--primary);margin-bottom:8px;
-               border-left:3px solid var(--accent);padding-left:8px}
+.company-header .deal-line{margin-top:8px;font-size:11px;font-weight:600;letter-spacing:.8px;background:rgba(255,255,255,0.12);display:inline-block;padding:4px 18px;border-radius:20px;color:#d4e8ff}
+.section-panel{background:var(--section-bg);border:1px solid var(--border);border-radius:7px;padding:12px 14px;margin:12px 14px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--primary);margin-bottom:8px;border-left:3px solid var(--accent);padding-left:8px}
 label{font-size:11.5px;font-weight:700;color:var(--primary);display:block;margin-bottom:2px}
-input,select,textarea{width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);
-  border-radius:4px;background:#fff;color:var(--text);transition:border-color .2s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary-light);
-  box-shadow:0 0 0 2px rgba(42,82,152,.12)}
+input,select,textarea{width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text);transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 2px rgba(42,82,152,.12)}
 textarea{resize:vertical;min-height:44px}
 .header-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .entry-panel{background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:12px 14px;margin:0 14px 12px}
 table{width:100%;border-collapse:collapse;margin-top:0;font-size:12px}
-th{background:var(--table-head);color:#fff;padding:7px 5px;text-align:center;
-   font-size:11.5px;letter-spacing:.3px;border:1px solid #2a5298}
+th{background:var(--table-head);color:#fff;padding:7px 5px;text-align:center;font-size:11.5px;letter-spacing:.3px;border:1px solid #2a5298}
 td{border:1px solid #c5d3e8;padding:5px;text-align:center;color:var(--text)}
 tbody tr:nth-child(even){background:var(--table-alt)}
 tbody tr:hover{background:#dce8fb}
 .right{text-align:right}
-.totals-table{width:340px;margin-left:auto;margin-top:14px;
-              border-radius:7px;overflow:hidden;border:1px solid var(--border)}
-.totals-table td{padding:6px 12px;font-size:12.5px;border:1px solid var(--border)}
+.totals-table{width:100%;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.totals-table td{padding:6px 10px;font-size:12.5px;border:1px solid var(--border);white-space:nowrap}
+.totals-table td:last-child{text-align:right;min-width:100px}
 .totals-table tr:first-child td{background:#f0f4fb}
 .totals-table .gst-row td{background:#fff8e1;color:#7a5000}
 .totals-table .grandtotal-row td{background:var(--primary);color:#fff;font-weight:700;font-size:13px}
 .totals-table .roundoff-row td{background:#fff3e0;color:#7a4000;font-style:italic}
 .totals-table .netpay-row td{background:var(--green);color:#fff;font-size:14px;font-weight:800}
 .totals-table .freight-row td{background:#f5f8fd;color:var(--muted);font-style:italic;font-size:11px}
-button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;
-       cursor:pointer;transition:all .15s}
+button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;cursor:pointer;transition:all .15s}
 .btn-add{background:var(--primary);color:#fff}
 .btn-add:hover{background:var(--primary-light)}
 .btn-print{background:#1a3c6e;color:#fff}
@@ -87,143 +62,109 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 .clr-btn{padding:4px 10px;font-size:11.5px;font-weight:700;border:2px solid transparent;border-radius:20px;cursor:pointer;transition:all .15s;opacity:0.85}
 .clr-btn:hover{opacity:1;transform:scale(1.06)}
 .clr-btn.active{border-color:#fff;box-shadow:0 0 0 3px #6a1b9a;opacity:1;transform:scale(1.08)}
-.no-print{}
-.entry-only{}
-.pdf-hide{display:none!important}
+
+/* ===== TERMS & CONDITIONS ===== */
+.tc-panel{background:#fffde7;border:1px solid #f9a825;border-radius:7px;padding:12px 14px;margin:0 14px 12px}
+.tc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
+.tc-table{width:100%;border-collapse:collapse;margin-top:6px}
+.tc-table td{border:none;padding:5px 8px;font-size:12px;vertical-align:middle}
+.tc-table .tc-icon{width:28px;font-size:14px;text-align:center}
+.tc-table .tc-label{width:170px;font-weight:700;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+.tc-table .tc-value{color:var(--text);font-size:12px}
+.tc-table tr{border-bottom:1px dashed #f0c060}
+.tc-table tr:last-child{border-bottom:none}
+.tc-badge{display:inline-block;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px}
+
+/* Print */
+.no-print{}.entry-only{}.pdf-hide{display:none!important}
 @media print{
+  @page{size:A4 landscape;margin:8mm}
   .no-print,.entry-only{display:none!important}
-  body{background:#fff!important;padding:0}
-  .card{box-shadow:none!important;border-radius:0!important}
-
-  /* Force background colors to print */
+  body{background:#fff!important;padding:0;margin:0}
+  .card{box-shadow:none!important;border-radius:0!important;max-width:100%!important;overflow:visible!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-
-  .company-header{
-    background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;
-    color:#fff!important;border-bottom:4px solid #f0a500!important;
-    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important
-  }
+  .company-header{background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;color:#fff!important;border-bottom:4px solid #f0a500!important}
   .company-header h2{color:#fff!important}
   .company-header .tagline{color:#c8d8f5!important}
   .company-header .contact{color:#e0ecff!important}
   .company-header .contact a{color:#f0a500!important}
   .company-header .deal-line{background:rgba(255,255,255,0.12)!important;color:#d4e8ff!important}
-
-  .section-panel{background:#f5f8fd!important;border:1px solid #c5d3e8!important}
+  .section-panel{background:#f5f8fd!important;border:1px solid #c5d3e8!important;margin:6px 10px!important;padding:8px 10px!important}
   .section-title{color:#1a3c6e!important;border-left:3px solid #f0a500!important}
-
   th{background:#1a3c6e!important;color:#fff!important;border:1px solid #2a5298!important}
   tbody tr:nth-child(even){background:#f0f4fb!important}
   td{border:1px solid #c5d3e8!important}
-
   .totals-table .gst-row td{background:#fff8e1!important;color:#7a5000!important}
   .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#fff!important}
   .totals-table .roundoff-row td{background:#fff3e0!important;color:#7a4000!important}
   .totals-table .netpay-row td{background:#1b7a4a!important;color:#fff!important}
   .totals-table .freight-row td{background:#f5f8fd!important;color:#5a6a85!important}
-
-  .table-wrapper{margin:0 14px!important}
-  .section-panel{margin:8px 14px!important}
-/* ================= MOBILE RESPONSIVE ================= */
-@media (max-width: 768px){
+  .totals-table{table-layout:fixed!important}
+  .totals-table td:first-child{width:55%!important;white-space:nowrap!important}
+  .totals-table td:last-child{width:45%!important;text-align:right!important;white-space:nowrap!important}
+  .table-wrapper{margin:0 6px!important;overflow:visible!important}
+  .tc-totals-row{display:table!important;width:calc(100% - 12px)!important;border-collapse:separate!important;border-spacing:6px 0!important;margin:10px 6px 0!important;page-break-inside:avoid!important}
+  .tc-totals-row .tc-box{display:table-cell!important;width:57%!important;vertical-align:top!important;border:1px solid #c5d3e8!important;border-radius:4px!important;overflow:visible!important;padding:4px!important}
+  .tc-totals-row .totals-box{display:table-cell!important;width:43%!important;vertical-align:top!important;overflow:visible!important}
+  .totals-table{width:100%!important;table-layout:auto!important}
+  .totals-table td:first-child{width:auto!important;white-space:nowrap!important;padding:5px 8px!important}
+  .totals-table td:last-child{width:auto!important;text-align:right!important;white-space:nowrap!important;padding:5px 8px!important;min-width:90px!important}
+}
+@media (max-width:768px){
   body{padding:6px}
-  .card{border-radius:6px}
-
-  /* Header */
-  .company-header{padding:12px 10px 10px}
-  .company-header h2{font-size:15px;letter-spacing:.8px}
-  .company-header .tagline{font-size:10px}
-  .company-header .contact{font-size:11px}
-  .company-header .deal-line{font-size:10px;padding:3px 10px}
-
-  /* Panels */
-  .section-panel{padding:10px;margin:8px 8px}
-  .entry-panel{padding:10px;margin:0 8px 10px}
-  .header-grid,.customer-grid{grid-template-columns:1fr}
-  .header-grid > div:last-child,
-  .customer-grid > div:last-child{grid-column:span 1}
-
-  /* Entry controls — 2 columns on mobile */
-  .entry-grid-mobile{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+  .header-grid,.customer-grid,.tc-grid{grid-template-columns:1fr}
+  .entry-grid-mobile{grid-template-columns:1fr 1fr}
   .entry-grid-mobile .btn-add-wrap{grid-column:span 2}
-
-  /* Cable info box */
-  .cable-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-
-  /* Table — horizontal scroll */
-  .table-wrapper{margin:0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cable-info-grid{grid-template-columns:1fr 1fr}
+  .table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:11px;min-width:560px}
-  th,td{padding:5px 4px}
-
-  /* Totals */
-  .totals-table{width:100%!important;margin:10px 8px 0;box-sizing:border-box}
-
-  /* Buttons */
-  .action-btns{padding:10px 8px;gap:6px;flex-wrap:wrap}
-  .action-btns button{flex:1;min-width:80px;font-size:11px;padding:7px 6px}
-
-  /* Colour buttons */
-  .clr-btn{padding:5px 8px;font-size:11px}
+  .totals-table{width:100%!important}
+  .action-btns{flex-wrap:wrap}
+  .action-btns button{flex:1;min-width:80px}
 }
 </style>
 </head>
-
 <body>
-
 <div class="card" id="printArea">
 
 <div class="company-header">
   <h2>⚡ SAI GANESH ELECTRICALS – SSE</h2>
   <div class="tagline">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com" style="color:#f0a500;text-decoration:none;font-weight:bold">krishnadsge@gmail.com</a></div>
+  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
   <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
 </div>
-
 
 <div class="section-panel">
   <div class="section-title">Quotation Details</div>
   <div class="header-grid">
-    <div>
-      <label>Quotation No</label>
-      <input type="text" id="qno">
-    </div>
-    <div>
-      <label>Quotation Date</label>
-      <input type="date" id="qdate">
-    </div>
+    <div><label>Quotation No</label><input type="text" id="qno"></div>
+    <div><label>Quotation Date</label><input type="date" id="qdate"></div>
   </div>
 </div>
 
 <div class="section-panel" style="margin-top:0">
   <div class="section-title">Customer Details</div>
   <div class="customer-grid">
-    <div>
-      <label>Customer Name</label>
-      <input type="text" id="custName">
-    </div>
-    <div>
-      <label>Customer GSTIN</label>
-      <input type="text" id="custGST">
-    </div>
-    <div style="grid-column:span 2">
-      <label>Customer Address</label>
-      <textarea id="custAddr"></textarea>
-    </div>
+    <div><label>Customer Name</label><input type="text" id="custName"></div>
+    <div><label>Customer GSTIN</label><input type="text" id="custGST"></div>
+    <div style="grid-column:span 2"><label>Customer Address</label><textarea id="custAddr"></textarea></div>
   </div>
 </div>
 
-<!-- ================= ENTRY AREA ================= -->
+<!-- ===== PAYMENT SELECTOR (screen only, hidden on print) ===== -->
+
+
+<!-- PLACEHOLDER so old references don't break -->
+<span id="tcPaymentVal" style="display:none">AGAINST DELIVERY</span>
+
+<!-- ===== ENTRY AREA ===== -->
 <div class="entry-only no-print">
 <div class="entry-panel">
 <div class="section-title">Add Item to Quotation</div>
-
-<!-- EXISTING BRAND ITEM ENTRY (UNCHANGED) -->
 <label>Brand</label>
 <select id="brand"></select>
-
 <label>Item</label>
 <select id="item"></select>
-
 <div class="entry-grid-mobile">
   <div>
     <label>Unit</label>
@@ -239,11 +180,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <div class="btn-add-wrap"><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addItem()">➕ ADD</button></div>
 </div>
 
-
-<!-- POLYCAB CABLE INFO BOX -->
 <div id="indCopperBox" style="display:none;margin-top:6px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
   <span id="cableBoxTitle" style="font-weight:bold;font-size:12px;color:#e65100">📦 POLYCAB CABLE INFO</span>
-<div class="cable-info-grid">
+  <div class="cable-info-grid">
     <div id="coilInfoRow" style="display:contents">
       <div><label>Coil Length (Mtr)</label><input type="number" id="coilLen" readonly style="background:#fff9c4;font-weight:bold"></div>
       <div><label>MRP per Mtr</label><input type="number" id="mrpPerMtr" readonly style="background:#e8f5e9;font-weight:bold"></div>
@@ -260,8 +199,6 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
       </select>
     </div>
   </div>
-
-  <!-- COLOUR PICKER ROW -->
   <div style="margin-top:8px">
     <label style="font-size:11px;font-weight:700;color:#6a1b9a;display:block;margin-bottom:5px">🎨 Wire / Cable Colour</label>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -282,1099 +219,440 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 
 <div style="margin-top:8px">
   <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount</label>
-  <label style="margin-left:15px">
-    <input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%
-  </label>
+  <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
 </div>
 </div>
 
-<!-- ================= CUSTOM ITEM FEATURE ================= -->
-<label>
-  <input type="checkbox" id="customToggle" onchange="toggleCustomItem()">
-  Add Custom Item (Unbranded / Misc)
-</label>
-
+<!-- CUSTOM ITEM -->
+<label><input type="checkbox" id="customToggle" onchange="toggleCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
 <div id="customItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
-
-    <div>
-      <label>Brand</label>
-      <input type="text" id="c_brand" placeholder="Local / NA">
-    </div>
-
-    <div>
-      <label>Description</label>
-      <input type="text" id="c_item" placeholder="Nut Bolt / Spring Wire">
-    </div>
-
-    <div>
-      <label>Unit</label>
-      <input type="text" id="c_unit" placeholder="KG / NOS / MTR">
-    </div>
-
-    <div>
-      <label>Qty</label>
-      <input type="number" id="c_qty" value="1">
-    </div>
-
-    <div>
-      <label>Rate</label>
-      <input type="number" id="c_rate">
-    </div>
-
-    <div>
-      <label>&nbsp;</label>
-      <button class="btn-add" onclick="addCustomItem()">➕ ADD</button>
-    </div>
-
+    <div><label>Brand</label><input type="text" id="c_brand" placeholder="Local / NA"></div>
+    <div><label>Description</label><input type="text" id="c_item" placeholder="Nut Bolt / Spring Wire"></div>
+    <div><label>Unit</label><input type="text" id="c_unit" placeholder="KG / NOS / MTR"></div>
+    <div><label>Qty</label><input type="number" id="c_qty" value="1"></div>
+    <div><label>Rate</label><input type="number" id="c_rate"></div>
+    <div><label>&nbsp;</label><button class="btn-add" onclick="addCustomItem()">➕ ADD</button></div>
   </div>
 </div>
-
 </div>
 
-<!-- ================= TABLE ================= -->
+<!-- TABLE -->
 <div class="table-wrapper">
 <div class="section-title" style="margin-bottom:6px">Quotation Items</div>
 <table id="qt">
 <thead>
 <tr>
-  <th>S.No</th>
-  <th>Brand</th>
-  <th>Description</th>
-  <th>Colour</th>
-  <th>HSN Code</th>
-  <th>Unit</th>
-  <th>Qty</th>
-  <th class="mrpCol">MRP</th>
-  <th class="mrpCol">Disc%</th>
-  <th>Net Rate</th>
-  <th id="perMtrHeader" style="display:none">Per Mtr Rate</th>
-  <th>Amount</th>
-  <th class="no-print">Action</th>
+  <th>S.No</th><th>Brand</th><th>Description</th><th>Colour</th><th>HSN Code</th>
+  <th>Unit</th><th>Qty</th><th class="mrpCol">MRP</th><th class="mrpCol">Disc%</th>
+  <th>Net Rate</th><th id="perMtrHeader" style="display:none">Per Mtr Rate</th>
+  <th>Amount</th><th class="no-print">Action</th>
 </tr>
 </thead>
 <tbody></tbody>
 </table>
 </div>
 
-<table class="totals-table" style="width:340px;margin-left:auto;margin-top:10px">
-<tr><td>Sub Total</td><td class="right" id="sub">0.00</td></tr>
-<tr class="gst-row"><td>GST 18%</td><td class="right" id="gst">0.00</td></tr>
-<tr class="grandtotal-row"><td><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
-<tr class="roundoff-row"><td>Round Off</td><td class="right" id="roundOff">0.00</td></tr>
-<tr class="netpay-row"><td><b>Net Payable</b></td><td class="right" id="netPayable"><b>0</b></td></tr>
-<tr class="freight-row"><td>Freight</td><td class="right">As per policy</td></tr>
-</table>
+<!-- ===== TOTALS + T&C SIDE BY SIDE ===== -->
+<div class="tc-totals-row" style="margin:14px 14px 0;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:8px">
 
-<div class="no-print action-btns" style="margin-top:14px;padding:0 14px 14px;display:flex;gap:8px">
+<!-- T&C LEFT -->
+<div class="tc-box" style="width:58%;flex-shrink:0">
+<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;border-radius:6px;table-layout:fixed">
+  <colgroup><col style="width:100px"><col style="width:12px"><col></colgroup>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">PAYMENTS</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word" id="tcBottomPayment">AGAINST DELIVERY</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">STOCK</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left">EX STOCK</td>
+  </tr>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">VALIDITY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left" id="tcBottomValidity">7 DAYS</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">TOLERANCE</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left">+/- 5%</td>
+  </tr>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">DELIVERY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word">WITHIN 7 DAYS OF ORDER CONFIRMATION</td>
+  </tr>
+  <tr style="background:#fff8e1">
+    <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0;text-align:left" colspan="3">TRANSPORTATION EXTRA</td>
+  </tr>
+  <tr style="background:#f9f9f9">
+    <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none;text-align:left" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
+  </tr>
+</table>
+</div>
+
+<!-- TOTALS RIGHT 45% -->
+<div class="totals-box" style="width:38%;flex-shrink:0">
+<table class="totals-table" style="width:100%;margin:0">
+  <tr><td style="text-align:left">Sub Total</td><td class="right" id="sub">0.00</td></tr>
+  <tr class="gst-row"><td style="text-align:left">GST 18%</td><td class="right" id="gst">0.00</td></tr>
+  <tr class="grandtotal-row"><td style="text-align:left"><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
+  <tr class="roundoff-row"><td style="text-align:left">Round Off</td><td class="right" id="roundOff">0.00</td></tr>
+  <tr class="netpay-row"><td style="text-align:left"><b>Net Payable</b></td><td class="right" id="netPayable"><b>0</b></td></tr>
+  <tr class="freight-row"><td style="text-align:left">Freight</td><td class="right">Extra — As Actuals</td></tr>
+</table>
+</div>
+
+</div>
+
+<div class="no-print" style="margin:10px 14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💳 Payment:</span>
+  <select id="payTermSelect" onchange="handlePayTermChange()" style="width:auto;min-width:160px;font-size:11.5px">
+    <option value="AGAINST DELIVERY">Against Delivery</option>
+    <option value="100% ADVANCE">100% Advance</option>
+    <option value="PDC">PDC (Post Dated Cheque)</option>
+  </select>
+  <div id="pdcDaysWrap" style="display:none;align-items:center;gap:6px">
+    <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">PDC Days:</span>
+    <input type="number" id="pdcDays" min="1" max="365" placeholder="e.g. 30" oninput="updateTCDisplay()" style="width:70px;font-size:11.5px">
+  </div>
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
+  <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px" placeholder="e.g. 7 DAYS">
+</div>
+
+<div class="no-print action-btns" style="margin-top:10px;padding:0 14px 14px;display:flex;gap:8px">
   <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
 </div>
 
-</div>
+</div><!-- end .card -->
 
 <script>
-/* ================= INVENTORY (UNCHANGED) ================= */
+/* ===== TERMS & CONDITIONS LOGIC ===== */
+function handlePayTermChange(){
+  const v = document.getElementById("payTermSelect").value;
+  const pdcWrap = document.getElementById("pdcDaysWrap");
+  pdcWrap.style.display = (v === "PDC") ? "flex" : "none";
+  updateTCDisplay();
+}
+
+function updateTCDisplay(){
+  const v = document.getElementById("payTermSelect").value;
+  const days = document.getElementById("pdcDays").value;
+  let display = "";
+  if(v === "100% ADVANCE"){
+    display = "100% ADVANCE";
+  } else if(v === "AGAINST DELIVERY"){
+    display = "AGAINST DELIVERY";
+  } else if(v === "PDC"){
+    display = days ? `PDC — ${days} DAYS` : "PDC (POST DATED CHEQUE)";
+  }
+  document.getElementById("tcBottomPayment").innerText = display;
+  document.getElementById("tcPaymentVal").innerText = display;
+  const vEl = document.getElementById("validityInput");
+  if(vEl) document.getElementById("tcBottomValidity").innerText = vEl.value.toUpperCase() || "7 DAYS";
+}
+
+/* ===== INVENTORY ===== */
 const items={
-  "GREATWHITE": [
-    { "name": "BLANK PLATE", "mrp": 38.0 },
-    { "name": "DOWN LIGHT 2M", "mrp": 511.0 },
-    { "name": "DOWN LIGHT 4M", "mrp": 644.0 },
-    { "name": "RJ-11 WITH SHUTTER SINGLE", "mrp": 168.0 },
-    { "name": "RJ-45 SINGLE CAT6", "mrp": 814.0 },
-    { "name": "6AMS 1WAY SWITCH", "mrp": 137.0 },
-    { "name": "6AMS 2WAY SWITCH", "mrp": 195.0 },
-    { "name": "BELL PUSH 1M", "mrp": 189.0 },
-    { "name": "BELL PUSH 2M", "mrp": 238.0 },
-    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 266.0 },
-    { "name": "6AMS SOCKET", "mrp": 198.0 },
-    { "name": "16AMS SOCKET", "mrp": 380.0 },
-    { "name": "FAN DIMMER 1M", "mrp": 537.0 },
-    { "name": "FAN DIMMER 2M", "mrp": 756.0 },
-    { "name": "18 MODULE PLATE", "mrp": 489.0 },
-    { "name": "16 MODULE PLATE", "mrp": 461.0 },
-    { "name": "12 MODULE PLATE", "mrp": 420.0 },
-    { "name": "9 MODULE PLATE", "mrp": 0.0 },
-    { "name": "8 MODULE PLATE", "mrp": 352.0 },
-    { "name": "6 MODULE PLATE", "mrp": 272.0 },
-    { "name": "4 MODULE PLATE", "mrp": 201.0 },
-    { "name": "3 MODULE PLATE", "mrp": 165.0 },
-    { "name": "2 MODULE PLATE", "mrp": 131.0 }
+  "GREATWHITE":[
+    {"name":"BLANK PLATE","mrp":38.0},{"name":"DOWN LIGHT 2M","mrp":511.0},{"name":"DOWN LIGHT 4M","mrp":644.0},
+    {"name":"RJ-11 WITH SHUTTER SINGLE","mrp":168.0},{"name":"RJ-45 SINGLE CAT6","mrp":814.0},
+    {"name":"6AMS 1WAY SWITCH","mrp":137.0},{"name":"6AMS 2WAY SWITCH","mrp":195.0},
+    {"name":"BELL PUSH 1M","mrp":189.0},{"name":"BELL PUSH 2M","mrp":238.0},
+    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":266.0},{"name":"6AMS SOCKET","mrp":198.0},
+    {"name":"16AMS SOCKET","mrp":380.0},{"name":"FAN DIMMER 1M","mrp":537.0},{"name":"FAN DIMMER 2M","mrp":756.0},
+    {"name":"18 MODULE PLATE","mrp":489.0},{"name":"16 MODULE PLATE","mrp":461.0},{"name":"12 MODULE PLATE","mrp":420.0},
+    {"name":"9 MODULE PLATE","mrp":0.0},{"name":"8 MODULE PLATE","mrp":352.0},{"name":"6 MODULE PLATE","mrp":272.0},
+    {"name":"4 MODULE PLATE","mrp":201.0},{"name":"3 MODULE PLATE","mrp":165.0},{"name":"2 MODULE PLATE","mrp":131.0}
   ],
-  "ANCHOR PENTA": [
-     { "name": "6AMS 1WAY SWITCH", "mrp": 46.0 },
-    { "name": "6AMS 2WAY SWITCH", "mrp": 106.0 },
-    { "name": "16AMS 1WAY SWITCH", "mrp": 131.0 },
-    { "name": "16AMS 2WAY SWITCH", "mrp": 172.0 },
-    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 144.0 },
-    { "name": "25AMS 1WAY SWITCH", "mrp": 188.0 },
-    { "name": "32AMS DP SWITCH IND", "mrp": 263.0 },
-    { "name": "6AMS BELL PUSH", "mrp": 111.0 },
-    { "name": "6AMS MEGA BELL PUSH", "mrp": 155.0 },
-    { "name": "1M STEP REGUATOR", "mrp": 422.0 },
-    { "name": "2M STEP REGUATOR", "mrp": 501.0 },
-    { "name": "3PIN SOCKET", "mrp": 143.0 },
-    { "name": "16A SOCKET", "mrp": 224.0 },
-    { "name": "INDICATOR", "mrp": 120.0 },
-    { "name": "TV SOCKET", "mrp": 143.0 },
-    { "name": "TP SOCKET", "mrp": 150.0 },
-    { "name": "RJ 45", "mrp": 871.0 },
-    { "name": "USB SOCKET", "mrp": 1532.0 },
-    { "name": "FOOT LAMP", "mrp": 811.0 },
-    { "name": "MINI MCB MODULAR", "mrp": 365.0 },
-    { "name": "BLANK PLATE 1M", "mrp": 34.0 },
-    { "name": "1 MODULE PLATE", "mrp": 108.0 },
-    { "name": "2 MODULE PLATE", "mrp": 108.0 },
-    { "name": "3 MODULE PLATE", "mrp": 152.0 },
-    { "name": "4 MODULE PLATE", "mrp": 168.0 },
-    { "name": "6 MODULE PLATE", "mrp": 244.0 },
-    { "name": "8 MODULE PLATE", "mrp": 320.0 },
-    { "name": "12 MODULE PLATE", "mrp": 383.0 },
-    { "name": "16 MODULE PLATE", "mrp": 407.0 },
-    { "name": "18 MODULE PLATE", "mrp": 429.0 }
+  "ANCHOR PENTA":[
+    {"name":"6AMS 1WAY SWITCH","mrp":46.0},{"name":"6AMS 2WAY SWITCH","mrp":106.0},{"name":"16AMS 1WAY SWITCH","mrp":131.0},
+    {"name":"16AMS 2WAY SWITCH","mrp":172.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":144.0},{"name":"25AMS 1WAY SWITCH","mrp":188.0},
+    {"name":"32AMS DP SWITCH IND","mrp":263.0},{"name":"6AMS BELL PUSH","mrp":111.0},{"name":"6AMS MEGA BELL PUSH","mrp":155.0},
+    {"name":"1M STEP REGUATOR","mrp":422.0},{"name":"2M STEP REGUATOR","mrp":501.0},{"name":"3PIN SOCKET","mrp":143.0},
+    {"name":"16A SOCKET","mrp":224.0},{"name":"INDICATOR","mrp":120.0},{"name":"TV SOCKET","mrp":143.0},{"name":"TP SOCKET","mrp":150.0},
+    {"name":"RJ 45","mrp":871.0},{"name":"USB SOCKET","mrp":1532.0},{"name":"FOOT LAMP","mrp":811.0},{"name":"MINI MCB MODULAR","mrp":365.0},
+    {"name":"BLANK PLATE 1M","mrp":34.0},{"name":"1 MODULE PLATE","mrp":108.0},{"name":"2 MODULE PLATE","mrp":108.0},
+    {"name":"3 MODULE PLATE","mrp":152.0},{"name":"4 MODULE PLATE","mrp":168.0},{"name":"6 MODULE PLATE","mrp":244.0},
+    {"name":"8 MODULE PLATE","mrp":320.0},{"name":"12 MODULE PLATE","mrp":383.0},{"name":"16 MODULE PLATE","mrp":407.0},{"name":"18 MODULE PLATE","mrp":429.0}
   ],
-  "ANCHOR ROMA": [
-    { "name": "6AMS 1WAY SWITCH", "mrp": 77.0 },
-    { "name": "6AMS 2WAY SWITCH", "mrp": 186.0 },
-    { "name": "16AMS 1WAY SWITCH", "mrp": 206.0 },
-    { "name": "16AMS 2WAY SWITCH", "mrp": 235.0 },
-    { "name": "16AMS 1WAY SWITCH WITH IND", "mrp": 245.0 },
-    { "name": "25AMS 1WAY SWITCH", "mrp": 314.0 },
-    { "name": "32AMS DP SWITCH IND", "mrp": 406.0 },
-    { "name": "6AMS BELL PUSH", "mrp": 193.0 },
-    { "name": "6AMS MEGA BELL PUSH", "mrp": 206.0 },
-    { "name": "1M STEP REGUATOR", "mrp": 441.0 },
-    { "name": "2M STEP REGUATOR", "mrp": 616.0 },
-    { "name": "3PIN SOCKET", "mrp": 179.0 },
-    { "name": "16A SOCKET", "mrp": 319.0 },
-    { "name": "INDICATOR", "mrp": 143.0 },
-    { "name": "TV SOCKET", "mrp": 204.0 },
-    { "name": "TP SOCKET", "mrp": 204.0 },
-    { "name": "RJ 45", "mrp": 842.0 },
-    { "name": "USB SOCKET", "mrp": 1652.0 },
-    { "name": "FOOT LAMP 3M", "mrp": 722.0 },
-    { "name": "MINI MCB MODULAR", "mrp": 0.0 },
-    { "name": "BLANK PLATE 1M", "mrp": 45.0 },
-    { "name": "1 MODULE PLATE", "mrp": 149.0 },
-    { "name": "2 MODULE PLATE", "mrp": 149.0 },
-    { "name": "3 MODULE PLATE", "mrp": 191.0 },
-    { "name": "4 MODULE PLATE", "mrp": 223.0 },
-    { "name": "6 MODULE PLATE", "mrp": 307.0 },
-    { "name": "8 MODULE PLATE", "mrp": 392.0 },
-    { "name": "12 MODULE PLATE", "mrp": 485.0 },
-    { "name": "16 MODULE PLATE", "mrp": 545.0 },
-    { "name": "18 MODULE PLATE", "mrp": 570.0 }
+  "ANCHOR ROMA":[
+    {"name":"6AMS 1WAY SWITCH","mrp":77.0},{"name":"6AMS 2WAY SWITCH","mrp":186.0},{"name":"16AMS 1WAY SWITCH","mrp":206.0},
+    {"name":"16AMS 2WAY SWITCH","mrp":235.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":245.0},{"name":"25AMS 1WAY SWITCH","mrp":314.0},
+    {"name":"32AMS DP SWITCH IND","mrp":406.0},{"name":"6AMS BELL PUSH","mrp":193.0},{"name":"6AMS MEGA BELL PUSH","mrp":206.0},
+    {"name":"1M STEP REGUATOR","mrp":441.0},{"name":"2M STEP REGUATOR","mrp":616.0},{"name":"3PIN SOCKET","mrp":179.0},
+    {"name":"16A SOCKET","mrp":319.0},{"name":"INDICATOR","mrp":143.0},{"name":"TV SOCKET","mrp":204.0},{"name":"TP SOCKET","mrp":204.0},
+    {"name":"RJ 45","mrp":842.0},{"name":"USB SOCKET","mrp":1652.0},{"name":"FOOT LAMP 3M","mrp":722.0},{"name":"MINI MCB MODULAR","mrp":0.0},
+    {"name":"BLANK PLATE 1M","mrp":45.0},{"name":"1 MODULE PLATE","mrp":149.0},{"name":"2 MODULE PLATE","mrp":149.0},
+    {"name":"3 MODULE PLATE","mrp":191.0},{"name":"4 MODULE PLATE","mrp":223.0},{"name":"6 MODULE PLATE","mrp":307.0},
+    {"name":"8 MODULE PLATE","mrp":392.0},{"name":"12 MODULE PLATE","mrp":485.0},{"name":"16 MODULE PLATE","mrp":545.0},{"name":"18 MODULE PLATE","mrp":570.0}
   ],
-  "LEGRAND ARTEOR": [
-    { "name": "6A 1W SWITCH", "mrp": 232.0 },
-    { "name": "6A 2W SWITCH", "mrp": 382.0 },
-    { "name": "6A 1W SWITCH IND", "mrp": 432.0 },
-    { "name": "16A 1W SWITCH", "mrp": 520.0 },
-    { "name": "16A 2WAY", "mrp": 750.0 },
-    { "name": "16A 1W SWITCH W/I", "mrp": 536.0 },
-    { "name": "20A DP SWITCH W/I", "mrp": 1154.0 },
-    { "name": "32A DP SWITCH W/I", "mrp": 1646.0 },
-    { "name": "25A SP 1W 1M", "mrp": 696.0 },
-    { "name": "BELL PUSH", "mrp": 418.0 },
-    { "name": "BELL WITH IND (1M)", "mrp": 556.0 },
-    { "name": "BELL PUSH W/IN(2M)", "mrp": 792.0 },
-    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
-    { "name": "6A SOCKET 3 PIN ISI", "mrp": 356.0 },
-    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
-    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
-    { "name": "16A SOCKET (2M)", "mrp": 722.0 },
-    { "name": "16A SOCKET (3M)", "mrp": 864.0 },
-    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
-    { "name": "1M STEP REGULATOR", "mrp": 1416.0 },
-    { "name": "2M STEP REG(100W)", "mrp": 1746.0 },
-    { "name": "2M STEP REG(120W)", "mrp": 1868.0 },
-    { "name": "INDICATOR", "mrp": 1054.0 },
-    { "name": "SKIRTING LIGHT 3M", "mrp": 1420.0 },
-    { "name": "T.V SOCKET", "mrp": 390.0 },
-    { "name": "TELEPHONE RJ11", "mrp": 374.0 },
-    { "name": "RJ 45 CAT 5e 1M", "mrp": 739.0 },
-    { "name": "RJ 45 CAT 6e 1M", "mrp": 1127.0 },
-    { "name": "25A MOTOR STARTER", "mrp": 0.0 },
-    { "name": "USB CHARGER ( 1M)", "mrp": 0.0 },
-    { "name": "Blanking Plate", "mrp": 72.0 },
-    { "name": "MCB16/25A Modular", "mrp": 5126.0 },
-    { "name": "1M PLATE", "mrp": 326.0 },
-    { "name": "2M PLATE", "mrp": 344.0 },
-    { "name": "3M PLATE", "mrp": 386.0 },
-    { "name": "4M PLATE", "mrp": 404.0 },
-    { "name": "6M PLATE", "mrp": 738.0 },
-    { "name": "8M PLATE", "mrp": 820.0 },
-    { "name": "8M SQ PLATE", "mrp": 1034.0 },
-    { "name": "12M PLATE", "mrp": 1264.0 },
-    { "name": "16M PLATE", "mrp": 1514.0 },
-    { "name": "18M PLATE", "mrp": 1676.0 }
+  "LEGRAND ARTEOR":[
+    {"name":"6A 1W SWITCH","mrp":232.0},{"name":"6A 2W SWITCH","mrp":382.0},{"name":"6A 1W SWITCH IND","mrp":432.0},
+    {"name":"16A 1W SWITCH","mrp":520.0},{"name":"16A 2WAY","mrp":750.0},{"name":"16A 1W SWITCH W/I","mrp":536.0},
+    {"name":"20A DP SWITCH W/I","mrp":1154.0},{"name":"32A DP SWITCH W/I","mrp":1646.0},{"name":"25A SP 1W 1M","mrp":696.0},
+    {"name":"BELL PUSH","mrp":418.0},{"name":"BELL WITH IND (1M)","mrp":556.0},{"name":"BELL PUSH W/IN(2M)","mrp":792.0},
+    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":356.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
+    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":722.0},{"name":"16A SOCKET (3M)","mrp":864.0},
+    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":1416.0},{"name":"2M STEP REG(100W)","mrp":1746.0},
+    {"name":"2M STEP REG(120W)","mrp":1868.0},{"name":"INDICATOR","mrp":1054.0},{"name":"SKIRTING LIGHT 3M","mrp":1420.0},
+    {"name":"T.V SOCKET","mrp":390.0},{"name":"TELEPHONE RJ11","mrp":374.0},{"name":"RJ 45 CAT 5e 1M","mrp":739.0},
+    {"name":"RJ 45 CAT 6e 1M","mrp":1127.0},{"name":"25A MOTOR STARTER","mrp":0.0},{"name":"USB CHARGER ( 1M)","mrp":0.0},
+    {"name":"Blanking Plate","mrp":72.0},{"name":"MCB16/25A Modular","mrp":5126.0},
+    {"name":"1M PLATE","mrp":326.0},{"name":"2M PLATE","mrp":344.0},{"name":"3M PLATE","mrp":386.0},{"name":"4M PLATE","mrp":404.0},
+    {"name":"6M PLATE","mrp":738.0},{"name":"8M PLATE","mrp":820.0},{"name":"8M SQ PLATE","mrp":1034.0},
+    {"name":"12M PLATE","mrp":1264.0},{"name":"16M PLATE","mrp":1514.0},{"name":"18M PLATE","mrp":1676.0}
   ],
-  "LEGRAND LYNCUS": [
-    { "name": "6A 1W SWITCH", "mrp": 98.0 },
-    { "name": "6A 2W SWITCH", "mrp": 204.0 },
-    { "name": "6A 1W SWITCH IND", "mrp": 204.0 },
-    { "name": "16A 1W SWITCH", "mrp": 236.0 },
-    { "name": "16A 2WAY", "mrp": 290.0 },
-    { "name": "16A 1W SWITCH W/I", "mrp": 300.0 },
-    { "name": "20A DP SWITCH W/I", "mrp": 512.0 },
-    { "name": "32A DP SWITCH W/I", "mrp": 690.0 },
-    { "name": "25A SP 1W 1M", "mrp": 358.0 },
-    { "name": "BELL PUSH", "mrp": 216.0 },
-    { "name": "BELL WITH IND (1M)", "mrp": 254.0 },
-    { "name": "BELL PUSH W/IN(2M)", "mrp": 290.0 },
-    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
-    { "name": "6A SOCKET 3 PIN ISI", "mrp": 202.0 },
-    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
-    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
-    { "name": "16A SOCKET (2M)", "mrp": 410.0 },
-    { "name": "16A SOCKET (3M)", "mrp": 488.0 },
-    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
-    { "name": "1M STEP REGULATOR", "mrp": 680.0 },
-    { "name": "2M STEP REG(100W)", "mrp": 844.0 },
-    { "name": "2M STEP REG(120W)", "mrp": 960.0 },
-    { "name": "INDICATOR", "mrp": 588.0 },
-    { "name": "SKIRTING LIGHT 3M", "mrp": 666.0 },
-    { "name": "T.V SOCKET", "mrp": 230.0 },
-    { "name": "TELEPHONE RJ11", "mrp": 216.0 },
-    { "name": "RJ 45 CAT 5e 1M", "mrp": 530.0 },
-    { "name": "RJ 45 CAT 6e 1M", "mrp": 740.0 },
-    { "name": "25A MOTOR STARTER", "mrp": 796.0 },
-    { "name": "USB CHARGER ( 1M)", "mrp": 1356.0 },
-    { "name": "Blanking Plate", "mrp": 54.0 },
-    { "name": "MCB16/25A Modular", "mrp": 546.0 },
-    { "name": "1M PLATE", "mrp": 170.0 },
-    { "name": "2M PLATE", "mrp": 170.0 },
-    { "name": "3M PLATE", "mrp": 218.0 },
-    { "name": "4M PLATE", "mrp": 254.0 },
-    { "name": "6M PLATE", "mrp": 308.0 },
-    { "name": "8M PLATE", "mrp": 394.0 },
-    { "name": "8M SQ PLATE", "mrp": 412.0 },
-    { "name": "12M PLATE", "mrp": 574.0 },
-    { "name": "16M PLATE", "mrp": 668.0 },
-    { "name": "18M PLATE", "mrp": 902.0 }
+  "LEGRAND LYNCUS":[
+    {"name":"6A 1W SWITCH","mrp":98.0},{"name":"6A 2W SWITCH","mrp":204.0},{"name":"6A 1W SWITCH IND","mrp":204.0},
+    {"name":"16A 1W SWITCH","mrp":236.0},{"name":"16A 2WAY","mrp":290.0},{"name":"16A 1W SWITCH W/I","mrp":300.0},
+    {"name":"20A DP SWITCH W/I","mrp":512.0},{"name":"32A DP SWITCH W/I","mrp":690.0},{"name":"25A SP 1W 1M","mrp":358.0},
+    {"name":"BELL PUSH","mrp":216.0},{"name":"BELL WITH IND (1M)","mrp":254.0},{"name":"BELL PUSH W/IN(2M)","mrp":290.0},
+    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":202.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
+    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":410.0},{"name":"16A SOCKET (3M)","mrp":488.0},
+    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":680.0},{"name":"2M STEP REG(100W)","mrp":844.0},
+    {"name":"2M STEP REG(120W)","mrp":960.0},{"name":"INDICATOR","mrp":588.0},{"name":"SKIRTING LIGHT 3M","mrp":666.0},
+    {"name":"T.V SOCKET","mrp":230.0},{"name":"TELEPHONE RJ11","mrp":216.0},{"name":"RJ 45 CAT 5e 1M","mrp":530.0},
+    {"name":"RJ 45 CAT 6e 1M","mrp":740.0},{"name":"25A MOTOR STARTER","mrp":796.0},{"name":"USB CHARGER ( 1M)","mrp":1356.0},
+    {"name":"Blanking Plate","mrp":54.0},{"name":"MCB16/25A Modular","mrp":546.0},
+    {"name":"1M PLATE","mrp":170.0},{"name":"2M PLATE","mrp":170.0},{"name":"3M PLATE","mrp":218.0},{"name":"4M PLATE","mrp":254.0},
+    {"name":"6M PLATE","mrp":308.0},{"name":"8M PLATE","mrp":394.0},{"name":"8M SQ PLATE","mrp":412.0},
+    {"name":"12M PLATE","mrp":574.0},{"name":"16M PLATE","mrp":668.0},{"name":"18M PLATE","mrp":902.0}
   ],
-  "LEGRAND MYRIUS": [
-    { "name": "6A 1W SWITCH", "mrp": 174.0 },
-    { "name": "6A 2W SWITCH", "mrp": 306.0 },
-    { "name": "6A 1W SWITCH IND", "mrp": 282.0 },
-    { "name": "16A 1W SWITCH", "mrp": 414.0 },
-    { "name": "16A 2WAY", "mrp": 478.0 },
-    { "name": "16A 1W SWITCH W/I", "mrp": 500.0 },
-    { "name": "20A DP SWITCH W/I", "mrp": 876.0 },
-    { "name": "32A DP SWITCH W/I", "mrp": 1418.0 },
-    { "name": "25A SP 1W 1M", "mrp": 606.0 },
-    { "name": "BELL PUSH", "mrp": 340.0 },
-    { "name": "BELL WITH IND (1M)", "mrp": 448.0 },
-    { "name": "BELL PUSH W/IN(2M)", "mrp": 606.0 },
-    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
-    { "name": "6A SOCKET 3 PIN ISI", "mrp": 284.0 },
-    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
-    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
-    { "name": "16A SOCKET (2M)", "mrp": 642.0 },
-    { "name": "16A SOCKET (3M)", "mrp": 768.0 },
-    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
-    { "name": "1M STEP REGULATOR", "mrp": 1208.0 },
-    { "name": "2M STEP REG(100W)", "mrp": 1390.0 },
-    { "name": "2M STEP REG(120W)", "mrp": 1494.0 },
-    { "name": "INDICATOR", "mrp": 0.0 },
-    { "name": "SKIRTING LIGHT 3M", "mrp": 1220.0 },
-    { "name": "T.V SOCKET", "mrp": 312.0 },
-    { "name": "TELEPHONE RJ11", "mrp": 310.0 },
-    { "name": "RJ 45 CAT 5e 1M", "mrp": 626.0 },
-    { "name": "RJ 45 CAT 6e 1M", "mrp": 977.0 },
-    { "name": "25A MOTOR STARTER", "mrp": 996.0 },
-    { "name": "USB CHARGER ( 1M)", "mrp": 2190.0 },
-    { "name": "Blanking Plate", "mrp": 80.0 },
-    { "name": "MCB16/25A Modular", "mrp": 592.0 },
-    { "name": "1M PLATE", "mrp": 300.0 },
-    { "name": "2M PLATE", "mrp": 318.0 },
-    { "name": "3M PLATE", "mrp": 346.0 },
-    { "name": "4M PLATE", "mrp": 366.0 },
-    { "name": "6M PLATE", "mrp": 716.0 },
-    { "name": "8M PLATE", "mrp": 764.0 },
-    { "name": "8M SQ PLATE", "mrp": 958.0 },
-    { "name": "12M PLATE", "mrp": 1162.0 },
-    { "name": "16M PLATE", "mrp": 1352.0 },
-    { "name": "18M PLATE", "mrp": 1552.0 }
+  "LEGRAND MYRIUS":[
+    {"name":"6A 1W SWITCH","mrp":174.0},{"name":"6A 2W SWITCH","mrp":306.0},{"name":"6A 1W SWITCH IND","mrp":282.0},
+    {"name":"16A 1W SWITCH","mrp":414.0},{"name":"16A 2WAY","mrp":478.0},{"name":"16A 1W SWITCH W/I","mrp":500.0},
+    {"name":"20A DP SWITCH W/I","mrp":876.0},{"name":"32A DP SWITCH W/I","mrp":1418.0},{"name":"25A SP 1W 1M","mrp":606.0},
+    {"name":"BELL PUSH","mrp":340.0},{"name":"BELL WITH IND (1M)","mrp":448.0},{"name":"BELL PUSH W/IN(2M)","mrp":606.0},
+    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":284.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
+    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":642.0},{"name":"16A SOCKET (3M)","mrp":768.0},
+    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":1208.0},{"name":"2M STEP REG(100W)","mrp":1390.0},
+    {"name":"2M STEP REG(120W)","mrp":1494.0},{"name":"INDICATOR","mrp":0.0},{"name":"SKIRTING LIGHT 3M","mrp":1220.0},
+    {"name":"T.V SOCKET","mrp":312.0},{"name":"TELEPHONE RJ11","mrp":310.0},{"name":"RJ 45 CAT 5e 1M","mrp":626.0},
+    {"name":"RJ 45 CAT 6e 1M","mrp":977.0},{"name":"25A MOTOR STARTER","mrp":996.0},{"name":"USB CHARGER ( 1M)","mrp":2190.0},
+    {"name":"Blanking Plate","mrp":80.0},{"name":"MCB16/25A Modular","mrp":592.0},
+    {"name":"1M PLATE","mrp":300.0},{"name":"2M PLATE","mrp":318.0},{"name":"3M PLATE","mrp":346.0},{"name":"4M PLATE","mrp":366.0},
+    {"name":"6M PLATE","mrp":716.0},{"name":"8M PLATE","mrp":764.0},{"name":"8M SQ PLATE","mrp":958.0},
+    {"name":"12M PLATE","mrp":1162.0},{"name":"16M PLATE","mrp":1352.0},{"name":"18M PLATE","mrp":1552.0}
   ],
-  "LEGRAND MYLINC": [
-    { "name": "6A 1W SWITCH", "mrp": 112.0 },
-    { "name": "6A 2W SWITCH", "mrp": 226.0 },
-    { "name": "6A 1W SWITCH IND", "mrp": 254.0 },
-    { "name": "16A 1W SWITCH", "mrp": 256.0 },
-    { "name": "16A 2WAY", "mrp": 322.0 },
-    { "name": "16A 1W SWITCH W/I", "mrp": 336.0 },
-    { "name": "20A DP SWITCH W/I", "mrp": 0.0 },
-    { "name": "32A DP SWITCH W/I", "mrp": 764.0 },
-    { "name": "25A SP 1W 1M", "mrp": 518.0 },
-    { "name": "BELL PUSH", "mrp": 236.0 },
-    { "name": "BELL WITH IND (1M)", "mrp": 1378.0 },
-    { "name": "BELL PUSH W/IN(2M)", "mrp": 468.0 },
-    { "name": "6A 2 PIN SOCKET", "mrp": 0.0 },
-    { "name": "6A SOCKET 3 PIN ISI", "mrp": 310.0 },
-    { "name": "6A SOCKET 2/3 PIN", "mrp": 0.0 },
-    { "name": "13A MULTI SOCKET", "mrp": 0.0 },
-    { "name": "16A SOCKET (2M)", "mrp": 476.0 },
-    { "name": "16A SOCKET (3M)", "mrp": 0.0 },
-    { "name": "25A SOCKET (2M)", "mrp": 0.0 },
-    { "name": "1M STEP REGULATOR", "mrp": 794.0 },
-    { "name": "2M STEP REG(100W)", "mrp": 1062.0 },
-    { "name": "2M STEP REG(120W)", "mrp": 868.0 },
-    { "name": "INDICATOR", "mrp": 326.0 },
-    { "name": "SKIRTING LIGHT 3M", "mrp": 1044.0 },
-    { "name": "T.V SOCKET", "mrp": 264.0 },
-    { "name": "TELEPHONE RJ11", "mrp": 248.0 },
-    { "name": "RJ 45 CAT 5e 1M", "mrp": 562.0 },
-    { "name": "RJ 45 CAT 6e 1M", "mrp": 818.0 },
-    { "name": "25A MOTOR STARTER", "mrp": 848.0 },
-    { "name": "USB CHARGER ( 1M)", "mrp": 1412.0 },
-    { "name": "Blanking Plate", "mrp": 64.0 },
-    { "name": "MCB16/25A Modular", "mrp": 562.0 },
-    { "name": "1M PLATE", "mrp": 186.0 },
-    { "name": "2M PLATE", "mrp": 186.0 },
-    { "name": "3M PLATE", "mrp": 254.0 },
-    { "name": "4M PLATE", "mrp": 282.0 },
-    { "name": "6M PLATE", "mrp": 350.0 },
-    { "name": "8M PLATE", "mrp": 450.0 },
-    { "name": "8M SQ PLATE", "mrp": 458.0 },
-    { "name": "12M PLATE", "mrp": 660.0 },
-    { "name": "16M PLATE", "mrp": 770.0 },
-    { "name": "18M PLATE", "mrp": 1030.0 }
+  "LEGRAND MYLINC":[
+    {"name":"6A 1W SWITCH","mrp":112.0},{"name":"6A 2W SWITCH","mrp":226.0},{"name":"6A 1W SWITCH IND","mrp":254.0},
+    {"name":"16A 1W SWITCH","mrp":256.0},{"name":"16A 2WAY","mrp":322.0},{"name":"16A 1W SWITCH W/I","mrp":336.0},
+    {"name":"20A DP SWITCH W/I","mrp":0.0},{"name":"32A DP SWITCH W/I","mrp":764.0},{"name":"25A SP 1W 1M","mrp":518.0},
+    {"name":"BELL PUSH","mrp":236.0},{"name":"BELL WITH IND (1M)","mrp":1378.0},{"name":"BELL PUSH W/IN(2M)","mrp":468.0},
+    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":310.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
+    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":476.0},{"name":"16A SOCKET (3M)","mrp":0.0},
+    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":794.0},{"name":"2M STEP REG(100W)","mrp":1062.0},
+    {"name":"2M STEP REG(120W)","mrp":868.0},{"name":"INDICATOR","mrp":326.0},{"name":"SKIRTING LIGHT 3M","mrp":1044.0},
+    {"name":"T.V SOCKET","mrp":264.0},{"name":"TELEPHONE RJ11","mrp":248.0},{"name":"RJ 45 CAT 5e 1M","mrp":562.0},
+    {"name":"RJ 45 CAT 6e 1M","mrp":818.0},{"name":"25A MOTOR STARTER","mrp":848.0},{"name":"USB CHARGER ( 1M)","mrp":1412.0},
+    {"name":"Blanking Plate","mrp":64.0},{"name":"MCB16/25A Modular","mrp":562.0},
+    {"name":"1M PLATE","mrp":186.0},{"name":"2M PLATE","mrp":186.0},{"name":"3M PLATE","mrp":254.0},{"name":"4M PLATE","mrp":282.0},
+    {"name":"6M PLATE","mrp":350.0},{"name":"8M PLATE","mrp":450.0},{"name":"8M SQ PLATE","mrp":458.0},
+    {"name":"12M PLATE","mrp":660.0},{"name":"16M PLATE","mrp":770.0},{"name":"18M PLATE","mrp":1030.0}
   ],
-  "LEGRAND SPN DB D/D": [
-    { "name": "4 WAY SPN DB ", "mrp": 2788.0 },
-    { "name": "8WAY SPN DB", "mrp": 3597.0 },
-    { "name": "12WAY SPN DB", "mrp": 4322.0 },
-    { "name": "16WAY SPN DB", "mrp": 5415.0 },
-    { "name": "18WAY SPN DB", "mrp": 5690.0 },
-    { "name": "20WAY SPN DB", "mrp": 6573.0 }
+  "LEGRAND SPN DB D/D":[
+    {"name":"4 WAY SPN DB ","mrp":2788.0},{"name":"8WAY SPN DB","mrp":3597.0},{"name":"12WAY SPN DB","mrp":4322.0},
+    {"name":"16WAY SPN DB","mrp":5415.0},{"name":"18WAY SPN DB","mrp":5690.0},{"name":"20WAY SPN DB","mrp":6573.0}
   ],
-  "LEGRAND ETPN HORIZONTAL DB D/D": [
-    { "name": "4 WAY ETPN DB ", "mrp": 7335.0 },
-    { "name": "6 WAY ETPN DB", "mrp": 8841.0 },
-    { "name": "8 WAY ETPN DB", "mrp": 10593.0 },
-    { "name": "12 WAY ETPN DB", "mrp": 15709.0 },
-    { "name": "16 WAY ETPN DB", "mrp": 19664.0 },
-    { "name": "18 WAY ETPN DB", "mrp": 27398.0 }
+  "LEGRAND ETPN HORIZONTAL DB D/D":[
+    {"name":"4 WAY ETPN DB ","mrp":7335.0},{"name":"6 WAY ETPN DB","mrp":8841.0},{"name":"8 WAY ETPN DB","mrp":10593.0},
+    {"name":"12 WAY ETPN DB","mrp":15709.0},{"name":"16 WAY ETPN DB","mrp":19664.0},{"name":"18 WAY ETPN DB","mrp":27398.0}
   ],
-  "LEGRAND VTPN MCB DB D/D": [
-    { "name": "4 WAY VTPN MCB DB ", "mrp": 17350.0 },
-    { "name": "6 WAY VTPN MCB DB", "mrp": 19215.0 },
-    { "name": "8 WAY VTPN MCB DB", "mrp": 22365.0 },
-    { "name": "12 WAY VTPN MCB DB", "mrp": 30090.0 }
+  "LEGRAND VTPN MCB DB D/D":[
+    {"name":"4 WAY VTPN MCB DB ","mrp":17350.0},{"name":"6 WAY VTPN MCB DB","mrp":19215.0},
+    {"name":"8 WAY VTPN MCB DB","mrp":22365.0},{"name":"12 WAY VTPN MCB DB","mrp":30090.0}
   ],
-  "LEGRAND VTPN MCCB DB DPX160 D/D": [
-    { "name": "4 WAY VTPN MCCB DPX160 DB ", "mrp": 21185.0 },
-    { "name": "6 WAY VTPN MCCB DPX160 DB", "mrp": 24044.0 },
-    { "name": "8 WAY VTPN MCCB DPX160 DB", "mrp": 26489.0 },
-    { "name": "12 WAY VTPN MCCB DPX160 DB", "mrp": 36113.0 }
+  "LEGRAND VTPN MCCB DB DPX160 D/D":[
+    {"name":"4 WAY VTPN MCCB DPX160 DB ","mrp":21185.0},{"name":"6 WAY VTPN MCCB DPX160 DB","mrp":24044.0},
+    {"name":"8 WAY VTPN MCCB DPX160 DB","mrp":26489.0},{"name":"12 WAY VTPN MCCB DPX160 DB","mrp":36113.0}
   ],
-  "LEGRAND VTPN MCCB DB DPX250 D/D": [
-    { "name": "4 WAY VTPN MCCB DPX250 DB ", "mrp": 32495.0 },
-    { "name": "8 WAY VTPN MCCB DPX250 DB", "mrp": 34268.0 },
-    { "name": "12 WAY VTPN MCCB DPX250 DB", "mrp": 38723.0 }
+  "LEGRAND VTPN MCCB DB DPX250 D/D":[
+    {"name":"4 WAY VTPN MCCB DPX250 DB ","mrp":32495.0},{"name":"8 WAY VTPN MCCB DPX250 DB","mrp":34268.0},{"name":"12 WAY VTPN MCCB DPX250 DB","mrp":38723.0}
   ],
-  "LEGRAND METAL ENCLOSER BOX": [
-    { "name": "SP ", "mrp": 761.0 },
-    { "name": "DP", "mrp": 1097.0 },
-    { "name": "TP", "mrp": 1097.0 },
-    { "name": "FP", "mrp": 1097.0 },
-    { "name": "507794 FP RCBO(8M) FP", "mrp": 1835.0 }
+  "LEGRAND METAL ENCLOSER BOX":[
+    {"name":"SP ","mrp":761.0},{"name":"DP","mrp":1097.0},{"name":"TP","mrp":1097.0},
+    {"name":"FP","mrp":1097.0},{"name":"507794 FP RCBO(8M) FP","mrp":1835.0}
   ],
-  "LEGRAND MCCB ENCLOSER BOX": [
-    { "name": "DPX3 160A 3P-4P ", "mrp": 6242.0 },
-    { "name": "DPX3 250A 3P-4P", "mrp": 10976.0 },
-    { "name": "DPX3 630A", "mrp": 17050.0 },
-    { "name": "DRX 100A TP", "mrp": 3370.0 },
-    { "name": "DRX 100A FP", "mrp": 3370.0 }
+  "LEGRAND MCCB ENCLOSER BOX":[
+    {"name":"DPX3 160A 3P-4P ","mrp":6242.0},{"name":"DPX3 250A 3P-4P","mrp":10976.0},{"name":"DPX3 630A","mrp":17050.0},
+    {"name":"DRX 100A TP","mrp":3370.0},{"name":"DRX 100A FP","mrp":3370.0}
   ],
-  "LEGRAND MCB DX3 (C)": [
-    { "name": "2-4AMS SP MCB ", "mrp": 729.0 },
-    { "name": "2-4AMS DP MCB ", "mrp": 1999.0 },
-    { "name": "2-4AMS TP MCB ", "mrp": 2944.0 },
-    { "name": "2-4AMS FP MCB ", "mrp": 3687.0 },
-    { "name": "6-32AMS SP MCB ", "mrp": 499.0 },
-    { "name": "6-32AMS DP MCB ", "mrp": 1472.0 },
-    { "name": "6-32AMS TP MCB", "mrp": 2387.0 },
-    { "name": "6-32AMS FP MCB", "mrp": 3243.0 },
-    { "name": "40-63AMS SP MCB", "mrp": 1026.0 },
-    { "name": "40-63AMS DP MCB", "mrp": 2316.0 },
-    { "name": "40-63AMS TP MCB", "mrp": 3623.0 },
-    { "name": "40-63AMS FP MCB", "mrp": 4614.0 },
-    { "name": "80AMS SP MCB", "mrp": 3977.0 },
-    { "name": "80AMS DP MCB", "mrp": 8814.0 },
-    { "name": "80AMS TP MCB", "mrp": 14163.0 },
-    { "name": "80AMS FP MCB", "mrp": 18264.0 },
-    { "name": "100AMS SP MCB", "mrp": 4352.0 },
-    { "name": "100AMS DP MCB", "mrp": 9393.0 },
-    { "name": "100AMS TP MCB", "mrp": 15086.0 },
-    { "name": "100AMS FP MCB", "mrp": 19030.0 },
-    { "name": "125AMS SP MCB", "mrp": 4722.0 },
-    { "name": "125AMS DP MCB", "mrp": 10228.0 },
-    { "name": "125AMS TP MCB", "mrp": 16581.0 },
-    { "name": "125AMS FP MCB", "mrp": 21319.0 }
+  "LEGRAND MCB DX3 (C)":[
+    {"name":"2-4AMS SP MCB ","mrp":729.0},{"name":"2-4AMS DP MCB ","mrp":1999.0},{"name":"2-4AMS TP MCB ","mrp":2944.0},{"name":"2-4AMS FP MCB ","mrp":3687.0},
+    {"name":"6-32AMS SP MCB ","mrp":499.0},{"name":"6-32AMS DP MCB ","mrp":1472.0},{"name":"6-32AMS TP MCB","mrp":2387.0},{"name":"6-32AMS FP MCB","mrp":3243.0},
+    {"name":"40-63AMS SP MCB","mrp":1026.0},{"name":"40-63AMS DP MCB","mrp":2316.0},{"name":"40-63AMS TP MCB","mrp":3623.0},{"name":"40-63AMS FP MCB","mrp":4614.0},
+    {"name":"80AMS SP MCB","mrp":3977.0},{"name":"80AMS DP MCB","mrp":8814.0},{"name":"80AMS TP MCB","mrp":14163.0},{"name":"80AMS FP MCB","mrp":18264.0},
+    {"name":"100AMS SP MCB","mrp":4352.0},{"name":"100AMS DP MCB","mrp":9393.0},{"name":"100AMS TP MCB","mrp":15086.0},{"name":"100AMS FP MCB","mrp":19030.0},
+    {"name":"125AMS SP MCB","mrp":4722.0},{"name":"125AMS DP MCB","mrp":10228.0},{"name":"125AMS TP MCB","mrp":16581.0},{"name":"125AMS FP MCB","mrp":21319.0}
   ],
-  "LEGRAND ISOLATER DX3 ": [
-    { "name": "32AMS DP  ", "mrp": 780.0 },
-    { "name": "32AMS TP ", "mrp": 1405.0 },
-    { "name": "32AMS FP ", "mrp": 1541.0 },
-    { "name": "40AMS DP ", "mrp": 858.0 },
-    { "name": "40AMS TP ", "mrp": 1507.0 },
-    { "name": "40AMS FP ", "mrp": 1914.0 },
-    { "name": "63AMS DP", "mrp": 1134.0 },
-    { "name": "63AMS TP ", "mrp": 1794.0 },
-    { "name": "63AMS FP ", "mrp": 2111.0 },
-    { "name": "100AMS DP ", "mrp": 1557.0 },
-    { "name": "100AMS TP ", "mrp": 1980.0 },
-    { "name": "100AMS FP ", "mrp": 2551.0 },
-    { "name": "125AMS DP", "mrp": 1771.0 },
-    { "name": "125AMS TP ", "mrp": 2284.0 },
-    { "name": "125AMS FP ", "mrp": 2811.0 }
+  "LEGRAND ISOLATER DX3 ":[
+    {"name":"32AMS DP  ","mrp":780.0},{"name":"32AMS TP ","mrp":1405.0},{"name":"32AMS FP ","mrp":1541.0},
+    {"name":"40AMS DP ","mrp":858.0},{"name":"40AMS TP ","mrp":1507.0},{"name":"40AMS FP ","mrp":1914.0},
+    {"name":"63AMS DP","mrp":1134.0},{"name":"63AMS TP ","mrp":1794.0},{"name":"63AMS FP ","mrp":2111.0},
+    {"name":"100AMS DP ","mrp":1557.0},{"name":"100AMS TP ","mrp":1980.0},{"name":"100AMS FP ","mrp":2551.0},
+    {"name":"125AMS DP","mrp":1771.0},{"name":"125AMS TP ","mrp":2284.0},{"name":"125AMS FP ","mrp":2811.0}
   ],
-  "KEI - IND COPPER WIRE": [
-    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 3060.0 },
-    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 4570.0 },
-    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 7300.0 },
-    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 10840.0 },
-    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 16410.0 },
-    
-    { "name": "1SQMM 180MTR IND COPPER WIRE", "mrp": 5880 },
-    { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 8780 },
-    { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 14040.0 },
-    { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 20840},
-    { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 31560 },
-    
-    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 11160.0 },
-    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 16980.0 },
-    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 27590.0 },
-    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 27470.0 },
-    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 41960.0 }
+  "KEI - IND COPPER WIRE":[
+    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3060.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4570.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7300.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10840.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":16410.0},
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":5880},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":8780},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14040.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":20840},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":31560},
+    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":11160.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":16980.0},
+    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":27590.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":27470.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":41960.0}
   ],
-"FINOLEX - FR-LSH 180MTR - IND COPPER WIRE": [
-   
-    { "name": "1SQMM 180MTR IND COPPER WIRE", "mrp": 4460.0 },
-    { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 6515.0 },
-    { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 10630.0 },
-    { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 16475},
-    { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 24685 }
-    
-   
+  "FINOLEX - FR-LSH 180MTR - IND COPPER WIRE":[
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":4460.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":6515.0},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":10630.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":16475},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":24685}
   ],
-"FINOLEX - FR-LSH 300 & 200 MTR - IND COPPER WIRE": [
-          
-    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 7435.0 },
-    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 10860.0 },
-    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 17715.0 },
-    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 18305.0 },
-    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 27430.0 }
+  "FINOLEX - FR-LSH 300 & 200 MTR - IND COPPER WIRE":[
+    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":7435.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":10860.0},
+    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":17715.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":18305.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":27430.0}
   ],
- "SUDHAKAR - FR IND COPPER WIRE": [
-    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 3095.0 },
-    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 4590.0 },
-    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 7160.0 },
-    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 10900.0 },
-    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 15835.0 },
-    
-    { "name": "1SQMM 180MTR IND COPPER WIRE", "mrp": 6190.0 },
-    { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 9180.0 },
-    { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 14320.0 },
-    { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 21800},
-    { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 31670 }
-    
-    
+  "SUDHAKAR - FR IND COPPER WIRE":[
+    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3095.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4590.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7160.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10900.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":15835.0},
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6190.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9180.0},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14320.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":21800},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":31670}
   ],
- "SUDHAKAR - FRLS IND COPPER WIRE": [
-    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 3140.0 },
-    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 4655.0 },
-    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 7365.0 },
-    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 11415.0 },
-    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 16745.0 },
-    
-    { "name": "1SQMM 180MTR IND COPPER WIRE", "mrp": 6280.0 },
-    { "name": "1.5SQMM 180MTR IND COPPER WIRE", "mrp": 9310.0 },
-    { "name": "2.5SQMM 180MTR IND COPPER WIRE", "mrp": 14730.0 },
-    { "name": "4SQMM 180MTR IND COPPER WIRE", "mrp": 22830},
-    { "name": "6SQMM 180MTR IND COPPER WIRE", "mrp": 33490 }
-    
-    
+  "SUDHAKAR - FRLS IND COPPER WIRE":[
+    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3140.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4655.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7365.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":11415.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":16745.0},
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6280.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9310.0},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14730.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":22830},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":33490}
   ],
-"RR KABEL - FRLS IND COPPER WIRE": [
-    
-    
-    { "name": "1SQMM 200MTR IND COPPER WIRE", "mrp": 7009.0 },
-    { "name": "1.5SQMM 200MTR IND COPPER WIRE", "mrp": 10126.0 },
-    { "name": "2.5SQMM 200MTR IND COPPER WIRE", "mrp": 16500.0 },
-    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 25363},
-    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 37623 }
-    
-    
+  "RR KABEL - FRLS IND COPPER WIRE":[
+    {"name":"1SQMM 200MTR IND COPPER WIRE","mrp":7009.0},{"name":"1.5SQMM 200MTR IND COPPER WIRE","mrp":10126.0},
+    {"name":"2.5SQMM 200MTR IND COPPER WIRE","mrp":16500.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":25363},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":37623}
   ],
-"HAVELLS - FRLS IND COPPER WIRE": [
-    
-    
-    { "name": "1SQMM 200MTR IND COPPER WIRE", "mrp": 0.0 },
-    { "name": "1.5SQMM 200MTR IND COPPER WIRE", "mrp": 0.0 },
-    { "name": "2.5SQMM 200MTR IND COPPER WIRE", "mrp": 0.0 },
-    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 0},
-    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 0 }
-    
-    
+  "HAVELLS - FRLS IND COPPER WIRE":[
+    {"name":"1SQMM 200MTR IND COPPER WIRE","mrp":0.0},{"name":"1.5SQMM 200MTR IND COPPER WIRE","mrp":0.0},
+    {"name":"2.5SQMM 200MTR IND COPPER WIRE","mrp":0.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":0}
   ],
-   "KEI - GREEN PLUS WIRE": [
-    
-    { "name": "1SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 3110 },
-    { "name": "1.5SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 4590 },
-    { "name": "2.5SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 7410 },
-    { "name": "4SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 10950 },
-    { "name": "6SQMM 90MTR GREEN PLUS IND COPPER WIRE", "mrp": 16580 },
-    
-    { "name": "1SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 6020.0 },
-    { "name": "1.5SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp":8980.0 },
-    { "name": "2.5SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 14390.0 },
-    { "name": "4SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 21360.0 },
-    { "name": "6SQMM 180MTR GREEN PLUS IND COPPER WIRE", "mrp": 32320.0 }
-   
+  "KEI - GREEN PLUS WIRE":[
+    {"name":"1SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":3110},{"name":"1.5SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":4590},
+    {"name":"2.5SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":7410},{"name":"4SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":10950},{"name":"6SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":16580},
+    {"name":"1SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":6020.0},{"name":"1.5SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":8980.0},
+    {"name":"2.5SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":14390.0},{"name":"4SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":21360.0},{"name":"6SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":32320.0}
   ],
-  "POLYCAB - IND COPPER WIRE": [
-    { "name": "1SQMM 90MTR IND COPPER WIRE", "mrp": 2980.0 },
-    { "name": "1.5SQMM 90MTR IND COPPER WIRE", "mrp": 4355.0 },
-    { "name": "2.5SQMM 90MTR IND COPPER WIRE", "mrp": 6880.0 },
-    { "name": "4SQMM 90MTR IND COPPER WIRE", "mrp": 10070.0 },
-    { "name": "6SQMM 90MTR IND COPPER WIRE", "mrp": 15050.0 },
-   
-    { "name": "1SQMM 180MTR LF IND COPPER WIRE", "mrp": 5960.0 },
-    { "name": "1.5SQMM 180MTR LF IND COPPER WIRE", "mrp": 8710.0 },
-    { "name": "2.5SQMM 180MTR LF IND COPPER WIRE", "mrp": 13760.0 },
-    { "name": "4SQMM 180MTR LF IND COPPER WIRE", "mrp": 20140.0 },
-    { "name": "6SQMM 180MTR LF IND COPPER WIRE", "mrp": 30100.0 },
-    
-    { "name": "1SQMM 300MTR IND COPPER WIRE", "mrp": 12155.0 },
-    { "name": "1.5SQMM 300MTR IND COPPER WIRE", "mrp": 17835.0 },
-    { "name": "2.5SQMM 300MTR IND COPPER WIRE", "mrp": 29515.0 },
-    { "name": "4SQMM 200MTR IND COPPER WIRE", "mrp": 30345.0 },
-    { "name": "6SQMM 200MTR IND COPPER WIRE", "mrp": 45410.0 }
+  "POLYCAB - IND COPPER WIRE":[
+    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":2980.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4355.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":6880.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10070.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":15050.0},
+    {"name":"1SQMM 180MTR LF IND COPPER WIRE","mrp":5960.0},{"name":"1.5SQMM 180MTR LF IND COPPER WIRE","mrp":8710.0},
+    {"name":"2.5SQMM 180MTR LF IND COPPER WIRE","mrp":13760.0},{"name":"4SQMM 180MTR LF IND COPPER WIRE","mrp":20140.0},{"name":"6SQMM 180MTR LF IND COPPER WIRE","mrp":30100.0},
+    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":12155.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":17835.0},
+    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":29515.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":30345.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":45410.0}
   ],
-  "POLYCAB - COPPER ARMOURED": [
-    { "name": "4X2CORE COPPER ARMOURED CABLE", "mrp": 487 },
-    { "name": "4X3CORE COPPER ARMOURED CABLE", "mrp": 675 },
-    { "name": "4X4CORE COPPER ARMOURED CABLE", "mrp": 878 },
-    { "name": "4X5CORE COPPER ARMOURED CABLE", "mrp": 1225 },
-    { "name": "4X6CORE COPPER ARMOURED CABLE", "mrp": 1455 },
-    { "name": "4X7CORE COPPER ARMOURED CABLE", "mrp": 1669 },
-    { "name": "6X2CORE COPPER ARMOURED CABLE", "mrp": 693 },
-    { "name": "6X3CORE COPPER ARMOURED CABLE", "mrp": 978 },
-    { "name": "6X4CORE COPPER ARMOURED CABLE", "mrp": 1271 },
-    { "name": "6X5CORE COPPER ARMOURED CABLE", "mrp": 1820 },
-    { "name": "6X6CORE COPPER ARMOURED CABLE", "mrp": 2189 },
-    { "name": "6X7CORE COPPER ARMOURED CABLE", "mrp": 2553 },
-    { "name": "10X2CORE COPPER ARMOURED CABLE", "mrp": 1096 },
-    { "name": "10X3CORE COPPER ARMOURED CABLE", "mrp": 1561 },
-    { "name": "10X4CORE COPPER ARMOURED CABLE", "mrp": 2066 },
-    { "name": "10X5CORE COPPER ARMOURED CABLE", "mrp": 2734 },
-    { "name": "16X1CORE COPPER ARMOURED CABLE", "mrp": 953 },
-    { "name": "16X2CORE COPPER ARMOURED CABLE", "mrp": 1550 },
-    { "name": "16X3CORE COPPER ARMOURED CABLE", "mrp": 2319 },
-    { "name": "16X4CORE COPPER ARMOURED CABLE", "mrp": 3047 },
-    { "name": "16X5CORE COPPER ARMOURED CABLE", "mrp": 4073 },
-    { "name": "1.5X2CORE COPPER ARMOURED CABLE", "mrp": 251 },
-    { "name": "1.5X3CORE COPPER ARMOURED CABLE", "mrp": 319 },
-    { "name": "1.5X4CORE COPPER ARMOURED CABLE", "mrp": 401 },
-    { "name": "1.5X5CORE COPPER ARMOURED CABLE", "mrp": 510 },
-    { "name": "1.5X6CORE COPPER ARMOURED CABLE", "mrp": 616 },
-    { "name": "1.5X7CORE COPPER ARMOURED CABLE", "mrp": 641 },
-    { "name": "1.5X8CORE COPPER ARMOURED CABLE", "mrp": 729 },
-    { "name": "1.5X10CORE COPPER ARMOURED CABLE", "mrp": 913 },
-    { "name": "1.5X12CORE COPPER ARMOURED CABLE", "mrp": 1027 },
-    { "name": "1.5X14CORE COPPER ARMOURED CABLE", "mrp": 1179 },
-    { "name": "1.5X16CORE COPPER ARMOURED CABLE", "mrp": 1348 },
-    { "name": "1.5X19CORE COPPER ARMOURED CABLE", "mrp": 1598 },
-    { "name": "1.5X24CORE COPPER ARMOURED CABLE", "mrp": 1999 },
-    { "name": "1.5X27CORE COPPER ARMOURED CABLE", "mrp": 2266 },
-    { "name": "1.5X30CORE COPPER ARMOURED CABLE", "mrp": 2526 },
-    { "name": "1.5X37CORE COPPER ARMOURED CABLE", "mrp": 3277 },
-    { "name": "1.5X44CORE COPPER ARMOURED CABLE", "mrp": 3827 },
-    { "name": "1.5X61CORE COPPER ARMOURED CABLE", "mrp": 5635 },
-    { "name": "2.5X2CORE COPPER ARMOURED CABLE", "mrp": 353 },
-    { "name": "2.5X3CORE COPPER ARMOURED CABLE", "mrp": 469 },
-    { "name": "2.5X4CORE COPPER ARMOURED CABLE", "mrp": 605 },
-    { "name": "2.5X5CORE COPPER ARMOURED CABLE", "mrp": 751 },
-    { "name": "2.5X6CORE COPPER ARMOURED CABLE", "mrp": 881 },
-    { "name": "2.5X7CORE COPPER ARMOURED CABLE", "mrp": 1024 },
-    { "name": "2.5X8CORE COPPER ARMOURED CABLE", "mrp": 1181 },
-    { "name": "2.5X10CORE COPPER ARMOURED CABLE", "mrp": 1403 },
-    { "name": "2.5X12CORE COPPER ARMOURED CABLE", "mrp": 1661 },
-    { "name": "2.5X14CORE COPPER ARMOURED CABLE", "mrp": 1947 },
-    { "name": "2.5X16CORE COPPER ARMOURED CABLE", "mrp": 2201 },
-    { "name": "2.5X19CORE COPPER ARMOURED CABLE", "mrp": 2586 },
-    { "name": "2.5X24CORE COPPER ARMOURED CABLE", "mrp": 3258 },
-    { "name": "2.5X27CORE COPPER ARMOURED CABLE", "mrp": 3712 },
-    { "name": "2.5X30CORE COPPER ARMOURED CABLE", "mrp": 4464 },
-    { "name": "2.5X37CORE COPPER ARMOURED CABLE", "mrp": 5214 },
-    { "name": "2.5X44CORE COPPER ARMOURED CABLE", "mrp": 6090 },
-    { "name": "2.5X61CORE COPPER ARMOURED CABLE", "mrp": 8829 },
-    { "name": "25X1CORE COPPER ARMOURED CABLE", "mrp": 1467 },
-    { "name": "25X2CORE COPPER ARMOURED CABLE", "mrp":  2414 },
-    { "name": "25X3CORE COPPER ARMOURED CABLE", "mrp": 3624 },
-    { "name": "25X3.5CORE COPPER ARMOURED CABLE", "mrp": 4397 },
-    { "name": "25X4CORE COPPER ARMOURED CABLE", "mrp": 4821 },
-    { "name": "25X5CORE COPPER ARMOURED CABLE", "mrp": 7437 },
-    { "name": "35X1CORECOPPER ARMOURED CABLE", "mrp": 2003 },
-    { "name": "35X2CORECOPPER ARMOURED CABLE", "mrp": 3565 },
-    { "name": "35X3CORECOPPER ARMOURED CABLE", "mrp": 5229 },
-    { "name": "35X3.5CORECOPPER ARMOURED CABLE", "mrp": 5987 },
-    { "name": "35X4CORECOPPER ARMOURED CABLE", "mrp": 6918 },
-    { "name": "35X5CORECOPPER ARMOURED CABLE", "mrp": 10250 },
-     { "name": "50X1CORECOPPER ARMOURED CABLE", "mrp": 2805 },
-    { "name": "50X2CORECOPPER ARMOURED CABLE", "mrp": 4812 },
-    { "name": "50X3CORECOPPER ARMOURED CABLE", "mrp": 7054 },
-    { "name": "50X3.5CORECOPPER ARMOURED CABLE", "mrp": 8306 },
-    { "name": "50X4CORECOPPER ARMOURED CABLE", "mrp": 9428 },
-    { "name": "50X5CORECOPPER ARMOURED CABLE", "mrp": 14094 },
-    { "name": "70X1CORECOPPER ARMOURED CABLE", "mrp": 3865 },
-    { "name": "70X2CORECOPPER ARMOURED CABLE", "mrp": 7149 },
-    { "name": "70X3CORECOPPER ARMOURED CABLE", "mrp": 10230 },
-    { "name": "70X3.5CORECOPPER ARMOURED CABLE", "mrp": 11944 },
-    { "name": "70X4CORECOPPER ARMOURED CABLE", "mrp": 13700 },
-    { "name": "70X5CORECOPPER ARMOURED CABLE", "mrp": 22166 },
-    { "name": "95X1CORECOPPER ARMOURED CABLE", "mrp": 5159 },
-    { "name": "95X3CORECOPPER ARMOURED CABLE", "mrp": 14325 },
-    { "name": "95X3.5CORECOPPER ARMOURED CABLE", "mrp": 16596 },
-    { "name": "95X4CORECOPPER ARMOURED CABLE", "mrp": 18926 },
-    { "name": "120X1CORECOPPER ARMOURED CABLE", "mrp": 6467 },
-    { "name": "120X3CORECOPPER ARMOURED CABLE", "mrp": 17666 },
-    { "name": "120X3.5CORECOPPER ARMOURED CABLE", "mrp": 21050 },
-    { "name": "120X4CORECOPPER ARMOURED CABLE", "mrp": 23556 },
-    { "name": "150X1CORECOPPER ARMOURED CABLE", "mrp": 8035 },
-    { "name": "150X3CORECOPPER ARMOURED CABLE", "mrp": 21742 },
-    { "name": "150X3.5CORECOPPER ARMOURED CABLE", "mrp": 25186 },
-    { "name": "150X4CORECOPPER ARMOURED CABLE", "mrp": 29151 },
-    { "name": "185X1CORECOPPER ARMOURED CABLE", "mrp": 9883 },
-    { "name": "185X3CORECOPPER ARMOURED CABLE", "mrp": 27537 },
-    { "name": "185X3.5CORECOPPER ARMOURED CABLE", "mrp": 32190 },
-    { "name": "185X4CORECOPPER ARMOURED CABLE", "mrp": 36470 },
-    { "name": "240X1CORECOPPER ARMOURED CABLE", "mrp": 12747 },
-    { "name": "240X3CORECOPPER ARMOURED CABLE", "mrp": 35916 },
-    { "name": "240X3.5CORECOPPER ARMOURED CABLE", "mrp": 41488 },
-    { "name": "240X4CORECOPPER ARMOURED CABLE", "mrp": 47684 },
-    { "name": "300X1CORECOPPER ARMOURED CABLE", "mrp": 15875 },
-    { "name": "300X3CORECOPPER ARMOURED CABLE", "mrp": 45875 },
-    { "name": "300X3.5CORECOPPER ARMOURED CABLE", "mrp": 52462 },
-    { "name": "300X4CORECOPPER ARMOURED CABLE", "mrp": 60514 },
-    { "name": "400X1CORECOPPER ARMOURED CABLE", "mrp": 21097 },
-    { "name": "400X3CORECOPPER ARMOURED CABLE", "mrp": 59329 },
-    { "name": "400X3.5CORECOPPER ARMOURED CABLE", "mrp": 66416 },
-    { "name": "400X4CORECOPPER ARMOURED CABLE", "mrp": 82647 },
-    { "name": "500X1CORECOPPER ARMOURED CABLE", "mrp": 26269 },
-    { "name": "630X1CORECOPPER ARMOURED CABLE", "mrp": 33024 },
-    { "name": "800X1CORECOPPER ARMOURED CABLE", "mrp": 41821 },
-    { "name": "1000X1CORECOPPER ARMOURED CABLE", "mrp": 52138 }
-
- ],
-  "POLYCAB - ALU ARMOURED": [
-    { "name": "2.5X2CORE ALU ARMOURED CABLE", "mrp": 204},
-    { "name": "2.5X3CORE ALU ARMOURED CABLE", "mrp": 221},
-    { "name": "2.5X4CORE ALU ARMOURED CABLE", "mrp":  252},
-    { "name": "4X2CORE ALU ARMOURED CABLE", "mrp":221 },
-    { "name": "4X3CORE ALU ARMOURED CABLE", "mrp": 256 },
-    { "name": "4X4CORE ALU ARMOURED CABLE", "mrp": 300 },
-    { "name": "6X2CORE ALU ARMOURED CABLE", "mrp": 278 },
-    { "name": "6X3CORE ALU ARMOURED CABLE", "mrp": 321 },
-    { "name": "6X4CORE ALU ARMOURED CABLE", "mrp": 360 },
-    { "name": "10X2CORE ALU ARMOURED CABLE", "mrp": 336 },
-    { "name": "10X3CORE ALU ARMOURED CABLE", "mrp": 400 },
-    { "name": "10X4CORE ALU ARMOURED CABLE", "mrp": 524 },
-    { "name": "16X1CORE ALU ARMOURED CABLE", "mrp": 231 },
-    { "name": "16X2CORE ALU ARMOURED CABLE", "mrp": 388 },
-    { "name": "16X3CORE ALU ARMOURED CABLE", "mrp": 444 },
-    { "name": "16X4CORE ALU ARMOURED CABLE", "mrp": 568 },
-    
-    { "name": "25X1CORE ALU ARMOURED CABLE", "mrp": 287 },
-    { "name": "25X2CORE ALU ARMOURED CABLE", "mrp": 401 },
-    { "name": "25X3CORE ALU ARMOURED CABLE", "mrp": 534 },
-    { "name": "25X3.5CORE ALU ARMOURED CABLE", "mrp": 626 },
-    { "name": "25X4CORE ALU ARMOURED CABLE", "mrp": 673 },
-    { "name": "35X1COREALU ARMOURED CABLE", "mrp": 359 },
-    { "name": "35X2COREALU ARMOURED CABLE", "mrp": 513 },
-    { "name": "35X3COREALU ARMOURED CABLE", "mrp": 731 },
-    { "name": "35X3.5COREALU ARMOURED CABLE", "mrp":809},
-    { "name": "35X4COREALU ARMOURED CABLE", "mrp": 921 },
-     { "name": "50X1COREALU ARMOURED CABLE", "mrp": 457 },
-    { "name": "50X2COREALU ARMOURED CABLE", "mrp": 694 },
-    { "name": "50X3COREALU ARMOURED CABLE", "mrp": 945 },
-    { "name": "50X3.5COREALU ARMOURED CABLE", "mrp": 1078 },
-    { "name": "50X4COREALU ARMOURED CABLE", "mrp": 1214 },
-    { "name": "70X1COREALU ARMOURED CABLE", "mrp": 581 },
-    { "name": "70X2COREALU ARMOURED CABLE", "mrp": 880},
-    { "name": "70X3COREALU ARMOURED CABLE", "mrp": 1268 },
-    { "name": "70X3.5COREALU ARMOURED CABLE", "mrp":1469 },
-    { "name": "70X4COREALU ARMOURED CABLE", "mrp": 1646},
-    { "name": "95X1COREALU ARMOURED CABLE", "mrp": 710 },
-    { "name": "95X2COREALU ARMOURED CABLE", "mrp": 1137 },
-    { "name": "95X3COREALU ARMOURED CABLE", "mrp": 1610 },
-    { "name": "95X3.5COREALU ARMOURED CABLE", "mrp": 1860 },
-    { "name": "95X4COREALU ARMOURED CABLE", "mrp": 2171 },
-    { "name": "120X1COREALU ARMOURED CABLE", "mrp": 850 },
-    { "name": "120X2COREALU ARMOURED CABLE", "mrp": 1401 },
-    { "name": "120X3COREALU ARMOURED CABLE", "mrp": 1997 },
-    { "name": "120X3.5COREALU ARMOURED CABLE", "mrp": 2332 },
-    { "name": "120X4COREALU ARMOURED CABLE", "mrp": 2656 },
-    { "name": "150X1COREALU ARMOURED CABLE", "mrp": 1013 },
-    { "name": "150X2COREALU ARMOURED CABLE", "mrp": 1715 },
-    { "name": "150X3COREALU ARMOURED CABLE", "mrp": 2474 },
-    { "name": "150X3.5COREALU ARMOURED CABLE", "mrp": 2720 },
-    { "name": "150X4COREALU ARMOURED CABLE", "mrp":  3209},
-    { "name": "185X1COREALU ARMOURED CABLE", "mrp": 1228 },
-    { "name": "185X2COREALU ARMOURED CABLE", "mrp":2093 },
-    { "name": "185X3COREALU ARMOURED CABLE", "mrp": 3060},
-    { "name": "185X3.5COREALU ARMOURED CABLE", "mrp": 3441 },
-    { "name": "185X4COREALU ARMOURED CABLE", "mrp":4043 },
-    { "name": "240X1COREALU ARMOURED CABLE", "mrp": 1526 },
-    { "name": "240X2COREALU ARMOURED CABLE", "mrp": 2648 },
-    { "name": "240X3COREALU ARMOURED CABLE", "mrp": 3959},
-    { "name": "240X3.5COREALU ARMOURED CABLE", "mrp": 4386 },
-    { "name": "240X4COREALU ARMOURED CABLE", "mrp":5228 },
-    { "name": "300X1COREALU ARMOURED CABLE", "mrp": 1855 },
-    { "name": "300X2COREALU ARMOURED CABLE", "mrp": 3257 },
-    { "name": "300X3COREALU ARMOURED CABLE", "mrp": 4896 },
-    { "name": "300X3.5COREALU ARMOURED CABLE", "mrp": 5440 },
-    { "name": "300X4COREALU ARMOURED CABLE", "mrp": 6462 },
-    { "name": "400X1COREALU ARMOURED CABLE", "mrp": 2395 },
-    { "name": "400X2COREALU ARMOURED CABLE", "mrp": 4269 },
-    { "name": "400X3COREALU ARMOURED CABLE", "mrp": 6214 },
-    { "name": "400X3.5COREALU ARMOURED CABLE", "mrp": 6902 },
-    { "name": "400X4COREALU ARMOURED CABLE", "mrp": 8309 },
-    { "name": "500X1COREALU ARMOURED CABLE", "mrp": 2905 },
-    { "name": "500X2COREALU ARMOURED CABLE", "mrp": 5928},
-    { "name": "500X3COREALU ARMOURED CABLE", "mrp": 8348},
-    { "name": "500X3.5COREALU ARMOURED CABLE", "mrp": 9832 },
-    { "name": "500X4COREALU ARMOURED CABLE", "mrp": 11025 },
-    { "name": "630X1COREALU ARMOURED CABLE", "mrp": 3585 },
-    { "name": "630X2COREALU ARMOURED CABLE", "mrp": 7292 },
-    { "name": "630X3COREALU ARMOURED CABLE", "mrp": 10613 },
-    { "name": "630X3.5COREALU ARMOURED CABLE", "mrp": 12047 },
-    { "name": "630X4COREALU ARMOURED CABLE", "mrp": 14472 },
-    { "name": "800X1COREALU ARMOURED CABLE", "mrp": 4461 },
-    { "name": "1000X1COREALU ARMOURED CABLE", "mrp":5440 }
-
-],
-  "POLYCAB - COPPER FLEXIBLE": [
- { "name": "0.5X1CORE COPPER FLEXIBLE CABLE", "mrp":20.80 },
- { "name": "0.5X2CORE COPPER FLEXIBLE CABLE", "mrp":53.9 },
- { "name": "0.5X3CORE COPPER FLEXIBLE CABLE", "mrp":72.6 },
- { "name": "0.5X4CORE COPPER FLEXIBLE CABLE", "mrp":92 },
- { "name": "0.5X5CORE COPPER FLEXIBLE CABLE", "mrp":115.75 },
- { "name": "0.5X6CORE COPPER FLEXIBLE CABLE", "mrp":138.82 },
-
- { "name": "0.75X1CORE COPPER FLEXIBLE CABLE", "mrp":29.4},
- { "name": "0.75X2CORE COPPER FLEXIBLE CABLE", "mrp":71.80 },
- { "name": "0.75X3CORE COPPER FLEXIBLE CABLE", "mrp":97.90 },
- { "name": "0.75X4CORE COPPER FLEXIBLE CABLE", "mrp":125.15 },
- { "name": "0.75X5CORE COPPER FLEXIBLE CABLE", "mrp":164},
- { "name": "0.75X6CORE COPPER FLEXIBLE CABLE", "mrp":198.82 },
-
- { "name": "1X1CORE COPPER FLEXIBLE CABLE", "mrp":36.35 },
- { "name": "1X2CORE COPPER FLEXIBLE CABLE", "mrp":89.95 },
- { "name": "1X3CORE COPPER FLEXIBLE CABLE", "mrp":124 },
- { "name": "1X4CORE COPPER FLEXIBLE CABLE", "mrp":159 },
- { "name": "1X5CORE COPPER FLEXIBLE CABLE", "mrp":212 },
- { "name": "1X6CORE COPPER FLEXIBLE CABLE", "mrp":254.25},
-
- { "name": "1.5X1CORE COPPER FLEXIBLE CABLE", "mrp":52.10 },
- { "name": "1.5X2CORE COPPER FLEXIBLE CABLE", "mrp":123},
- { "name": "1.5X3CORE COPPER FLEXIBLE CABLE", "mrp":175 },
- { "name": "1.5X4CORE COPPER FLEXIBLE CABLE", "mrp":223 },
- { "name": "1.5X5CORE COPPER FLEXIBLE CABLE", "mrp":289 },
- { "name": "1.5X6CORE COPPER FLEXIBLE CABLE", "mrp":350 },
-
- { "name": "2.5X1CORE COPPER FLEXIBLE CABLE", "mrp":86.15 },
- { "name": "2.5X2CORE COPPER FLEXIBLE CABLE", "mrp":200.50 },
- { "name": "2.5X3CORE COPPER FLEXIBLE CABLE", "mrp":277},
- { "name": "2.5X4CORE COPPER FLEXIBLE CABLE", "mrp":371 },
- { "name": "2.5X5CORE COPPER FLEXIBLE CABLE", "mrp":469},
- { "name": "2.5X6CORE COPPER FLEXIBLE CABLE", "mrp":566 },
-
- { "name": "4X1CORE COPPER FLEXIBLE CABLE", "mrp":133.5 },
- { "name": "4X2CORE COPPER FLEXIBLE CABLE", "mrp":294 },
- { "name": "4X3CORE COPPER FLEXIBLE CABLE", "mrp":421 },
- { "name": "4X4CORE COPPER FLEXIBLE CABLE", "mrp":556 },
- { "name": "4X5CORE COPPER FLEXIBLE CABLE", "mrp":744},
- { "name": "4X6CORE COPPER FLEXIBLE CABLE", "mrp":890 },
-
- { "name": "6X1CORE COPPER FLEXIBLE CABLE", "mrp":200 },
- { "name": "6X2CORE COPPER FLEXIBLE CABLE", "mrp":432 },
- { "name": "6X3CORE COPPER FLEXIBLE CABLE", "mrp":617 },
- { "name": "6X4CORE COPPER FLEXIBLE CABLE", "mrp":815 },
- { "name": "6X5CORE COPPER FLEXIBLE CABLE", "mrp":1093 },
- { "name": "6X6CORE COPPER FLEXIBLE CABLE", "mrp":1315 },
-
- { "name": "10X1CORE COPPER FLEXIBLE CABLE", "mrp":351 },
- { "name": "10X2CORE COPPER FLEXIBLE CABLE", "mrp":731 },
- { "name": "10X3CORE COPPER FLEXIBLE CABLE", "mrp":1074},
- { "name": "10X4CORE COPPER FLEXIBLE CABLE", "mrp":1418},
- { "name": "10X5CORE COPPER FLEXIBLE CABLE", "mrp":1887 },
-
- { "name": "16X1CORE COPPER FLEXIBLE CABLE", "mrp":542},
- { "name": "16X2CORE COPPER FLEXIBLE CABLE", "mrp":1161 },
- { "name": "16X3CORE COPPER FLEXIBLE CABLE", "mrp":1691 },
- { "name": "16X4CORE COPPER FLEXIBLE CABLE", "mrp":2225 },
- { "name": "16X5CORE COPPER FLEXIBLE CABLE", "mrp":2887 },
-
- { "name": "25X1CORE COPPER FLEXIBLE CABLE", "mrp":843 },
- { "name": "25X2CORE COPPER FLEXIBLE CABLE", "mrp":1925 },
- { "name": "25X3CORE COPPER FLEXIBLE CABLE", "mrp":2796 },
- { "name": "25X4CORE COPPER FLEXIBLE CABLE", "mrp":3656 },
- { "name": "25X5CORE COPPER FLEXIBLE CABLE", "mrp":5240 },
-
- { "name": "35X1CORE COPPER FLEXIBLE CABLE", "mrp":1178 },
- { "name": "35X2CORE COPPER FLEXIBLE CABLE", "mrp":2678 },
- { "name": "35X3CORE COPPER FLEXIBLE CABLE", "mrp":3882 },
- { "name": "35X4CORE COPPER FLEXIBLE CABLE", "mrp":5114 },
- { "name": "35X5CORE COPPER FLEXIBLE CABLE", "mrp":7183 },
-
- { "name": "50X1CORE COPPER FLEXIBLE CABLE", "mrp":1680 },
- { "name": "50X2CORE COPPER FLEXIBLE CABLE", "mrp":3801 },
- { "name": "50X3CORE COPPER FLEXIBLE CABLE", "mrp":5531 },
- { "name": "50X4CORE COPPER FLEXIBLE CABLE", "mrp":7302 },
- { "name": "50X5CORE COPPER FLEXIBLE CABLE", "mrp":10398 },
-
- { "name": "70X1CORE COPPER FLEXIBLE CABLE", "mrp":2375 },
- { "name": "70X2CORE COPPER FLEXIBLE CABLE", "mrp":5393 },
- { "name": "70X3CORE COPPER FLEXIBLE CABLE", "mrp":7674 },
- { "name": "70X4CORE COPPER FLEXIBLE CABLE", "mrp":10148},
- { "name": "70X5CORE COPPER FLEXIBLE CABLE", "mrp":14221 },
-
- { "name": "95X1CORE COPPER FLEXIBLE CABLE", "mrp":3163 },
- { "name": "95X3CORE COPPER FLEXIBLE CABLE", "mrp":10670 },
- { "name": "95X4CORE COPPER FLEXIBLE CABLE", "mrp":14077},
-
- { "name": "120X1CORE COPPER FLEXIBLE CABLE", "mrp":4160 },
- { "name": "120X3CORE COPPER FLEXIBLE CABLE", "mrp":13550 },
- { "name": "120X4CORE COPPER FLEXIBLE CABLE", "mrp":17882 },
-
- { "name": "150X1CORE COPPER FLEXIBLE CABLE", "mrp":5205 },
- { "name": "150X3CORE COPPER FLEXIBLE CABLE", "mrp":16937},
- { "name": "150X4CORE COPPER FLEXIBLE CABLE", "mrp":22355 },
-
- { "name": "185X1CORE COPPER FLEXIBLE CABLE", "mrp":6600 },
- { "name": "185X3CORE COPPER FLEXIBLE CABLE", "mrp":20858},
- { "name": "185X4CORE COPPER FLEXIBLE CABLE", "mrp":27569},
-
- { "name": "240X1CORE COPPER FLEXIBLE CABLE", "mrp":8452 },
- { "name": "240X3CORE COPPER FLEXIBLE CABLE", "mrp":26926},
- { "name": "240X4CORE COPPER FLEXIBLE CABLE", "mrp":35641 },
-
- { "name": "300X1CORE COPPER FLEXIBLE CABLE", "mrp":10576},
- { "name": "300X3CORE COPPER FLEXIBLE CABLE", "mrp":33598 },
- { "name": "300X4CORE COPPER FLEXIBLE CABLE", "mrp":44490 },
-
- { "name": "400X1CORE COPPER FLEXIBLE CABLE", "mrp":14093 },
- { "name": "400X3CORE COPPER FLEXIBLE CABLE", "mrp":44767 },
- { "name": "400X4CORE COPPER FLEXIBLE CABLE", "mrp":58931 },
-
-    { "name": "500X1CORECOPPER FLEXIBLE CABLE", "mrp": 17631 },
-
-    { "name": "630X1CORECOPPER FLEXIBLE CABLE", "mrp":22739 }
-
+  "POLYCAB - COPPER ARMOURED":[
+    {"name":"4X2CORE COPPER ARMOURED CABLE","mrp":487},{"name":"4X3CORE COPPER ARMOURED CABLE","mrp":675},{"name":"4X4CORE COPPER ARMOURED CABLE","mrp":878},{"name":"4X5CORE COPPER ARMOURED CABLE","mrp":1225},{"name":"4X6CORE COPPER ARMOURED CABLE","mrp":1455},{"name":"4X7CORE COPPER ARMOURED CABLE","mrp":1669},
+    {"name":"6X2CORE COPPER ARMOURED CABLE","mrp":693},{"name":"6X3CORE COPPER ARMOURED CABLE","mrp":978},{"name":"6X4CORE COPPER ARMOURED CABLE","mrp":1271},{"name":"6X5CORE COPPER ARMOURED CABLE","mrp":1820},{"name":"6X6CORE COPPER ARMOURED CABLE","mrp":2189},{"name":"6X7CORE COPPER ARMOURED CABLE","mrp":2553},
+    {"name":"10X2CORE COPPER ARMOURED CABLE","mrp":1096},{"name":"10X3CORE COPPER ARMOURED CABLE","mrp":1561},{"name":"10X4CORE COPPER ARMOURED CABLE","mrp":2066},{"name":"10X5CORE COPPER ARMOURED CABLE","mrp":2734},
+    {"name":"16X1CORE COPPER ARMOURED CABLE","mrp":953},{"name":"16X2CORE COPPER ARMOURED CABLE","mrp":1550},{"name":"16X3CORE COPPER ARMOURED CABLE","mrp":2319},{"name":"16X4CORE COPPER ARMOURED CABLE","mrp":3047},{"name":"16X5CORE COPPER ARMOURED CABLE","mrp":4073},
+    {"name":"1.5X2CORE COPPER ARMOURED CABLE","mrp":251},{"name":"1.5X3CORE COPPER ARMOURED CABLE","mrp":319},{"name":"1.5X4CORE COPPER ARMOURED CABLE","mrp":401},{"name":"1.5X5CORE COPPER ARMOURED CABLE","mrp":510},{"name":"1.5X6CORE COPPER ARMOURED CABLE","mrp":616},{"name":"1.5X7CORE COPPER ARMOURED CABLE","mrp":641},{"name":"1.5X8CORE COPPER ARMOURED CABLE","mrp":729},{"name":"1.5X10CORE COPPER ARMOURED CABLE","mrp":913},{"name":"1.5X12CORE COPPER ARMOURED CABLE","mrp":1027},{"name":"1.5X14CORE COPPER ARMOURED CABLE","mrp":1179},{"name":"1.5X16CORE COPPER ARMOURED CABLE","mrp":1348},{"name":"1.5X19CORE COPPER ARMOURED CABLE","mrp":1598},{"name":"1.5X24CORE COPPER ARMOURED CABLE","mrp":1999},{"name":"1.5X27CORE COPPER ARMOURED CABLE","mrp":2266},{"name":"1.5X30CORE COPPER ARMOURED CABLE","mrp":2526},{"name":"1.5X37CORE COPPER ARMOURED CABLE","mrp":3277},{"name":"1.5X44CORE COPPER ARMOURED CABLE","mrp":3827},{"name":"1.5X61CORE COPPER ARMOURED CABLE","mrp":5635},
+    {"name":"2.5X2CORE COPPER ARMOURED CABLE","mrp":353},{"name":"2.5X3CORE COPPER ARMOURED CABLE","mrp":469},{"name":"2.5X4CORE COPPER ARMOURED CABLE","mrp":605},{"name":"2.5X5CORE COPPER ARMOURED CABLE","mrp":751},{"name":"2.5X6CORE COPPER ARMOURED CABLE","mrp":881},{"name":"2.5X7CORE COPPER ARMOURED CABLE","mrp":1024},{"name":"2.5X8CORE COPPER ARMOURED CABLE","mrp":1181},{"name":"2.5X10CORE COPPER ARMOURED CABLE","mrp":1403},{"name":"2.5X12CORE COPPER ARMOURED CABLE","mrp":1661},{"name":"2.5X14CORE COPPER ARMOURED CABLE","mrp":1947},{"name":"2.5X16CORE COPPER ARMOURED CABLE","mrp":2201},{"name":"2.5X19CORE COPPER ARMOURED CABLE","mrp":2586},{"name":"2.5X24CORE COPPER ARMOURED CABLE","mrp":3258},{"name":"2.5X27CORE COPPER ARMOURED CABLE","mrp":3712},{"name":"2.5X30CORE COPPER ARMOURED CABLE","mrp":4464},{"name":"2.5X37CORE COPPER ARMOURED CABLE","mrp":5214},{"name":"2.5X44CORE COPPER ARMOURED CABLE","mrp":6090},{"name":"2.5X61CORE COPPER ARMOURED CABLE","mrp":8829},
+    {"name":"25X1CORE COPPER ARMOURED CABLE","mrp":1467},{"name":"25X2CORE COPPER ARMOURED CABLE","mrp":2414},{"name":"25X3CORE COPPER ARMOURED CABLE","mrp":3624},{"name":"25X3.5CORE COPPER ARMOURED CABLE","mrp":4397},{"name":"25X4CORE COPPER ARMOURED CABLE","mrp":4821},{"name":"25X5CORE COPPER ARMOURED CABLE","mrp":7437},
+    {"name":"35X1CORECOPPER ARMOURED CABLE","mrp":2003},{"name":"35X2CORECOPPER ARMOURED CABLE","mrp":3565},{"name":"35X3CORECOPPER ARMOURED CABLE","mrp":5229},{"name":"35X3.5CORECOPPER ARMOURED CABLE","mrp":5987},{"name":"35X4CORECOPPER ARMOURED CABLE","mrp":6918},{"name":"35X5CORECOPPER ARMOURED CABLE","mrp":10250},
+    {"name":"50X1CORECOPPER ARMOURED CABLE","mrp":2805},{"name":"50X2CORECOPPER ARMOURED CABLE","mrp":4812},{"name":"50X3CORECOPPER ARMOURED CABLE","mrp":7054},{"name":"50X3.5CORECOPPER ARMOURED CABLE","mrp":8306},{"name":"50X4CORECOPPER ARMOURED CABLE","mrp":9428},{"name":"50X5CORECOPPER ARMOURED CABLE","mrp":14094},
+    {"name":"70X1CORECOPPER ARMOURED CABLE","mrp":3865},{"name":"70X2CORECOPPER ARMOURED CABLE","mrp":7149},{"name":"70X3CORECOPPER ARMOURED CABLE","mrp":10230},{"name":"70X3.5CORECOPPER ARMOURED CABLE","mrp":11944},{"name":"70X4CORECOPPER ARMOURED CABLE","mrp":13700},{"name":"70X5CORECOPPER ARMOURED CABLE","mrp":22166},
+    {"name":"95X1CORECOPPER ARMOURED CABLE","mrp":5159},{"name":"95X3CORECOPPER ARMOURED CABLE","mrp":14325},{"name":"95X3.5CORECOPPER ARMOURED CABLE","mrp":16596},{"name":"95X4CORECOPPER ARMOURED CABLE","mrp":18926},
+    {"name":"120X1CORECOPPER ARMOURED CABLE","mrp":6467},{"name":"120X3CORECOPPER ARMOURED CABLE","mrp":17666},{"name":"120X3.5CORECOPPER ARMOURED CABLE","mrp":21050},{"name":"120X4CORECOPPER ARMOURED CABLE","mrp":23556},
+    {"name":"150X1CORECOPPER ARMOURED CABLE","mrp":8035},{"name":"150X3CORECOPPER ARMOURED CABLE","mrp":21742},{"name":"150X3.5CORECOPPER ARMOURED CABLE","mrp":25186},{"name":"150X4CORECOPPER ARMOURED CABLE","mrp":29151},
+    {"name":"185X1CORECOPPER ARMOURED CABLE","mrp":9883},{"name":"185X3CORECOPPER ARMOURED CABLE","mrp":27537},{"name":"185X3.5CORECOPPER ARMOURED CABLE","mrp":32190},{"name":"185X4CORECOPPER ARMOURED CABLE","mrp":36470},
+    {"name":"240X1CORECOPPER ARMOURED CABLE","mrp":12747},{"name":"240X3CORECOPPER ARMOURED CABLE","mrp":35916},{"name":"240X3.5CORECOPPER ARMOURED CABLE","mrp":41488},{"name":"240X4CORECOPPER ARMOURED CABLE","mrp":47684},
+    {"name":"300X1CORECOPPER ARMOURED CABLE","mrp":15875},{"name":"300X3CORECOPPER ARMOURED CABLE","mrp":45875},{"name":"300X3.5CORECOPPER ARMOURED CABLE","mrp":52462},{"name":"300X4CORECOPPER ARMOURED CABLE","mrp":60514},
+    {"name":"400X1CORECOPPER ARMOURED CABLE","mrp":21097},{"name":"400X3CORECOPPER ARMOURED CABLE","mrp":59329},{"name":"400X3.5CORECOPPER ARMOURED CABLE","mrp":66416},{"name":"400X4CORECOPPER ARMOURED CABLE","mrp":82647},
+    {"name":"500X1CORECOPPER ARMOURED CABLE","mrp":26269},{"name":"630X1CORECOPPER ARMOURED CABLE","mrp":33024},{"name":"800X1CORECOPPER ARMOURED CABLE","mrp":41821},{"name":"1000X1CORECOPPER ARMOURED CABLE","mrp":52138}
   ],
- "KEI - COPPER ARMOURED": [
-    { "name": "4X2CORE COPPER ARMOURED CABLE", "mrp": 507 },
-    { "name": "4X3CORE COPPER ARMOURED CABLE", "mrp": 659 },
-    { "name": "4X4CORE COPPER ARMOURED CABLE", "mrp": 835 },
-   
-    { "name": "6X2CORE COPPER ARMOURED CABLE", "mrp": 689 },
-    { "name": "6X3CORE COPPER ARMOURED CABLE", "mrp": 906 },
-    { "name": "6X4CORE COPPER ARMOURED CABLE", "mrp": 1185 },
-   
-    { "name": "10X2CORE COPPER ARMOURED CABLE", "mrp": 1052 },
-    { "name": "10X3CORE COPPER ARMOURED CABLE", "mrp": 1461 },
-    { "name": "10X4CORE COPPER ARMOURED CABLE", "mrp": 1898 },
-  
-    { "name": "16X1CORE COPPER ARMOURED CABLE", "mrp": 868},
-    { "name": "16X2CORE COPPER ARMOURED CABLE", "mrp": 1591 },
-    { "name": "16X3CORE COPPER ARMOURED CABLE", "mrp": 2340 },
-    { "name": "16X4CORE COPPER ARMOURED CABLE", "mrp": 3018 },
-   
-    { "name": "1.5X2CORE COPPER ARMOURED CABLE", "mrp": 247 },
-    { "name": "1.5X3CORE COPPER ARMOURED CABLE", "mrp": 307 },
-    { "name": "1.5X4CORE COPPER ARMOURED CABLE", "mrp": 382 },
-    { "name": "1.5X5CORE COPPER ARMOURED CABLE", "mrp": 508 },
-    { "name": "1.5X6CORE COPPER ARMOURED CABLE", "mrp": 586 },
-    { "name": "1.5X7CORE COPPER ARMOURED CABLE", "mrp": 655 },
-    { "name": "1.5X8CORE COPPER ARMOURED CABLE", "mrp": 744 },
-    { "name": "1.5X10CORE COPPER ARMOURED CABLE", "mrp": 900 },
-    { "name": "1.5X12CORE COPPER ARMOURED CABLE", "mrp": 920 },
-    { "name": "1.5X14CORE COPPER ARMOURED CABLE", "mrp": 1062 },
-    { "name": "1.5X16CORE COPPER ARMOURED CABLE", "mrp": 1209 },
-    { "name": "1.5X19CORE COPPER ARMOURED CABLE", "mrp": 1420 },
-    { "name": "1.5X24CORE COPPER ARMOURED CABLE", "mrp": 1804 },
-    { "name": "1.5X27CORE COPPER ARMOURED CABLE", "mrp": 2012 },
-    { "name": "1.5X30CORE COPPER ARMOURED CABLE", "mrp": 2228 },
-    { "name": "1.5X37CORE COPPER ARMOURED CABLE", "mrp": 2731 },
-   
-    { "name": "2.5X2CORE COPPER ARMOURED CABLE", "mrp": 332 },
-    { "name": "2.5X3CORE COPPER ARMOURED CABLE", "mrp": 446 },
-    { "name": "2.5X4CORE COPPER ARMOURED CABLE", "mrp": 557 },
-    { "name": "2.5X5CORE COPPER ARMOURED CABLE", "mrp": 751 },
-    { "name": "2.5X6CORE COPPER ARMOURED CABLE", "mrp": 886 },
-    { "name": "2.5X7CORE COPPER ARMOURED CABLE", "mrp": 998 },
-    { "name": "2.5X8CORE COPPER ARMOURED CABLE", "mrp": 1133 },
-    { "name": "2.5X10CORE COPPER ARMOURED CABLE", "mrp": 1335 },
-    { "name": "2.5X12CORE COPPER ARMOURED CABLE", "mrp": 1569 },
-    { "name": "2.5X14CORE COPPER ARMOURED CABLE", "mrp": 1819 },
-    { "name": "2.5X16CORE COPPER ARMOURED CABLE", "mrp": 2061 },
-    { "name": "2.5X19CORE COPPER ARMOURED CABLE", "mrp": 2410 },
-    { "name": "2.5X24CORE COPPER ARMOURED CABLE", "mrp": 3024 },
-    { "name": "2.5X27CORE COPPER ARMOURED CABLE", "mrp": 3365 },
-    { "name": "2.5X30CORE COPPER ARMOURED CABLE", "mrp": 3721 },
-    { "name": "2.5X37CORE COPPER ARMOURED CABLE", "mrp": 4549 },
-  
-    { "name": "25X1CORE COPPER ARMOURED CABLE", "mrp": 1448 },
-    { "name": "25X2CORE COPPER ARMOURED CABLE", "mrp": 2639 },
-    { "name": "25X3CORE COPPER ARMOURED CABLE", "mrp": 3835 },
-    { "name": "25X3.5CORE COPPER ARMOURED CABLE", "mrp": 4734 },
-    { "name": "25X4CORE COPPER ARMOURED CABLE", "mrp": 5201 },
-   
-    { "name": "35X1CORECOPPER ARMOURED CABLE", "mrp": 1969 },
-    { "name": "35X2CORECOPPER ARMOURED CABLE", "mrp": 3623 },
-    { "name": "35X3CORECOPPER ARMOURED CABLE", "mrp": 5293 },
-    { "name": "35X3.5CORECOPPER ARMOURED CABLE", "mrp": 6238 },
-    { "name": "35X4CORECOPPER ARMOURED CABLE", "mrp": 7184 },
-   
-     { "name": "50X1CORECOPPER ARMOURED CABLE", "mrp": 2772 },
-    { "name": "50X2CORECOPPER ARMOURED CABLE", "mrp": 5162 },
-    { "name": "50X3CORECOPPER ARMOURED CABLE", "mrp": 7649 },
-    { "name": "50X3.5CORECOPPER ARMOURED CABLE", "mrp": 8908 },
-    { "name": "50X4CORECOPPER ARMOURED CABLE", "mrp": 10184 },
-   
-    { "name": "70X1CORECOPPER ARMOURED CABLE", "mrp": 3815 },
-    { "name": "70X2CORECOPPER ARMOURED CABLE", "mrp": 7163 },
-    { "name": "70X3CORECOPPER ARMOURED CABLE", "mrp": 10654 },
-    { "name": "70X3.5CORECOPPER ARMOURED CABLE", "mrp": 12407 },
-    { "name": "70X4CORECOPPER ARMOURED CABLE", "mrp": 14156 },
-  
-    { "name": "95X1CORECOPPER ARMOURED CABLE", "mrp": 5081 },
-    { "name": "95X2CORECOPPER ARMOURED CABLE", "mrp": 9649},
-    { "name": "95X3CORECOPPER ARMOURED CABLE", "mrp": 14358 },
-    { "name": "95X3.5CORECOPPER ARMOURED CABLE", "mrp": 16871 },
-    { "name": "95X4CORECOPPER ARMOURED CABLE", "mrp": 19108 },
-    { "name": "120X1CORECOPPER ARMOURED CABLE", "mrp": 6367 },
-    { "name": "120X2CORECOPPER ARMOURED CABLE", "mrp": 12136 },
-    { "name": "120X3CORECOPPER ARMOURED CABLE", "mrp": 18088 },
-    { "name": "120X3.5CORECOPPER ARMOURED CABLE", "mrp": 21587 },
-    { "name": "120X4CORECOPPER ARMOURED CABLE", "mrp": 24064 },
-    { "name": "150X1CORECOPPER ARMOURED CABLE", "mrp": 7903 },
-    { "name": "150X2CORECOPPER ARMOURED CABLE", "mrp": 15128 },
-    { "name": "150X3CORECOPPER ARMOURED CABLE", "mrp": 22578 },
-    { "name": "150X3.5CORECOPPER ARMOURED CABLE", "mrp": 26063 },
-    { "name": "150X4CORECOPPER ARMOURED CABLE", "mrp": 30043 },
-    { "name": "185X1CORECOPPER ARMOURED CABLE", "mrp": 9722 },
-    { "name": "185X2CORECOPPER ARMOURED CABLE", "mrp": 18620 },
-    { "name": "185X3CORECOPPER ARMOURED CABLE", "mrp": 27809 },
-    { "name": "185X3.5CORECOPPER ARMOURED CABLE", "mrp": 32544 },
-    { "name": "185X4CORECOPPER ARMOURED CABLE", "mrp": 37009 },
-    { "name": "240X1CORECOPPER ARMOURED CABLE", "mrp": 12527 },
-    { "name": "240X2CORECOPPER ARMOURED CABLE", "mrp": 24086 },
-    { "name": "240X3CORECOPPER ARMOURED CABLE", "mrp": 35946 },
-    { "name": "240X3.5CORECOPPER ARMOURED CABLE", "mrp": 41924 },
-    { "name": "240X4CORECOPPER ARMOURED CABLE", "mrp": 47880 },
-    { "name": "300X1CORECOPPER ARMOURED CABLE", "mrp": 15600 },
-    { "name": "300X2CORECOPPER ARMOURED CABLE", "mrp": 30022 },
-    { "name": "300X3CORECOPPER ARMOURED CABLE", "mrp": 44866 },
-    { "name": "300X3.5CORECOPPER ARMOURED CABLE", "mrp": 52360 },
-    { "name": "300X4CORECOPPER ARMOURED CABLE", "mrp": 59830 },
-    { "name": "400X1CORECOPPER ARMOURED CABLE", "mrp": 20724 },
-    { "name": "400X2CORECOPPER ARMOURED CABLE", "mrp": 39913 },
-    { "name": "400X3CORECOPPER ARMOURED CABLE", "mrp": 59719 },
-    { "name": "400X3.5CORECOPPER ARMOURED CABLE", "mrp": 69224 },
-    { "name": "400X4CORECOPPER ARMOURED CABLE", "mrp": 79949 },
-    { "name": "500X1CORECOPPER ARMOURED CABLE", "mrp": 25794 },
-    { "name": "630X1CORECOPPER ARMOURED CABLE", "mrp": 32417 },
-    { "name": "800X1CORECOPPER ARMOURED CABLE", "mrp": 41040 },
-    { "name": "1000X1CORECOPPER ARMOURED CABLE", "mrp": 51154 }
-
- ],
-  "KEI - ALU ARMOURED": [
-    { "name": "4X2CORE ALU ARMOURED CABLE", "mrp":180 },
-    { "name": "4X3CORE ALU ARMOURED CABLE", "mrp": 198 },
-    { "name": "4X4CORE ALU ARMOURED CABLE", "mrp": 216 },
-    { "name": "6X2CORE ALU ARMOURED CABLE", "mrp": 213 },
-    { "name": "6X3CORE ALU ARMOURED CABLE", "mrp": 230 },
-    { "name": "6X4CORE ALU ARMOURED CABLE", "mrp": 258 },
-    { "name": "10X2CORE ALU ARMOURED CABLE", "mrp": 273 },
-    { "name": "10X3CORE ALU ARMOURED CABLE", "mrp": 289 },
-    { "name": "10X4CORE ALU ARMOURED CABLE", "mrp": 345 },
-    
-    { "name": "16X2CORE ALU ARMOURED CABLE", "mrp":  313},
-    { "name": "16X3CORE ALU ARMOURED CABLE", "mrp": 332},
-    { "name": "16X4CORE ALU ARMOURED CABLE", "mrp": 423 },
-   
-    { "name": "25X1CORE ALU ARMOURED CABLE", "mrp": 248 },
-    { "name": "25X2CORE ALU ARMOURED CABLE", "mrp": 340 },
-    { "name": "25X3CORE ALU ARMOURED CABLE", "mrp": 460 },
-    { "name": "25X3.5CORE ALU ARMOURED CABLE", "mrp": 533 },
-    { "name": "25X4CORE ALU ARMOURED CABLE", "mrp": 589 },
-    { "name": "35X1COREALU ARMOURED CABLE", "mrp": 305 },
-    { "name": "35X2COREALU ARMOURED CABLE", "mrp": 429 },
-    { "name": "35X3COREALU ARMOURED CABLE", "mrp": 589 },
-    { "name": "35X3.5COREALU ARMOURED CABLE", "mrp": 672},
-    { "name": "35X4COREALU ARMOURED CABLE", "mrp": 760 },
-     { "name": "50X1COREALU ARMOURED CABLE", "mrp": 390 },
-    { "name": "50X2COREALU ARMOURED CABLE", "mrp": 564 },
-    { "name": "50X3COREALU ARMOURED CABLE", "mrp": 782 },
-    { "name": "50X3.5COREALU ARMOURED CABLE", "mrp": 898 },
-    { "name": "50X4COREALU ARMOURED CABLE", "mrp": 1018 },
-    { "name": "70X1COREALU ARMOURED CABLE", "mrp": 495 },
-    { "name": "70X2COREALU ARMOURED CABLE", "mrp": 749 },
-    { "name": "70X3COREALU ARMOURED CABLE", "mrp": 1055 },
-    { "name": "70X3.5COREALU ARMOURED CABLE", "mrp": 1214 },
-    { "name": "70X4COREALU ARMOURED CABLE", "mrp": 1371},
-    { "name": "95X1COREALU ARMOURED CABLE", "mrp": 604 },
-    { "name": "95X2COREALU ARMOURED CABLE", "mrp": 961 },
-    { "name": "95X3COREALU ARMOURED CABLE", "mrp": 1359 },
-    { "name": "95X3.5COREALU ARMOURED CABLE", "mrp": 1577 },
-    { "name": "95X4COREALU ARMOURED CABLE", "mrp": 1759},
-    { "name": "120X1COREALU ARMOURED CABLE", "mrp": 721 },
-    { "name": "120X2COREALU ARMOURED CABLE", "mrp": 1190 },
-    { "name": "120X3COREALU ARMOURED CABLE", "mrp": 1690 },
-    { "name": "120X3.5COREALU ARMOURED CABLE", "mrp": 2006 },
-    { "name": "120X4COREALU ARMOURED CABLE", "mrp": 2212 },
-    { "name": "150X1COREALU ARMOURED CABLE", "mrp": 860 },
-    { "name": "150X2COREALU ARMOURED CABLE", "mrp": 1447 },
-    { "name": "150X3COREALU ARMOURED CABLE", "mrp": 2087 },
-    { "name": "150X3.5COREALU ARMOURED CABLE", "mrp": 2391 },
-    { "name": "150X4COREALU ARMOURED CABLE", "mrp":  2727},
-    { "name": "185X1COREALU ARMOURED CABLE", "mrp": 1042 },
-    { "name": "185X2COREALU ARMOURED CABLE", "mrp":1763 },
-    { "name": "185X3COREALU ARMOURED CABLE", "mrp": 2549},
-    { "name": "185X3.5COREALU ARMOURED CABLE", "mrp": 2970 },
-    { "name": "185X4COREALU ARMOURED CABLE", "mrp":3345 },
-    { "name": "240X1COREALU ARMOURED CABLE", "mrp": 1293 },
-    { "name": "240X2COREALU ARMOURED CABLE", "mrp": 2220 },
-    { "name": "240X3COREALU ARMOURED CABLE", "mrp": 3236},
-    { "name": "240X3.5COREALU ARMOURED CABLE", "mrp": 3738 },
-    { "name": "240X4COREALU ARMOURED CABLE", "mrp": 4239 },
-    { "name": "300X1COREALU ARMOURED CABLE", "mrp": 1572 },
-    { "name": "300X2COREALU ARMOURED CABLE", "mrp": 2727 },
-    { "name": "300X3COREALU ARMOURED CABLE", "mrp": 3980 },
-    { "name": "300X3.5COREALU ARMOURED CABLE", "mrp": 4620 },
-    { "name": "300X4COREALU ARMOURED CABLE", "mrp": 5238 },
-    { "name": "400X1COREALU ARMOURED CABLE", "mrp": 2029 },
-    { "name": "400X2COREALU ARMOURED CABLE", "mrp": 3564 },
-    { "name": "400X3COREALU ARMOURED CABLE", "mrp":5182 },
-    { "name": "400X3.5COREALU ARMOURED CABLE", "mrp": 5999 },
-    { "name": "400X4COREALU ARMOURED CABLE", "mrp": 6860 },
-    { "name": "500X1COREALU ARMOURED CABLE", "mrp": 2452 },
-    
-    { "name": "630X1COREALU ARMOURED CABLE", "mrp": 3026 },
-    
-    { "name": "800X1COREALU ARMOURED CABLE", "mrp": 3770 },
-    { "name": "1000X1COREALU ARMOURED CABLE", "mrp":4598 }
-]
-
+  "POLYCAB - ALU ARMOURED":[
+    {"name":"2.5X2CORE ALU ARMOURED CABLE","mrp":204},{"name":"2.5X3CORE ALU ARMOURED CABLE","mrp":221},{"name":"2.5X4CORE ALU ARMOURED CABLE","mrp":252},
+    {"name":"4X2CORE ALU ARMOURED CABLE","mrp":221},{"name":"4X3CORE ALU ARMOURED CABLE","mrp":256},{"name":"4X4CORE ALU ARMOURED CABLE","mrp":300},
+    {"name":"6X2CORE ALU ARMOURED CABLE","mrp":278},{"name":"6X3CORE ALU ARMOURED CABLE","mrp":321},{"name":"6X4CORE ALU ARMOURED CABLE","mrp":360},
+    {"name":"10X2CORE ALU ARMOURED CABLE","mrp":336},{"name":"10X3CORE ALU ARMOURED CABLE","mrp":400},{"name":"10X4CORE ALU ARMOURED CABLE","mrp":524},
+    {"name":"16X1CORE ALU ARMOURED CABLE","mrp":231},{"name":"16X2CORE ALU ARMOURED CABLE","mrp":388},{"name":"16X3CORE ALU ARMOURED CABLE","mrp":444},{"name":"16X4CORE ALU ARMOURED CABLE","mrp":568},
+    {"name":"25X1CORE ALU ARMOURED CABLE","mrp":287},{"name":"25X2CORE ALU ARMOURED CABLE","mrp":401},{"name":"25X3CORE ALU ARMOURED CABLE","mrp":534},{"name":"25X3.5CORE ALU ARMOURED CABLE","mrp":626},{"name":"25X4CORE ALU ARMOURED CABLE","mrp":673},
+    {"name":"35X1COREALU ARMOURED CABLE","mrp":359},{"name":"35X2COREALU ARMOURED CABLE","mrp":513},{"name":"35X3COREALU ARMOURED CABLE","mrp":731},{"name":"35X3.5COREALU ARMOURED CABLE","mrp":809},{"name":"35X4COREALU ARMOURED CABLE","mrp":921},
+    {"name":"50X1COREALU ARMOURED CABLE","mrp":457},{"name":"50X2COREALU ARMOURED CABLE","mrp":694},{"name":"50X3COREALU ARMOURED CABLE","mrp":945},{"name":"50X3.5COREALU ARMOURED CABLE","mrp":1078},{"name":"50X4COREALU ARMOURED CABLE","mrp":1214},
+    {"name":"70X1COREALU ARMOURED CABLE","mrp":581},{"name":"70X2COREALU ARMOURED CABLE","mrp":880},{"name":"70X3COREALU ARMOURED CABLE","mrp":1268},{"name":"70X3.5COREALU ARMOURED CABLE","mrp":1469},{"name":"70X4COREALU ARMOURED CABLE","mrp":1646},
+    {"name":"95X1COREALU ARMOURED CABLE","mrp":710},{"name":"95X2COREALU ARMOURED CABLE","mrp":1137},{"name":"95X3COREALU ARMOURED CABLE","mrp":1610},{"name":"95X3.5COREALU ARMOURED CABLE","mrp":1860},{"name":"95X4COREALU ARMOURED CABLE","mrp":2171},
+    {"name":"120X1COREALU ARMOURED CABLE","mrp":850},{"name":"120X2COREALU ARMOURED CABLE","mrp":1401},{"name":"120X3COREALU ARMOURED CABLE","mrp":1997},{"name":"120X3.5COREALU ARMOURED CABLE","mrp":2332},{"name":"120X4COREALU ARMOURED CABLE","mrp":2656},
+    {"name":"150X1COREALU ARMOURED CABLE","mrp":1013},{"name":"150X2COREALU ARMOURED CABLE","mrp":1715},{"name":"150X3COREALU ARMOURED CABLE","mrp":2474},{"name":"150X3.5COREALU ARMOURED CABLE","mrp":2720},{"name":"150X4COREALU ARMOURED CABLE","mrp":3209},
+    {"name":"185X1COREALU ARMOURED CABLE","mrp":1228},{"name":"185X2COREALU ARMOURED CABLE","mrp":2093},{"name":"185X3COREALU ARMOURED CABLE","mrp":3060},{"name":"185X3.5COREALU ARMOURED CABLE","mrp":3441},{"name":"185X4COREALU ARMOURED CABLE","mrp":4043},
+    {"name":"240X1COREALU ARMOURED CABLE","mrp":1526},{"name":"240X2COREALU ARMOURED CABLE","mrp":2648},{"name":"240X3COREALU ARMOURED CABLE","mrp":3959},{"name":"240X3.5COREALU ARMOURED CABLE","mrp":4386},{"name":"240X4COREALU ARMOURED CABLE","mrp":5228},
+    {"name":"300X1COREALU ARMOURED CABLE","mrp":1855},{"name":"300X2COREALU ARMOURED CABLE","mrp":3257},{"name":"300X3COREALU ARMOURED CABLE","mrp":4896},{"name":"300X3.5COREALU ARMOURED CABLE","mrp":5440},{"name":"300X4COREALU ARMOURED CABLE","mrp":6462},
+    {"name":"400X1COREALU ARMOURED CABLE","mrp":2395},{"name":"400X2COREALU ARMOURED CABLE","mrp":4269},{"name":"400X3COREALU ARMOURED CABLE","mrp":6214},{"name":"400X3.5COREALU ARMOURED CABLE","mrp":6902},{"name":"400X4COREALU ARMOURED CABLE","mrp":8309},
+    {"name":"500X1COREALU ARMOURED CABLE","mrp":2905},{"name":"500X2COREALU ARMOURED CABLE","mrp":5928},{"name":"500X3COREALU ARMOURED CABLE","mrp":8348},{"name":"500X3.5COREALU ARMOURED CABLE","mrp":9832},{"name":"500X4COREALU ARMOURED CABLE","mrp":11025},
+    {"name":"630X1COREALU ARMOURED CABLE","mrp":3585},{"name":"630X2COREALU ARMOURED CABLE","mrp":7292},{"name":"630X3COREALU ARMOURED CABLE","mrp":10613},{"name":"630X3.5COREALU ARMOURED CABLE","mrp":12047},{"name":"630X4COREALU ARMOURED CABLE","mrp":14472},
+    {"name":"800X1COREALU ARMOURED CABLE","mrp":4461},{"name":"1000X1COREALU ARMOURED CABLE","mrp":5440}
+  ],
+  "POLYCAB - COPPER FLEXIBLE":[
+    {"name":"0.5X1CORE COPPER FLEXIBLE CABLE","mrp":20.80},{"name":"0.5X2CORE COPPER FLEXIBLE CABLE","mrp":53.9},{"name":"0.5X3CORE COPPER FLEXIBLE CABLE","mrp":72.6},{"name":"0.5X4CORE COPPER FLEXIBLE CABLE","mrp":92},{"name":"0.5X5CORE COPPER FLEXIBLE CABLE","mrp":115.75},{"name":"0.5X6CORE COPPER FLEXIBLE CABLE","mrp":138.82},
+    {"name":"0.75X1CORE COPPER FLEXIBLE CABLE","mrp":29.4},{"name":"0.75X2CORE COPPER FLEXIBLE CABLE","mrp":71.80},{"name":"0.75X3CORE COPPER FLEXIBLE CABLE","mrp":97.90},{"name":"0.75X4CORE COPPER FLEXIBLE CABLE","mrp":125.15},{"name":"0.75X5CORE COPPER FLEXIBLE CABLE","mrp":164},{"name":"0.75X6CORE COPPER FLEXIBLE CABLE","mrp":198.82},
+    {"name":"1X1CORE COPPER FLEXIBLE CABLE","mrp":36.35},{"name":"1X2CORE COPPER FLEXIBLE CABLE","mrp":89.95},{"name":"1X3CORE COPPER FLEXIBLE CABLE","mrp":124},{"name":"1X4CORE COPPER FLEXIBLE CABLE","mrp":159},{"name":"1X5CORE COPPER FLEXIBLE CABLE","mrp":212},{"name":"1X6CORE COPPER FLEXIBLE CABLE","mrp":254.25},
+    {"name":"1.5X1CORE COPPER FLEXIBLE CABLE","mrp":52.10},{"name":"1.5X2CORE COPPER FLEXIBLE CABLE","mrp":123},{"name":"1.5X3CORE COPPER FLEXIBLE CABLE","mrp":175},{"name":"1.5X4CORE COPPER FLEXIBLE CABLE","mrp":223},{"name":"1.5X5CORE COPPER FLEXIBLE CABLE","mrp":289},{"name":"1.5X6CORE COPPER FLEXIBLE CABLE","mrp":350},
+    {"name":"2.5X1CORE COPPER FLEXIBLE CABLE","mrp":86.15},{"name":"2.5X2CORE COPPER FLEXIBLE CABLE","mrp":200.50},{"name":"2.5X3CORE COPPER FLEXIBLE CABLE","mrp":277},{"name":"2.5X4CORE COPPER FLEXIBLE CABLE","mrp":371},{"name":"2.5X5CORE COPPER FLEXIBLE CABLE","mrp":469},{"name":"2.5X6CORE COPPER FLEXIBLE CABLE","mrp":566},
+    {"name":"4X1CORE COPPER FLEXIBLE CABLE","mrp":133.5},{"name":"4X2CORE COPPER FLEXIBLE CABLE","mrp":294},{"name":"4X3CORE COPPER FLEXIBLE CABLE","mrp":421},{"name":"4X4CORE COPPER FLEXIBLE CABLE","mrp":556},{"name":"4X5CORE COPPER FLEXIBLE CABLE","mrp":744},{"name":"4X6CORE COPPER FLEXIBLE CABLE","mrp":890},
+    {"name":"6X1CORE COPPER FLEXIBLE CABLE","mrp":200},{"name":"6X2CORE COPPER FLEXIBLE CABLE","mrp":432},{"name":"6X3CORE COPPER FLEXIBLE CABLE","mrp":617},{"name":"6X4CORE COPPER FLEXIBLE CABLE","mrp":815},{"name":"6X5CORE COPPER FLEXIBLE CABLE","mrp":1093},{"name":"6X6CORE COPPER FLEXIBLE CABLE","mrp":1315},
+    {"name":"10X1CORE COPPER FLEXIBLE CABLE","mrp":351},{"name":"10X2CORE COPPER FLEXIBLE CABLE","mrp":731},{"name":"10X3CORE COPPER FLEXIBLE CABLE","mrp":1074},{"name":"10X4CORE COPPER FLEXIBLE CABLE","mrp":1418},{"name":"10X5CORE COPPER FLEXIBLE CABLE","mrp":1887},
+    {"name":"16X1CORE COPPER FLEXIBLE CABLE","mrp":542},{"name":"16X2CORE COPPER FLEXIBLE CABLE","mrp":1161},{"name":"16X3CORE COPPER FLEXIBLE CABLE","mrp":1691},{"name":"16X4CORE COPPER FLEXIBLE CABLE","mrp":2225},{"name":"16X5CORE COPPER FLEXIBLE CABLE","mrp":2887},
+    {"name":"25X1CORE COPPER FLEXIBLE CABLE","mrp":843},{"name":"25X2CORE COPPER FLEXIBLE CABLE","mrp":1925},{"name":"25X3CORE COPPER FLEXIBLE CABLE","mrp":2796},{"name":"25X4CORE COPPER FLEXIBLE CABLE","mrp":3656},{"name":"25X5CORE COPPER FLEXIBLE CABLE","mrp":5240},
+    {"name":"35X1CORE COPPER FLEXIBLE CABLE","mrp":1178},{"name":"35X2CORE COPPER FLEXIBLE CABLE","mrp":2678},{"name":"35X3CORE COPPER FLEXIBLE CABLE","mrp":3882},{"name":"35X4CORE COPPER FLEXIBLE CABLE","mrp":5114},{"name":"35X5CORE COPPER FLEXIBLE CABLE","mrp":7183},
+    {"name":"50X1CORE COPPER FLEXIBLE CABLE","mrp":1680},{"name":"50X2CORE COPPER FLEXIBLE CABLE","mrp":3801},{"name":"50X3CORE COPPER FLEXIBLE CABLE","mrp":5531},{"name":"50X4CORE COPPER FLEXIBLE CABLE","mrp":7302},{"name":"50X5CORE COPPER FLEXIBLE CABLE","mrp":10398},
+    {"name":"70X1CORE COPPER FLEXIBLE CABLE","mrp":2375},{"name":"70X2CORE COPPER FLEXIBLE CABLE","mrp":5393},{"name":"70X3CORE COPPER FLEXIBLE CABLE","mrp":7674},{"name":"70X4CORE COPPER FLEXIBLE CABLE","mrp":10148},{"name":"70X5CORE COPPER FLEXIBLE CABLE","mrp":14221},
+    {"name":"95X1CORE COPPER FLEXIBLE CABLE","mrp":3163},{"name":"95X3CORE COPPER FLEXIBLE CABLE","mrp":10670},{"name":"95X4CORE COPPER FLEXIBLE CABLE","mrp":14077},
+    {"name":"120X1CORE COPPER FLEXIBLE CABLE","mrp":4160},{"name":"120X3CORE COPPER FLEXIBLE CABLE","mrp":13550},{"name":"120X4CORE COPPER FLEXIBLE CABLE","mrp":17882},
+    {"name":"150X1CORE COPPER FLEXIBLE CABLE","mrp":5205},{"name":"150X3CORE COPPER FLEXIBLE CABLE","mrp":16937},{"name":"150X4CORE COPPER FLEXIBLE CABLE","mrp":22355},
+    {"name":"185X1CORE COPPER FLEXIBLE CABLE","mrp":6600},{"name":"185X3CORE COPPER FLEXIBLE CABLE","mrp":20858},{"name":"185X4CORE COPPER FLEXIBLE CABLE","mrp":27569},
+    {"name":"240X1CORE COPPER FLEXIBLE CABLE","mrp":8452},{"name":"240X3CORE COPPER FLEXIBLE CABLE","mrp":26926},{"name":"240X4CORE COPPER FLEXIBLE CABLE","mrp":35641},
+    {"name":"300X1CORE COPPER FLEXIBLE CABLE","mrp":10576},{"name":"300X3CORE COPPER FLEXIBLE CABLE","mrp":33598},{"name":"300X4CORE COPPER FLEXIBLE CABLE","mrp":44490},
+    {"name":"400X1CORE COPPER FLEXIBLE CABLE","mrp":14093},{"name":"400X3CORE COPPER FLEXIBLE CABLE","mrp":44767},{"name":"400X4CORE COPPER FLEXIBLE CABLE","mrp":58931},
+    {"name":"500X1CORECOPPER FLEXIBLE CABLE","mrp":17631},{"name":"630X1CORECOPPER FLEXIBLE CABLE","mrp":22739}
+  ],
+  "KEI - COPPER ARMOURED":[
+    {"name":"4X2CORE COPPER ARMOURED CABLE","mrp":507},{"name":"4X3CORE COPPER ARMOURED CABLE","mrp":659},{"name":"4X4CORE COPPER ARMOURED CABLE","mrp":835},
+    {"name":"6X2CORE COPPER ARMOURED CABLE","mrp":689},{"name":"6X3CORE COPPER ARMOURED CABLE","mrp":906},{"name":"6X4CORE COPPER ARMOURED CABLE","mrp":1185},
+    {"name":"10X2CORE COPPER ARMOURED CABLE","mrp":1052},{"name":"10X3CORE COPPER ARMOURED CABLE","mrp":1461},{"name":"10X4CORE COPPER ARMOURED CABLE","mrp":1898},
+    {"name":"16X1CORE COPPER ARMOURED CABLE","mrp":868},{"name":"16X2CORE COPPER ARMOURED CABLE","mrp":1591},{"name":"16X3CORE COPPER ARMOURED CABLE","mrp":2340},{"name":"16X4CORE COPPER ARMOURED CABLE","mrp":3018},
+    {"name":"1.5X2CORE COPPER ARMOURED CABLE","mrp":247},{"name":"1.5X3CORE COPPER ARMOURED CABLE","mrp":307},{"name":"1.5X4CORE COPPER ARMOURED CABLE","mrp":382},{"name":"1.5X5CORE COPPER ARMOURED CABLE","mrp":508},{"name":"1.5X6CORE COPPER ARMOURED CABLE","mrp":586},{"name":"1.5X7CORE COPPER ARMOURED CABLE","mrp":655},{"name":"1.5X8CORE COPPER ARMOURED CABLE","mrp":744},{"name":"1.5X10CORE COPPER ARMOURED CABLE","mrp":900},{"name":"1.5X12CORE COPPER ARMOURED CABLE","mrp":920},{"name":"1.5X14CORE COPPER ARMOURED CABLE","mrp":1062},{"name":"1.5X16CORE COPPER ARMOURED CABLE","mrp":1209},{"name":"1.5X19CORE COPPER ARMOURED CABLE","mrp":1420},{"name":"1.5X24CORE COPPER ARMOURED CABLE","mrp":1804},{"name":"1.5X27CORE COPPER ARMOURED CABLE","mrp":2012},{"name":"1.5X30CORE COPPER ARMOURED CABLE","mrp":2228},{"name":"1.5X37CORE COPPER ARMOURED CABLE","mrp":2731},
+    {"name":"2.5X2CORE COPPER ARMOURED CABLE","mrp":332},{"name":"2.5X3CORE COPPER ARMOURED CABLE","mrp":446},{"name":"2.5X4CORE COPPER ARMOURED CABLE","mrp":557},{"name":"2.5X5CORE COPPER ARMOURED CABLE","mrp":751},{"name":"2.5X6CORE COPPER ARMOURED CABLE","mrp":886},{"name":"2.5X7CORE COPPER ARMOURED CABLE","mrp":998},{"name":"2.5X8CORE COPPER ARMOURED CABLE","mrp":1133},{"name":"2.5X10CORE COPPER ARMOURED CABLE","mrp":1335},{"name":"2.5X12CORE COPPER ARMOURED CABLE","mrp":1569},{"name":"2.5X14CORE COPPER ARMOURED CABLE","mrp":1819},{"name":"2.5X16CORE COPPER ARMOURED CABLE","mrp":2061},{"name":"2.5X19CORE COPPER ARMOURED CABLE","mrp":2410},{"name":"2.5X24CORE COPPER ARMOURED CABLE","mrp":3024},{"name":"2.5X27CORE COPPER ARMOURED CABLE","mrp":3365},{"name":"2.5X30CORE COPPER ARMOURED CABLE","mrp":3721},{"name":"2.5X37CORE COPPER ARMOURED CABLE","mrp":4549},
+    {"name":"25X1CORE COPPER ARMOURED CABLE","mrp":1448},{"name":"25X2CORE COPPER ARMOURED CABLE","mrp":2639},{"name":"25X3CORE COPPER ARMOURED CABLE","mrp":3835},{"name":"25X3.5CORE COPPER ARMOURED CABLE","mrp":4734},{"name":"25X4CORE COPPER ARMOURED CABLE","mrp":5201},
+    {"name":"35X1CORECOPPER ARMOURED CABLE","mrp":1969},{"name":"35X2CORECOPPER ARMOURED CABLE","mrp":3623},{"name":"35X3CORECOPPER ARMOURED CABLE","mrp":5293},{"name":"35X3.5CORECOPPER ARMOURED CABLE","mrp":6238},{"name":"35X4CORECOPPER ARMOURED CABLE","mrp":7184},
+    {"name":"50X1CORECOPPER ARMOURED CABLE","mrp":2772},{"name":"50X2CORECOPPER ARMOURED CABLE","mrp":5162},{"name":"50X3CORECOPPER ARMOURED CABLE","mrp":7649},{"name":"50X3.5CORECOPPER ARMOURED CABLE","mrp":8908},{"name":"50X4CORECOPPER ARMOURED CABLE","mrp":10184},
+    {"name":"70X1CORECOPPER ARMOURED CABLE","mrp":3815},{"name":"70X2CORECOPPER ARMOURED CABLE","mrp":7163},{"name":"70X3CORECOPPER ARMOURED CABLE","mrp":10654},{"name":"70X3.5CORECOPPER ARMOURED CABLE","mrp":12407},{"name":"70X4CORECOPPER ARMOURED CABLE","mrp":14156},
+    {"name":"95X1CORECOPPER ARMOURED CABLE","mrp":5081},{"name":"95X2CORECOPPER ARMOURED CABLE","mrp":9649},{"name":"95X3CORECOPPER ARMOURED CABLE","mrp":14358},{"name":"95X3.5CORECOPPER ARMOURED CABLE","mrp":16871},{"name":"95X4CORECOPPER ARMOURED CABLE","mrp":19108},
+    {"name":"120X1CORECOPPER ARMOURED CABLE","mrp":6367},{"name":"120X2CORECOPPER ARMOURED CABLE","mrp":12136},{"name":"120X3CORECOPPER ARMOURED CABLE","mrp":18088},{"name":"120X3.5CORECOPPER ARMOURED CABLE","mrp":21587},{"name":"120X4CORECOPPER ARMOURED CABLE","mrp":24064},
+    {"name":"150X1CORECOPPER ARMOURED CABLE","mrp":7903},{"name":"150X2CORECOPPER ARMOURED CABLE","mrp":15128},{"name":"150X3CORECOPPER ARMOURED CABLE","mrp":22578},{"name":"150X3.5CORECOPPER ARMOURED CABLE","mrp":26063},{"name":"150X4CORECOPPER ARMOURED CABLE","mrp":30043},
+    {"name":"185X1CORECOPPER ARMOURED CABLE","mrp":9722},{"name":"185X2CORECOPPER ARMOURED CABLE","mrp":18620},{"name":"185X3CORECOPPER ARMOURED CABLE","mrp":27809},{"name":"185X3.5CORECOPPER ARMOURED CABLE","mrp":32544},{"name":"185X4CORECOPPER ARMOURED CABLE","mrp":37009},
+    {"name":"240X1CORECOPPER ARMOURED CABLE","mrp":12527},{"name":"240X2CORECOPPER ARMOURED CABLE","mrp":24086},{"name":"240X3CORECOPPER ARMOURED CABLE","mrp":35946},{"name":"240X3.5CORECOPPER ARMOURED CABLE","mrp":41924},{"name":"240X4CORECOPPER ARMOURED CABLE","mrp":47880},
+    {"name":"300X1CORECOPPER ARMOURED CABLE","mrp":15600},{"name":"300X2CORECOPPER ARMOURED CABLE","mrp":30022},{"name":"300X3CORECOPPER ARMOURED CABLE","mrp":44866},{"name":"300X3.5CORECOPPER ARMOURED CABLE","mrp":52360},{"name":"300X4CORECOPPER ARMOURED CABLE","mrp":59830},
+    {"name":"400X1CORECOPPER ARMOURED CABLE","mrp":20724},{"name":"400X2CORECOPPER ARMOURED CABLE","mrp":39913},{"name":"400X3CORECOPPER ARMOURED CABLE","mrp":59719},{"name":"400X3.5CORECOPPER ARMOURED CABLE","mrp":69224},{"name":"400X4CORECOPPER ARMOURED CABLE","mrp":79949},
+    {"name":"500X1CORECOPPER ARMOURED CABLE","mrp":25794},{"name":"630X1CORECOPPER ARMOURED CABLE","mrp":32417},{"name":"800X1CORECOPPER ARMOURED CABLE","mrp":41040},{"name":"1000X1CORECOPPER ARMOURED CABLE","mrp":51154}
+  ],
+  "KEI - ALU ARMOURED":[
+    {"name":"4X2CORE ALU ARMOURED CABLE","mrp":180},{"name":"4X3CORE ALU ARMOURED CABLE","mrp":198},{"name":"4X4CORE ALU ARMOURED CABLE","mrp":216},
+    {"name":"6X2CORE ALU ARMOURED CABLE","mrp":213},{"name":"6X3CORE ALU ARMOURED CABLE","mrp":230},{"name":"6X4CORE ALU ARMOURED CABLE","mrp":258},
+    {"name":"10X2CORE ALU ARMOURED CABLE","mrp":273},{"name":"10X3CORE ALU ARMOURED CABLE","mrp":289},{"name":"10X4CORE ALU ARMOURED CABLE","mrp":345},
+    {"name":"16X2CORE ALU ARMOURED CABLE","mrp":313},{"name":"16X3CORE ALU ARMOURED CABLE","mrp":332},{"name":"16X4CORE ALU ARMOURED CABLE","mrp":423},
+    {"name":"25X1CORE ALU ARMOURED CABLE","mrp":248},{"name":"25X2CORE ALU ARMOURED CABLE","mrp":340},{"name":"25X3CORE ALU ARMOURED CABLE","mrp":460},{"name":"25X3.5CORE ALU ARMOURED CABLE","mrp":533},{"name":"25X4CORE ALU ARMOURED CABLE","mrp":589},
+    {"name":"35X1COREALU ARMOURED CABLE","mrp":305},{"name":"35X2COREALU ARMOURED CABLE","mrp":429},{"name":"35X3COREALU ARMOURED CABLE","mrp":589},{"name":"35X3.5COREALU ARMOURED CABLE","mrp":672},{"name":"35X4COREALU ARMOURED CABLE","mrp":760},
+    {"name":"50X1COREALU ARMOURED CABLE","mrp":390},{"name":"50X2COREALU ARMOURED CABLE","mrp":564},{"name":"50X3COREALU ARMOURED CABLE","mrp":782},{"name":"50X3.5COREALU ARMOURED CABLE","mrp":898},{"name":"50X4COREALU ARMOURED CABLE","mrp":1018},
+    {"name":"70X1COREALU ARMOURED CABLE","mrp":495},{"name":"70X2COREALU ARMOURED CABLE","mrp":749},{"name":"70X3COREALU ARMOURED CABLE","mrp":1055},{"name":"70X3.5COREALU ARMOURED CABLE","mrp":1214},{"name":"70X4COREALU ARMOURED CABLE","mrp":1371},
+    {"name":"95X1COREALU ARMOURED CABLE","mrp":604},{"name":"95X2COREALU ARMOURED CABLE","mrp":961},{"name":"95X3COREALU ARMOURED CABLE","mrp":1359},{"name":"95X3.5COREALU ARMOURED CABLE","mrp":1577},{"name":"95X4COREALU ARMOURED CABLE","mrp":1759},
+    {"name":"120X1COREALU ARMOURED CABLE","mrp":721},{"name":"120X2COREALU ARMOURED CABLE","mrp":1190},{"name":"120X3COREALU ARMOURED CABLE","mrp":1690},{"name":"120X3.5COREALU ARMOURED CABLE","mrp":2006},{"name":"120X4COREALU ARMOURED CABLE","mrp":2212},
+    {"name":"150X1COREALU ARMOURED CABLE","mrp":860},{"name":"150X2COREALU ARMOURED CABLE","mrp":1447},{"name":"150X3COREALU ARMOURED CABLE","mrp":2087},{"name":"150X3.5COREALU ARMOURED CABLE","mrp":2391},{"name":"150X4COREALU ARMOURED CABLE","mrp":2727},
+    {"name":"185X1COREALU ARMOURED CABLE","mrp":1042},{"name":"185X2COREALU ARMOURED CABLE","mrp":1763},{"name":"185X3COREALU ARMOURED CABLE","mrp":2549},{"name":"185X3.5COREALU ARMOURED CABLE","mrp":2970},{"name":"185X4COREALU ARMOURED CABLE","mrp":3345},
+    {"name":"240X1COREALU ARMOURED CABLE","mrp":1293},{"name":"240X2COREALU ARMOURED CABLE","mrp":2220},{"name":"240X3COREALU ARMOURED CABLE","mrp":3236},{"name":"240X3.5COREALU ARMOURED CABLE","mrp":3738},{"name":"240X4COREALU ARMOURED CABLE","mrp":4239},
+    {"name":"300X1COREALU ARMOURED CABLE","mrp":1572},{"name":"300X2COREALU ARMOURED CABLE","mrp":2727},{"name":"300X3COREALU ARMOURED CABLE","mrp":3980},{"name":"300X3.5COREALU ARMOURED CABLE","mrp":4620},{"name":"300X4COREALU ARMOURED CABLE","mrp":5238},
+    {"name":"400X1COREALU ARMOURED CABLE","mrp":2029},{"name":"400X2COREALU ARMOURED CABLE","mrp":3564},{"name":"400X3COREALU ARMOURED CABLE","mrp":5182},{"name":"400X3.5COREALU ARMOURED CABLE","mrp":5999},{"name":"400X4COREALU ARMOURED CABLE","mrp":6860},
+    {"name":"500X1COREALU ARMOURED CABLE","mrp":2452},{"name":"630X1COREALU ARMOURED CABLE","mrp":3026},{"name":"800X1COREALU ARMOURED CABLE","mrp":3770},{"name":"1000X1COREALU ARMOURED CABLE","mrp":4598}
+  ]
 };
 
-/* ================= CORE LOGIC ================= */
+/* ===== CORE LOGIC ===== */
 const brandSel=document.getElementById("brand");
 const itemSel=document.getElementById("item");
 const tbody=document.querySelector("#qt tbody");
@@ -1389,11 +667,7 @@ function generateQuotationNo(){
 
 window.onload=()=>{
   brandSel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{
-    let o=document.createElement("option");
-    o.textContent=b;
-    brandSel.appendChild(o);
-  });
+  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;brandSel.appendChild(o);});
   qdate.valueAsDate=new Date();
   qno.value=generateQuotationNo();
 };
@@ -1403,112 +677,54 @@ brandSel.onchange=()=>{
   mrp.value=net.value=disc.value="";
   document.getElementById("indCopperBox").style.display="none";
   if(!brandSel.value) return;
-  items[brandSel.value].forEach(i=>{
-    let o=document.createElement("option");
-    o.textContent=i.name;
-    o.value=i.mrp;
-    itemSel.appendChild(o);
-  });
-  // IND COPPER / GREEN PLUS = sold by COIL, Armoured/Flexible = sold by MTRS
+  items[brandSel.value].forEach(i=>{let o=document.createElement("option");o.textContent=i.name;o.value=i.mrp;itemSel.appendChild(o);});
   const b=brandSel.value.toUpperCase();
-  if(b.includes("IND COPPER") || b.includes("GREEN PLUS")) unit.value="COIL";
+  if(b.includes("IND COPPER")||b.includes("GREEN PLUS")) unit.value="COIL";
   else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
 };
 
-/* ---- IND COPPER length map ---- */
 function getCoilLength(itemName){
   const n=itemName.toUpperCase();
-  if(n.includes("90MTR"))  return 90;
+  if(n.includes("90MTR")) return 90;
   if(n.includes("180MTR")) return 180;
   if(n.includes("200MTR")) return 200;
   if(n.includes("300MTR")) return 300;
   return null;
 }
-
-function isIndCopperBrand(brandVal){
-  return brandVal && brandVal.toUpperCase().includes("IND COPPER");
-}
-
-function isPolycabCable(brandVal){
-  const b=(brandVal||"").toUpperCase();
-  return b.includes("POLYCAB - IND COPPER") ||
-         b.includes("POLYCAB - COPPER ARMOURED") ||
-         b.includes("POLYCAB - ALU ARMOURED") ||
-         b.includes("POLYCAB - COPPER FLEXIBLE");
-}
-
-function isWireCoilBrand(brandVal){
-  // Any brand that sells IND COPPER wire by COIL (has length in name)
-  const b=(brandVal||"").toUpperCase().trim();
-  return b.includes("IND COPPER") || b.includes("GREEN PLUS");
-}
-
-function isKEIIndCopper(brandVal){
-  const b=(brandVal||"").toUpperCase().trim();
-  return b==="KEI - IND COPPER WIRE" || b==="KEI - GREEN PLUS WIRE";
-}
-
-function isKEICable(brandVal){
-  const b=(brandVal||"").toUpperCase();
-  return b.includes("KEI - COPPER ARMOURED") || b.includes("KEI - ALU ARMOURED");
-}
-
-// Extract short display brand from full key e.g. "FINOLEX - FR-LSH 180MTR - IND COPPER WIRE" → "FINOLEX"
-function getDisplayBrand(brandVal){
-  if(brandVal.startsWith("POLYCAB")) return "POLYCAB";
-  if(brandVal.startsWith("KEI")) return "KEI";
-  // For all others: take first segment before " - "
-  const parts = brandVal.split(" - ");
-  return parts[0].trim();
+function isWireCoilBrand(b){const u=(b||"").toUpperCase().trim();return u.includes("IND COPPER")||u.includes("GREEN PLUS");}
+function isPolycabCable(b){const u=(b||"").toUpperCase();return u.includes("POLYCAB - IND COPPER")||u.includes("POLYCAB - COPPER ARMOURED")||u.includes("POLYCAB - ALU ARMOURED")||u.includes("POLYCAB - COPPER FLEXIBLE");}
+function isKEICable(b){const u=(b||"").toUpperCase();return u.includes("KEI - COPPER ARMOURED")||u.includes("KEI - ALU ARMOURED");}
+function getDisplayBrand(b){
+  if(b.startsWith("POLYCAB")) return "POLYCAB";
+  if(b.startsWith("KEI")) return "KEI";
+  return b.split(" - ")[0].trim();
 }
 
 function updateIndCopperBox(){
   const brand=brandSel.value;
   const indBox=document.getElementById("indCopperBox");
-  const frBox=document.getElementById("frToggleBox");
-  const titleEl=document.getElementById("cableBoxTitle");
   const b=brand.toUpperCase();
-
-  const isWire = isWireCoilBrand(brand);
-  const isPolycab = isPolycabCable(brand);
-  const isKEICab = isKEICable(brand);
-
-  if(!isWire && !isPolycab && !isKEICab){
-    indBox.style.display="none";
-    return;
-  }
-
+  const isWire=isWireCoilBrand(brand);
+  const isPolycab=isPolycabCable(brand);
+  const isKEICab=isKEICable(brand);
+  if(!isWire&&!isPolycab&&!isKEICab){indBox.style.display="none";return;}
   const coilMRP=+mrp.value;
   const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
   const len=getCoilLength(itemName);
-  const shortBrand = getDisplayBrand(brand);
-
-  // Update title
-  if(isWire){
-    titleEl.innerText=`📦 ${shortBrand} — COIL INFO`;
-  } else if(b.includes("COPPER ARMOURED")){
-    titleEl.innerText=`📦 ${shortBrand} COPPER ARMOURED — INFO`;
-  } else if(b.includes("ALU ARMOURED")){
-    titleEl.innerText=`📦 ${shortBrand} ALU ARMOURED — INFO`;
-  } else if(b.includes("COPPER FLEXIBLE")){
-    titleEl.innerText=`📦 ${shortBrand} COPPER FLEXIBLE — INFO`;
-  }
-
-  // Always show FR toggle
-  frBox.style.display="block";
-
-  // Show coil/per-mtr info only for wire brands (have fixed lengths)
+  const shortBrand=getDisplayBrand(brand);
+  const titleEl=document.getElementById("cableBoxTitle");
+  if(isWire) titleEl.innerText=`📦 ${shortBrand} — COIL INFO`;
+  else if(b.includes("COPPER ARMOURED")) titleEl.innerText=`📦 ${shortBrand} COPPER ARMOURED — INFO`;
+  else if(b.includes("ALU ARMOURED")) titleEl.innerText=`📦 ${shortBrand} ALU ARMOURED — INFO`;
+  else if(b.includes("COPPER FLEXIBLE")) titleEl.innerText=`📦 ${shortBrand} COPPER FLEXIBLE — INFO`;
+  document.getElementById("frToggleBox").style.display="block";
   const coilInfoRow=document.getElementById("coilInfoRow");
-  if(isWire && len && coilMRP){
+  if(isWire&&len&&coilMRP){
     document.getElementById("coilLen").value=len;
-    const mrpM=+(coilMRP/len).toFixed(2);
-    document.getElementById("mrpPerMtr").value=mrpM;
+    document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2);
     updateNetPerMtr();
     if(coilInfoRow) coilInfoRow.style.display="";
-  } else {
-    if(coilInfoRow) coilInfoRow.style.display="none";
-  }
-
+  } else {if(coilInfoRow) coilInfoRow.style.display="none";}
   indBox.style.display="block";
 }
 
@@ -1520,231 +736,93 @@ function updateNetPerMtr(){
   document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2);
 }
 
-function updateIndModeDisplay(){
-  const mode=document.getElementById("indEntryMode").value;
-  if(mode==="mtr"){
-    unit.value="MTRS";
-  } else {
-    unit.value="COIL";
-  }
-}
-
-itemSel.onchange=()=>{
-  mrp.value=itemSel.value;
-  updateIndCopperBox();
-};
-
-/* Watch disc/net changes to update per-mtr */
+itemSel.onchange=()=>{mrp.value=itemSel.value;updateIndCopperBox();};
 document.getElementById("disc").addEventListener("input",()=>{updateNetPerMtr();});
 document.getElementById("net").addEventListener("input",()=>{updateNetPerMtr();});
 
-/* ================= HSN CODE LOOKUP ================= */
-function getHSN(brand, itemName){
-  const b=brand.toUpperCase();
-  const n=itemName.toUpperCase();
-
-  // Cables & Wires (insulated copper/alu - Chapter 85)
-  if(b.includes("IND COPPER") || b.includes("GREEN PLUS") || b.includes("POLYCAB COPPER") || b.includes("KEI"))
-    return "85446090";
-  if(n.includes("COPPER ARMOURED") || n.includes("CU ARM"))
-    return "85446090";
-  if(n.includes("ALU ARMOURED") || b.includes("ALU ARM"))
-    return "85446090";
-  if(n.includes("COPPER FLEXIBLE") || b.includes("COPPER FLEXIBLE"))
-    return "85446090";
-
-  // Switches, Sockets, Regulators, Bell Push, Indicators (8536)
-  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||
-     n.includes("BELL PUSH")||n.includes("INDICATOR")||n.includes("BELL WITH IND"))
-    return "85365020";
-
-  // MCB / MCCB / Isolators (8536)
-  if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT"))
-    return "85362000";
-
-  // Distribution Boards / DB / Panels (8537)
-  if(n.includes(" DB ")||n.includes("DB$")||n.endsWith("DB")||
-     n.includes("PANEL")||n.includes("ENCLOSER")||n.includes("ENCLOSURE"))
-    return "85371000";
-
-  // Modular Plates / Blank Plates (8538)
-  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")||n.includes("FRAME"))
-    return "85389000";
-
-  // Lighting (9405)
-  if(n.includes("DOWN LIGHT")||n.includes("SKIRTING LIGHT")||n.includes("FOOT LAMP"))
-    return "94051090";
-
-  // RJ45 / TV Socket / Telephone / USB / Data (8536)
-  if(n.includes("RJ")||n.includes("TV SOCKET")||n.includes("TELEPHONE")||n.includes("USB"))
-    return "85363090";
-
-  // Cable Tray (7308)
-  if(n.includes("CABLE TRAY")||n.includes("TRAY"))
-    return "73089090";
-
-  // Metal Box / Junction Box (8538)
-  if(n.includes("METAL BOX")||n.includes("JUNCTION BOX")||n.includes("BOX"))
-    return "85389000";
-
-  // Default for electrical items
+function getHSN(brand,itemName){
+  const b=brand.toUpperCase(),n=itemName.toUpperCase();
+  if(b.includes("IND COPPER")||b.includes("GREEN PLUS")||b.includes("POLYCAB COPPER")||b.includes("KEI")) return "85446090";
+  if(n.includes("COPPER ARMOURED")||n.includes("CU ARM")||n.includes("ALU ARMOURED")||b.includes("ALU ARM")||n.includes("COPPER FLEXIBLE")||b.includes("COPPER FLEXIBLE")) return "85446090";
+  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||n.includes("BELL PUSH")||n.includes("INDICATOR")||n.includes("BELL WITH IND")) return "85365020";
+  if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT")) return "85362000";
+  if(n.includes(" DB ")||n.endsWith("DB")||n.includes("PANEL")||n.includes("ENCLOSER")||n.includes("ENCLOSURE")) return "85371000";
+  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")||n.includes("FRAME")) return "85389000";
+  if(n.includes("DOWN LIGHT")||n.includes("SKIRTING LIGHT")||n.includes("FOOT LAMP")) return "94051090";
+  if(n.includes("RJ")||n.includes("TV SOCKET")||n.includes("TELEPHONE")||n.includes("USB")) return "85363090";
+  if(n.includes("CABLE TRAY")||n.includes("TRAY")) return "73089090";
+  if(n.includes("METAL BOX")||n.includes("JUNCTION BOX")||n.includes("BOX")) return "85389000";
   return "85369090";
 }
 
-/* ================= COLOUR PICKER ================= */
-let selectedColour = "";
-
+let selectedColour="";
 function selectColour(colour){
-  // Toggle off if already selected
-  if(selectedColour === colour && colour !== 'CUSTOM'){
-    clearColour(); return;
-  }
-  selectedColour = colour;
-  // Update button active states
-  document.querySelectorAll(".clr-btn").forEach(b => b.classList.remove("active"));
+  if(selectedColour===colour&&colour!=='CUSTOM'){clearColour();return;}
+  selectedColour=colour;
+  document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active"));
   document.getElementById("clr-"+colour).classList.add("active");
-  // Handle custom input
-  const customInput = document.getElementById("customColourInput");
-  if(colour === 'CUSTOM'){
-    customInput.style.display = "inline-block";
-    customInput.focus();
-    selectedColour = customInput.value.toUpperCase() || "";
-  } else {
-    customInput.style.display = "none";
-    document.getElementById("selectedColourDisplay").innerText = colour;
-  }
+  const ci=document.getElementById("customColourInput");
+  if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();selectedColour=ci.value.toUpperCase()||"";}
+  else{ci.style.display="none";document.getElementById("selectedColourDisplay").innerText=colour;}
 }
-
 function clearColour(){
-  selectedColour = "";
-  document.querySelectorAll(".clr-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("customColourInput").style.display = "none";
-  document.getElementById("customColourInput").value = "";
-  document.getElementById("selectedColourDisplay").innerText = "—";
+  selectedColour="";
+  document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("customColourInput").style.display="none";
+  document.getElementById("customColourInput").value="";
+  document.getElementById("selectedColourDisplay").innerText="—";
 }
-
 function getSelectedColour(){
-  const customInput = document.getElementById("customColourInput");
-  if(document.getElementById("clr-CUSTOM").classList.contains("active")){
-    return customInput.value.trim().toUpperCase() || "";
-  }
+  if(document.getElementById("clr-CUSTOM").classList.contains("active"))
+    return document.getElementById("customColourInput").value.trim().toUpperCase()||"";
   return selectedColour;
 }
-
-/* ================= COLOUR STYLE HELPER ================= */
 function getColourStyle(colour){
-  const map={
-    'RED':    'background:#fff0f0;color:#c62828;font-weight:700',
-    'YELLOW': 'background:#fffde7;color:#f57f17;font-weight:700',
-    'BLUE':   'background:#e3f2fd;color:#1565c0;font-weight:700',
-    'BLACK':  'background:#f5f5f5;color:#212121;font-weight:700',
-    'GREEN':  'background:#e8f5e9;color:#2e7d32;font-weight:700',
-  };
-  return map[colour.toUpperCase()] || 'background:#f3e5f5;color:#6a1b9a;font-weight:700';
+  const map={'RED':'background:#fff0f0;color:#c62828;font-weight:700','YELLOW':'background:#fffde7;color:#f57f17;font-weight:700','BLUE':'background:#e3f2fd;color:#1565c0;font-weight:700','BLACK':'background:#f5f5f5;color:#212121;font-weight:700','GREEN':'background:#e8f5e9;color:#2e7d32;font-weight:700'};
+  return map[colour.toUpperCase()]||'background:#f3e5f5;color:#6a1b9a;font-weight:700';
 }
 
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
   const coilMRP=+mrp.value;
-  let coilRate, perMtrRate="-", displayUnit, displayMRP, description, displayBrand, showPerMtr=false;
+  let coilRate,perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false;
   const itemName=itemSel.options[itemSel.selectedIndex].text.trim();
   const brand=brandSel.value;
   const b=brand.toUpperCase();
   const frType=document.getElementById("frType")?.value||"";
-  const colourVal = getSelectedColour();
-
-  // Display brand — extract short name from full key
-  displayBrand = getDisplayBrand(brand);
-
-  const isIndCopper = b.includes("IND COPPER") || b.includes("GREEN PLUS");
-  const isArmFlx = b.includes("ARMOURED") || b.includes("FLEXIBLE");
-
-  // Build description suffix: wire type only (colour is its own column)
-  function buildSuffix(base){
-    return frType ? `${base} ${frType}` : base;
-  }
-
+  const colourVal=getSelectedColour();
+  const displayBrand=getDisplayBrand(brand);
+  const isIndCopper=b.includes("IND COPPER")||b.includes("GREEN PLUS");
+  const isArmFlx=b.includes("ARMOURED")||b.includes("FLEXIBLE");
+  const buildSuffix=base=>frType?`${base} ${frType}`:base;
   if(isIndCopper){
     const len=+document.getElementById("coilLen").value||1;
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate=(coilRate/len).toFixed(2);
-    displayUnit="COIL";
-    displayMRP=coilMRP;
-    showPerMtr=true;
-    description = buildSuffix(itemName);
-
+    perMtrRate=(coilRate/len).toFixed(2);displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;description=buildSuffix(itemName);
   } else if(isArmFlx){
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";
-    displayUnit="MTRS";
-    displayMRP=coilMRP;
-    showPerMtr=false;
-    description = buildSuffix(itemName);
-
+    perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);
   } else {
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";
-    displayUnit=unit.value;
-    displayMRP=coilMRP;
-    showPerMtr=false;
-    description=itemName;
+    perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;
   }
-
-  // Colour cell — only for wires/cables
-  const colourCell = (isIndCopper || isArmFlx) ? (colourVal || "—") : "-";
-  // Colour cell style
-  const colourStyle = colourVal ? getColourStyle(colourVal) : "";
-
-  const hsn=getHSN(brand, itemName);
-  let amt=coilRate*qty.value;
-  let r=tbody.insertRow();
-  r.innerHTML=`
-    <td></td>
-    <td>${displayBrand}</td>
-    <td>${description}</td>
-    <td style="${colourStyle}">${colourCell}</td>
-    <td>${hsn}</td>
-    <td>${displayUnit}</td>
-    <td>${qty.value}</td>
-    <td class="mrpCol">${displayMRP}</td>
-    <td class="mrpCol">${disc.value||0}</td>
-    <td>${coilRate.toFixed(2)}</td>
-    <td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td>
-    <td>${amt.toFixed(2)}</td>
-    <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
+  const colourStyle=colourVal?getColourStyle(colourVal):"";
+  const hsn=getHSN(brand,itemName);
+  const amt=coilRate*qty.value;
+  const r=tbody.insertRow();
+  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${qty.value}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${coilRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
 
-/* ================= CUSTOM ITEM ================= */
-function toggleCustomItem(){
-  customItemBox.style.display=customToggle.checked?"block":"none";
-}
-
+function toggleCustomItem(){customItemBox.style.display=customToggle.checked?"block":"none";}
 function addCustomItem(){
-  const brand=c_brand.value||"NA";
-  const item=c_item.value;
-  const unit=c_unit.value;
-  const qty=+c_qty.value;
-  const rate=+c_rate.value;
+  const brand=c_brand.value||"NA",item=c_item.value,unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
   if(!item||!unit||!qty||!rate) return;
   const amt=qty*rate;
   const r=tbody.insertRow();
-  r.innerHTML=`
-    <td></td>
-    <td>${brand}</td>
-    <td>${item}</td>
-    <td>-</td>
-    <td>-</td>
-    <td>${unit}</td>
-    <td>${qty}</td>
-    <td class="mrpCol">-</td>
-    <td class="mrpCol">-</td>
-    <td>${rate.toFixed(2)}</td>
-    <td class="perMtrCell" style="display:none">-</td>
-    <td>${amt.toFixed(2)}</td>
-    <td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
-  renumber();calc();
-  c_item.value=c_rate.value="";
+  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${amt.toFixed(2)}</td><td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  renumber();calc();c_item.value=c_rate.value="";
 }
 
 function delRow(b){b.closest("tr").remove();renumber();calc();}
@@ -1754,42 +832,45 @@ function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[11].innerText);
   sub.innerText=s.toFixed(2);
   gst.innerText=gstToggle.checked?(s*0.18).toFixed(2):"0.00";
-  const grandTotal = s + +gst.innerText;
+  const grandTotal=s+(+gst.innerText);
   gt.innerText=grandTotal.toFixed(2);
-  const rounded = Math.round(grandTotal);
-  const roundOff = rounded - grandTotal;
-  document.getElementById("roundOff").innerText = (roundOff >= 0 ? "+" : "") + roundOff.toFixed(2);
-  document.getElementById("netPayable").innerHTML = "<b>₹ " + rounded.toLocaleString("en-IN") + "</b>";
-  document.querySelectorAll(".mrpCol")
-    .forEach(c=>c.style.display=showMRP.checked?"":"none");
-
-  // Show Per Mtr column only if any coil row exists
-  const hasIndCopper=[...tbody.rows].some(r=>
-    r.cells[5].innerText==="COIL" && r.cells[10].innerText!=="-"
-  );
+  const rounded=Math.round(grandTotal);
+  const roundOff=rounded-grandTotal;
+  document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
+  document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
+  document.querySelectorAll(".mrpCol").forEach(c=>c.style.display=showMRP.checked?"":"none");
+  const hasIndCopper=[...tbody.rows].some(r=>r.cells[5].innerText==="COIL"&&r.cells[10].innerText!=="-");
   document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
 }
 
-/* ================= EXPORT ================= */
 function exportExcel(){
-  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value]];
-  data.push(["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]);
+  const tcPay=document.getElementById("tcPaymentVal").innerText;
+  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],
+    ["Customer",custName.value,"GSTIN",custGST.value],[],
+    ["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,12).map(c=>c.innerText)));
+  data.push([]);
   data.push(["","","","","","","","","","","Sub Total",sub.innerText]);
-  data.push(["","","","","","","","","","","GST",gst.innerText]);
+  data.push(["","","","","","","","","","","GST 18%",gst.innerText]);
   data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
+  data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
+  data.push([]);
+  data.push(["TERMS & CONDITIONS"]);
+  data.push(["Payment Terms",tcPay]);
+  data.push(["Freight","Extra — charged at actuals"]);
+  data.push(["Delivery","Within 7 working days of order confirmation"]);
+  data.push(["Tolerance","±5% on quantity supplied is acceptable"]);
+  data.push(["Validity","Subject to stock availability & price revision"]);
   let wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
   XLSX.writeFile(wb,"SSE_Quotation.xlsx");
 }
 
-
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
   html2pdf().set({
-    margin:5,
-    filename:"SSE_Quotation.pdf",
+    margin:5,filename:"SSE_Quotation.pdf",
     html2canvas:{scale:2,useCORS:true},
     jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
   }).from(document.getElementById("printArea")).save().then(()=>{
