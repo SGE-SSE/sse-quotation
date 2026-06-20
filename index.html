@@ -172,12 +172,12 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <div class="entry-grid-mobile">
   <div>
     <label>Unit</label>
-    <select id="unit">
+    <select id="unit" onchange="updateQtyLabel()">
       <option>NOS</option><option>MTRS</option><option>COIL</option>
       <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
     </select>
   </div>
-  <div><label>Qty</label><input type="number" id="qty" value="1"></div>
+  <div><label id="qtyLabel">Qty</label><input type="number" id="qty" value="1"></div>
   <div><label>MRP</label><input type="number" id="mrp" readonly></div>
   <div><label>Discount %</label><input type="number" id="disc"></div>
   <div><label>Net Rate</label><input type="number" id="net"></div>
@@ -292,6 +292,11 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <tr style="background:#fff8e1">
     <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0;text-align:left" colspan="3">TRANSPORTATION EXTRA</td>
   </tr>
+  <tr id="remarksRow" style="display:none">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap;vertical-align:top">REMARKS</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left;vertical-align:top">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word" id="tcBottomRemarks"></td>
+  </tr>
   <tr style="background:#f9f9f9">
     <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none;text-align:left" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
   </tr>
@@ -325,6 +330,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
   <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px" placeholder="e.g. 7 DAYS">
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
+  <input type="text" id="remarksInput" oninput="updateTCDisplay()" style="width:220px;font-size:11.5px" placeholder="Optional note for this quotation">
 </div>
 
 <div class="no-print action-btns" style="margin-top:10px;padding:0 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
@@ -387,6 +394,13 @@ function updateTCDisplay(){
   document.getElementById("tcPaymentVal").innerText = display;
   const vEl = document.getElementById("validityInput");
   if(vEl) document.getElementById("tcBottomValidity").innerText = vEl.value.toUpperCase() || "7 DAYS";
+  const rEl = document.getElementById("remarksInput");
+  const remarksRow = document.getElementById("remarksRow");
+  if(rEl && remarksRow){
+    const txt = rEl.value.trim();
+    document.getElementById("tcBottomRemarks").innerText = txt;
+    remarksRow.style.display = txt ? "" : "none";
+  }
 }
 
 /* ===== INVENTORY ===== */
@@ -780,6 +794,7 @@ brandSel.onchange=()=>{
   const b=brandSel.value.toUpperCase();
   if(b.includes("IND COPPER")||b.includes("GREEN PLUS")) unit.value="COIL";
   else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
+  updateQtyLabel();
 };
 
 window.onload=()=>{
@@ -841,10 +856,10 @@ function renderPriceEditorRows(){
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid #eee";
       const tdName = document.createElement("td");
-      tdName.style.cssText = "padding:7px 8px;width:60%";
+      tdName.style.cssText = "padding:7px 8px;width:42%";
       tdName.textContent = it.name;
       const tdPrice = document.createElement("td");
-      tdPrice.style.cssText = "padding:7px 8px;width:25%";
+      tdPrice.style.cssText = "padding:7px 8px;width:20%";
       const priceInput = document.createElement("input");
       priceInput.type = "number";
       priceInput.step = "0.01";
@@ -856,8 +871,22 @@ function renderPriceEditorRows(){
         priceInput.style.borderColor = peWorkingCopy[brand][idx].mrp===0 ? "#e0a020" : "#ccc";
         priceInput.style.background = peWorkingCopy[brand][idx].mrp===0 ? "#fff8ea" : "#fff";
       };
+      const tdHSN = document.createElement("td");
+      tdHSN.style.cssText = "padding:7px 8px;width:18%";
+      const hsnInput = document.createElement("input");
+      hsnInput.type = "text";
+      hsnInput.placeholder = "HSN";
+      hsnInput.value = it.hsn || "";
+      hsnInput.title = it.hsn ? "" : "No HSN saved — currently auto-guessed on the quotation";
+      hsnInput.style.cssText = "width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px" + (!it.hsn ? ";border-color:#e0a020;background:#fff8ea" : "");
+      hsnInput.oninput = ()=>{
+        peWorkingCopy[brand][idx].hsn = hsnInput.value.trim();
+        peDirty = true;
+        hsnInput.style.borderColor = peWorkingCopy[brand][idx].hsn ? "#ccc" : "#e0a020";
+        hsnInput.style.background = peWorkingCopy[brand][idx].hsn ? "#fff" : "#fff8ea";
+      };
       const tdDel = document.createElement("td");
-      tdDel.style.cssText = "padding:7px 8px;width:15%;text-align:right";
+      tdDel.style.cssText = "padding:7px 8px;width:12%;text-align:right";
       const delBtn = document.createElement("button");
       delBtn.textContent = "Remove";
       delBtn.style.cssText = "background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline";
@@ -867,8 +896,9 @@ function renderPriceEditorRows(){
         renderPriceEditorRows();
       };
       tdPrice.appendChild(priceInput);
+      tdHSN.appendChild(hsnInput);
       tdDel.appendChild(delBtn);
-      tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdDel);
+      tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
       table.appendChild(tr);
     });
     section.appendChild(table);
@@ -888,7 +918,13 @@ function peAddItemPrompt(){
   if(!name) return;
   const mrpStr = prompt("Price (MRP) for this item:", "0");
   const mrp = parseFloat(mrpStr) || 0;
-  peWorkingCopy[brand].push({name: name.trim(), mrp});
+  const guessedHSN = getHSN(brand, name.trim());
+  const hsnStr = prompt(
+    "HSN Code for this item:\n\n(Suggested based on similar items — please confirm or correct it. This will be saved permanently with this item.)",
+    guessedHSN
+  );
+  const hsn = (hsnStr||"").trim() || guessedHSN;
+  peWorkingCopy[brand].push({name: name.trim(), mrp, hsn});
   peDirty = true;
   document.getElementById("peSearch").value = "";
   renderPriceEditorRows();
@@ -920,6 +956,7 @@ function peImportCSV(event){
       if(!rows.length) throw new Error("Empty file");
       const header = rows[0].map(h=>h.trim().toLowerCase());
       const bIdx=header.indexOf("brand"), nIdx=header.indexOf("item name"), mIdx=header.indexOf("mrp");
+      const hIdx=header.indexOf("hsn"); // optional column
       if(bIdx===-1||nIdx===-1||mIdx===-1) throw new Error("CSV must have Brand, Item Name, MRP columns");
       let updated=0, added=0;
       for(let i=1;i<rows.length;i++){
@@ -927,17 +964,18 @@ function peImportCSV(event){
         const brand=(r[bIdx]||"").trim();
         const name=(r[nIdx]||"").trim();
         const mrp=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0;
+        const hsn=hIdx!==-1?(r[hIdx]||"").trim():"";
         if(!brand||!name) continue;
         if(!peWorkingCopy[brand]) peWorkingCopy[brand]=[];
         const existing = peWorkingCopy[brand].find(it=>it.name===name);
-        if(existing){ existing.mrp = mrp; updated++; }
-        else { peWorkingCopy[brand].push({name, mrp}); added++; }
+        if(existing){ existing.mrp = mrp; if(hsn) existing.hsn = hsn; updated++; }
+        else { const newItem={name, mrp}; if(hsn) newItem.hsn=hsn; peWorkingCopy[brand].push(newItem); added++; }
       }
       peDirty = true;
       renderPriceEditorRows();
       document.getElementById("peStatus").textContent = `CSV import: ${updated} updated, ${added} added (not yet saved)`;
     }catch(err){
-      alert("Could not import this CSV: " + err.message + "\n\nMake sure it has columns named Brand, Item Name, MRP.");
+      alert("Could not import this CSV: " + err.message + "\n\nMake sure it has columns named Brand, Item Name, MRP (HSN column is optional).");
     }
     event.target.value = "";
   };
@@ -1040,7 +1078,20 @@ function updateNetPerMtr(){
   document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2);
 }
 
-itemSel.onchange=()=>{mrp.value=itemSel.value;updateIndCopperBox();};
+function updateQtyLabel(){
+  const qtyLabel=document.getElementById("qtyLabel");
+  const b=(brandSel.value||"").toUpperCase();
+  const isWire=b.includes("IND COPPER")||b.includes("GREEN PLUS");
+  if(isWire && unit.value==="MTRS"){
+    qtyLabel.innerText="Qty (Metres)";
+  } else if(isWire && unit.value==="COIL"){
+    qtyLabel.innerText="Qty (No. of Coils)";
+  } else {
+    qtyLabel.innerText="Qty";
+  }
+}
+
+itemSel.onchange=()=>{mrp.value=itemSel.value;updateIndCopperBox();updateQtyLabel();};
 document.getElementById("disc").addEventListener("input",()=>{updateNetPerMtr();});
 document.getElementById("net").addEventListener("input",()=>{updateNetPerMtr();});
 
@@ -1089,7 +1140,7 @@ function getColourStyle(colour){
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
   const coilMRP=+mrp.value;
-  let coilRate,perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false;
+  let coilRate,perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false,finalRate,finalQty=+qty.value;
   const itemName=itemSel.options[itemSel.selectedIndex].text.trim();
   const brand=brandSel.value;
   const b=brand.toUpperCase();
@@ -1102,20 +1153,33 @@ function addItem(){
   if(isIndCopper){
     const len=+document.getElementById("coilLen").value||1;
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate=(coilRate/len).toFixed(2);displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;description=buildSuffix(itemName);
+    perMtrRate=(coilRate/len).toFixed(2);
+    description=buildSuffix(itemName);
+    if(unit.value==="MTRS"){
+      // Selling by the metre: Qty = metres required, rate used is the per-metre rate.
+      displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;
+      finalRate=+perMtrRate;
+    } else {
+      // Selling whole coils: Qty = number of coils, rate used is the per-coil rate.
+      displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;
+      finalRate=coilRate;
+    }
   } else if(isArmFlx){
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);
+    finalRate=coilRate;
   } else {
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;
+    finalRate=coilRate;
   }
   const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
   const colourStyle=colourVal?getColourStyle(colourVal):"";
-  const hsn=getHSN(brand,itemName);
-  const amt=coilRate*qty.value;
+  const selectedItemObj=(items[brand]||[]).find(i=>i.name===itemName);
+  const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
+  const amt=finalRate*finalQty;
   const r=tbody.insertRow();
-  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${qty.value}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${coilRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
 
@@ -1150,6 +1214,7 @@ function calc(){
 
 function exportExcel(){
   const tcPay=document.getElementById("tcPaymentVal").innerText;
+  const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
   let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],
     ["Customer",custName.value,"GSTIN",custGST.value],[],
     ["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
@@ -1166,6 +1231,7 @@ function exportExcel(){
   data.push(["Delivery","Within 7 working days of order confirmation"]);
   data.push(["Tolerance","±5% on quantity supplied is acceptable"]);
   data.push(["Validity","Subject to stock availability & price revision"]);
+  if(remarksTxt) data.push(["Remarks",remarksTxt]);
   let wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
   XLSX.writeFile(wb,"SSE_Quotation.xlsx");
