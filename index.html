@@ -52,9 +52,13 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 .btn-print{background:#1a3c6e;color:#fff}
 .btn-excel{background:#1b7a4a;color:#fff}
 .btn-pdf{background:#c0392b;color:#fff}
+.btn-prices{background:#6a1b9a;color:#fff}
+.btn-edit-prices{background:#b8860b;color:#fff}
 .btn-print:hover{background:#2a5298}
 .btn-excel:hover{background:#156038}
 .btn-pdf:hover{background:#a93226}
+.btn-prices:hover{background:#8338c4}
+.btn-edit-prices:hover{background:#9a7209}
 .table-wrapper{margin:0 14px 0}
 .entry-grid-mobile{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px}
 .entry-grid-mobile .btn-add-wrap{grid-column:span 1}
@@ -323,10 +327,38 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px" placeholder="e.g. 7 DAYS">
 </div>
 
-<div class="no-print action-btns" style="margin-top:10px;padding:0 14px 14px;display:flex;gap:8px">
+<div class="no-print action-btns" style="margin-top:10px;padding:0 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
+  <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
+  <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
+  <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
+</div>
+
+<!-- ===== EDIT PRICES MODAL ===== -->
+<div id="priceEditorOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;width:100%;max-width:900px;max-height:90vh;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <div style="background:#1a3c6e;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:16px">✏️ Edit Prices</strong>
+      <button onclick="closePriceEditor()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:12px 18px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="peSearch" type="text" placeholder="🔍 Search brand or item..." oninput="renderPriceEditorRows()" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px">
+      <button onclick="peAddItemPrompt()" style="background:#1b7a4a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Item</button>
+      <button onclick="peAddBrandPrompt()" style="background:#1a3c6e;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Brand</button>
+      <button onclick="document.getElementById('peCsvInput').click()" style="background:#6a1b9a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">📥 Import CSV</button>
+      <input type="file" id="peCsvInput" accept=".csv" style="display:none" onchange="peImportCSV(event)">
+    </div>
+    <div id="peList" style="overflow-y:auto;flex:1;padding:0 18px"></div>
+    <div style="padding:12px 18px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <span id="peStatus" style="font-size:12px;color:#666"></span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closePriceEditor()" style="background:#eee;color:#333;border:none;padding:10px 18px;border-radius:6px;cursor:pointer">Cancel</button>
+        <button id="peSaveBtn" onclick="savePriceEditorChanges()" style="background:#1b7a4a;color:#fff;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;font-weight:bold">💾 Save & Sync</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 </div><!-- end .card -->
@@ -358,7 +390,10 @@ function updateTCDisplay(){
 }
 
 /* ===== INVENTORY ===== */
-const items={
+/* FALLBACK_ITEMS is the built-in catalog used only if the live Google Sheet
+   can't be reached (e.g. no internet, sheet not published). Normal day-to-day
+   price edits should be made in the Google Sheet, NOT here. */
+const FALLBACK_ITEMS={
   "GREATWHITE":[
     {"name":"BLANK PLATE","mrp":38.0},{"name":"DOWN LIGHT 2M","mrp":511.0},{"name":"DOWN LIGHT 4M","mrp":644.0},
     {"name":"RJ-11 WITH SHUTTER SINGLE","mrp":168.0},{"name":"RJ-45 SINGLE CAT6","mrp":814.0},
@@ -657,6 +692,77 @@ const brandSel=document.getElementById("brand");
 const itemSel=document.getElementById("item");
 const tbody=document.querySelector("#qt tbody");
 
+/* ===== LIVE PRICE DATABASE (JSONBin) =====
+   `items` is the data actually used by the dropdowns and the Edit Prices
+   screen. It starts as a cached copy (if one exists from a previous visit)
+   or the built-in fallback, then gets replaced with fresh data fetched from
+   the shared JSONBin database. Saving from the Edit Prices screen writes
+   straight back to this same bin, so all devices stay in sync. */
+const JSONBIN_ID = "6a3637b1f5f4af5e29132730";
+const JSONBIN_MASTER_KEY = "$2a$10$MpuJTq8HXuguilKQPgM3Tu60666pOEexgLKy0In631iih1mkYOqkW";
+const JSONBIN_URL = "https://api.jsonbin.io/v3/b/" + JSONBIN_ID;
+const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V1";
+
+let items = JSON.parse(JSON.stringify(FALLBACK_ITEMS));
+try{
+  const cached = JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || "null");
+  if(cached && cached.items) items = cached.items;
+}catch(e){}
+
+function setPriceStatus(msg, isError){
+  const el=document.getElementById("priceStatus");
+  if(el){ el.textContent=msg; el.style.color = isError ? "#c0392b" : "var(--muted)"; }
+}
+
+async function refreshPrices(manual){
+  setPriceStatus("Refreshing prices…", false);
+  try{
+    const res = await fetch(JSONBIN_URL + "/latest", {
+      headers: { "X-Master-Key": JSONBIN_MASTER_KEY },
+      cache: "no-store"
+    });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    const fetched = data.record;
+    if(!fetched || typeof fetched !== "object" || !Object.keys(fetched).length) throw new Error("Database returned no data");
+    items = fetched;
+    const now = new Date();
+    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({items, fetchedAt: now.toISOString()}));
+    refreshBrandDropdown();
+    setPriceStatus("✓ Prices updated " + now.toLocaleString(), false);
+  }catch(e){
+    let cachedAt = "";
+    try{
+      const cached = JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || "null");
+      if(cached && cached.fetchedAt) cachedAt = " (showing prices from " + new Date(cached.fetchedAt).toLocaleString() + ")";
+    }catch(e2){}
+    setPriceStatus("⚠ Could not refresh prices" + cachedAt + " — " + e.message, true);
+    if(manual) alert("Could not refresh prices from the database.\n\n" + e.message + "\n\nCheck your internet connection.");
+  }
+}
+
+async function savePricesToCloud(){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Master-Key": JSONBIN_MASTER_KEY
+    },
+    body: JSON.stringify(items)
+  });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const now = new Date();
+  localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({items, fetchedAt: now.toISOString()}));
+  setPriceStatus("✓ Saved & synced " + now.toLocaleString(), false);
+}
+
+function refreshBrandDropdown(){
+  const prevBrand = brandSel.value;
+  brandSel.innerHTML="<option value=''>Select Brand</option>";
+  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;brandSel.appendChild(o);});
+  if(prevBrand && items[prevBrand]){ brandSel.value=prevBrand; brandSel.onchange(); }
+}
+
 function generateQuotationNo(){
   const y=new Date().getFullYear();
   const k="SSE_QTN_"+y;
@@ -664,13 +770,6 @@ function generateQuotationNo(){
   localStorage.setItem(k,s);
   return `SSE/QTN/${y}/${String(s).padStart(3,"0")}`;
 }
-
-window.onload=()=>{
-  brandSel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;brandSel.appendChild(o);});
-  qdate.valueAsDate=new Date();
-  qno.value=generateQuotationNo();
-};
 
 brandSel.onchange=()=>{
   itemSel.innerHTML="<option value=''>Select Item</option>";
@@ -682,6 +781,211 @@ brandSel.onchange=()=>{
   if(b.includes("IND COPPER")||b.includes("GREEN PLUS")) unit.value="COIL";
   else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
 };
+
+window.onload=()=>{
+  refreshBrandDropdown();
+  qdate.valueAsDate=new Date();
+  qno.value=generateQuotationNo();
+  refreshPrices(false);
+};
+
+/* ===== EDIT PRICES PANEL ===== */
+let peWorkingCopy = null; // working draft, only written to `items`/cloud on Save
+let peDirty = false;
+
+function openPriceEditor(){
+  peWorkingCopy = JSON.parse(JSON.stringify(items));
+  peDirty = false;
+  document.getElementById("peSearch").value = "";
+  document.getElementById("peStatus").textContent = "";
+  document.getElementById("priceEditorOverlay").style.display = "flex";
+  renderPriceEditorRows();
+}
+
+function closePriceEditor(){
+  if(peDirty && !confirm("Discard unsaved changes?")) return;
+  document.getElementById("priceEditorOverlay").style.display = "none";
+  peWorkingCopy = null;
+}
+
+function renderPriceEditorRows(){
+  const q = document.getElementById("peSearch").value.trim().toLowerCase();
+  const list = document.getElementById("peList");
+  list.innerHTML = "";
+  const brands = Object.keys(peWorkingCopy).sort();
+  brands.forEach(brand=>{
+    const brandMatches = brand.toLowerCase().includes(q);
+    const rows = peWorkingCopy[brand].filter((it,idx)=>{
+      if(!q) return true;
+      return brandMatches || it.name.toLowerCase().includes(q);
+    });
+    if(!rows.length) return;
+
+    const section = document.createElement("div");
+    section.style.marginBottom = "14px";
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
+    header.innerHTML = `<strong style="color:#1a3c6e;font-size:13px">${brand}</strong>`;
+    const delBrandBtn = document.createElement("button");
+    delBrandBtn.textContent = "Delete brand";
+    delBrandBtn.style.cssText = "background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline";
+    delBrandBtn.onclick = ()=>peDeleteBrand(brand);
+    header.appendChild(delBrandBtn);
+    section.appendChild(header);
+
+    const table = document.createElement("table");
+    table.style.cssText = "width:100%;border-collapse:collapse;font-size:13px";
+    peWorkingCopy[brand].forEach((it, idx)=>{
+      if(q && !brandMatches && !it.name.toLowerCase().includes(q)) return;
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid #eee";
+      const tdName = document.createElement("td");
+      tdName.style.cssText = "padding:7px 8px;width:60%";
+      tdName.textContent = it.name;
+      const tdPrice = document.createElement("td");
+      tdPrice.style.cssText = "padding:7px 8px;width:25%";
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.step = "0.01";
+      priceInput.value = it.mrp;
+      priceInput.style.cssText = "width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px" + (it.mrp===0 ? ";border-color:#e0a020;background:#fff8ea" : "");
+      priceInput.oninput = ()=>{
+        peWorkingCopy[brand][idx].mrp = parseFloat(priceInput.value)||0;
+        peDirty = true;
+        priceInput.style.borderColor = peWorkingCopy[brand][idx].mrp===0 ? "#e0a020" : "#ccc";
+        priceInput.style.background = peWorkingCopy[brand][idx].mrp===0 ? "#fff8ea" : "#fff";
+      };
+      const tdDel = document.createElement("td");
+      tdDel.style.cssText = "padding:7px 8px;width:15%;text-align:right";
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Remove";
+      delBtn.style.cssText = "background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline";
+      delBtn.onclick = ()=>{
+        peWorkingCopy[brand].splice(idx,1);
+        peDirty = true;
+        renderPriceEditorRows();
+      };
+      tdPrice.appendChild(priceInput);
+      tdDel.appendChild(delBtn);
+      tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdDel);
+      table.appendChild(tr);
+    });
+    section.appendChild(table);
+    list.appendChild(section);
+  });
+  if(!list.children.length){
+    list.innerHTML = "<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
+  }
+}
+
+function peAddItemPrompt(){
+  const brands = Object.keys(peWorkingCopy).sort();
+  const brand = prompt("Add item to which brand? (type exact brand name)\n\nExisting brands:\n" + brands.join(", "));
+  if(!brand) return;
+  if(!peWorkingCopy[brand]){ alert("That brand doesn't exist. Use '+ Add Brand' first, or check spelling."); return; }
+  const name = prompt("New item name:");
+  if(!name) return;
+  const mrpStr = prompt("Price (MRP) for this item:", "0");
+  const mrp = parseFloat(mrpStr) || 0;
+  peWorkingCopy[brand].push({name: name.trim(), mrp});
+  peDirty = true;
+  document.getElementById("peSearch").value = "";
+  renderPriceEditorRows();
+}
+
+function peAddBrandPrompt(){
+  const brand = prompt("New brand name:");
+  if(!brand) return;
+  if(peWorkingCopy[brand]){ alert("That brand already exists."); return; }
+  peWorkingCopy[brand] = [];
+  peDirty = true;
+  renderPriceEditorRows();
+}
+
+function peDeleteBrand(brand){
+  if(!confirm(`Delete the entire brand "${brand}" and all its items? This cannot be undone after you save.`)) return;
+  delete peWorkingCopy[brand];
+  peDirty = true;
+  renderPriceEditorRows();
+}
+
+function peImportCSV(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const rows = parseCSVForImport(e.target.result);
+      if(!rows.length) throw new Error("Empty file");
+      const header = rows[0].map(h=>h.trim().toLowerCase());
+      const bIdx=header.indexOf("brand"), nIdx=header.indexOf("item name"), mIdx=header.indexOf("mrp");
+      if(bIdx===-1||nIdx===-1||mIdx===-1) throw new Error("CSV must have Brand, Item Name, MRP columns");
+      let updated=0, added=0;
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];
+        const brand=(r[bIdx]||"").trim();
+        const name=(r[nIdx]||"").trim();
+        const mrp=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0;
+        if(!brand||!name) continue;
+        if(!peWorkingCopy[brand]) peWorkingCopy[brand]=[];
+        const existing = peWorkingCopy[brand].find(it=>it.name===name);
+        if(existing){ existing.mrp = mrp; updated++; }
+        else { peWorkingCopy[brand].push({name, mrp}); added++; }
+      }
+      peDirty = true;
+      renderPriceEditorRows();
+      document.getElementById("peStatus").textContent = `CSV import: ${updated} updated, ${added} added (not yet saved)`;
+    }catch(err){
+      alert("Could not import this CSV: " + err.message + "\n\nMake sure it has columns named Brand, Item Name, MRP.");
+    }
+    event.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVForImport(text){
+  const rows=[];
+  let row=[],field="",inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c=='"'){ if(text[i+1]=='"'){field+='"';i++;} else inQuotes=false; }
+      else field+=c;
+    }else{
+      if(c=='"') inQuotes=true;
+      else if(c==','){row.push(field);field="";}
+      else if(c=='\n'){row.push(field);rows.push(row);row=[];field="";}
+      else if(c=='\r'){}
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.length && r.some(f=>f.trim()!==""));
+}
+
+async function savePriceEditorChanges(){
+  const btn = document.getElementById("peSaveBtn");
+  const status = document.getElementById("peStatus");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  try{
+    items = peWorkingCopy;
+    await savePricesToCloud();
+    refreshBrandDropdown();
+    peDirty = false;
+    status.textContent = "✓ Saved! Synced to all devices.";
+    status.style.color = "#156038";
+    setTimeout(()=>{ document.getElementById("priceEditorOverlay").style.display="none"; }, 900);
+  }catch(e){
+    status.textContent = "⚠ Could not save: " + e.message;
+    status.style.color = "#c0392b";
+    alert("Could not save changes to the shared database.\n\n" + e.message + "\n\nYour edits are still here in the editor — check your internet connection and try Save again.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "💾 Save & Sync";
+  }
+}
 
 function getCoilLength(itemName){
   const n=itemName.toUpperCase();
