@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --primary:#1a3c6e;--primary-light:#2a5298;--accent:#f0a500;--bg:#eef2f7;
@@ -154,9 +155,16 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </div>
 
 <div class="section-panel" style="margin-top:0">
-  <div class="section-title">Customer Details</div>
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Customer Details</span>
+    <button type="button" class="no-print" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+  </div>
   <div class="customer-grid">
-    <div><label>Customer Name</label><input type="text" id="custName"></div>
+    <div style="position:relative">
+      <label>Customer Name</label>
+      <input type="text" id="custName" autocomplete="off" oninput="onPartyNameInput()" onfocus="onPartyNameInput()" onblur="setTimeout(hidePartySuggestions,150)">
+      <div id="partySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
+    </div>
     <div><label>Customer GSTIN</label><input type="text" id="custGST"></div>
     <div style="grid-column:span 2"><label>Customer Address</label><textarea id="custAddr"></textarea></div>
   </div>
@@ -342,12 +350,14 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </div>
 
 <div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE QUOTATION</button>
   <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
   <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
   <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
+  <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
 </div>
 
 <!-- ===== EDIT PRICES MODAL ===== -->
@@ -375,7 +385,234 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
+<!-- ===== PARTY HISTORY MODAL ===== -->
+<div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;width:min(700px,92vw);max-height:85vh;overflow-y:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;color:#1a3c6e">📜 Party History</h3>
+      <button onclick="closePartyHistory()" style="background:#eee;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕ Close</button>
+    </div>
+    <div style="margin-bottom:12px;position:relative">
+      <input type="text" id="historyPartySearch" placeholder="Type party name…" autocomplete="off"
+        oninput="onHistoryPartySearch()" style="width:100%;padding:8px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
+      <div id="historyPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
+    </div>
+    <div id="historyList" style="font-size:13px;color:#555">Select a party to see their past quotations.</div>
+  </div>
+</div>
+
 </div><!-- end .card -->
+
+<script>
+const SUPABASE_URL = "https://psfqruuzjwpvllahlkla.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9jcUcWEowbzGG3QgEA943g_VS0BJQWl";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentPartyId = null; // set when an existing party is chosen, or after a new one is created on save
+
+/* ===== PARTY AUTOCOMPLETE (Customer Name field) ===== */
+let partySearchTimer = null;
+function onPartyNameInput(){
+  currentPartyId = null; // typing invalidates a previous exact match until re-confirmed
+  clearTimeout(partySearchTimer);
+  const q = custName.value.trim();
+  if(!q){ hidePartySuggestions(); return; }
+  partySearchTimer = setTimeout(async ()=>{
+    const { data, error } = await sb.from("parties").select("id,name,gstin,address").ilike("name", `%${q}%`).limit(8);
+    if(error){ console.error(error); return; }
+    renderPartySuggestions(data||[], "partySuggestions", (p)=>{
+      custName.value = p.name;
+      custGST.value = p.gstin || "";
+      custAddr.value = p.address || "";
+      currentPartyId = p.id;
+      hidePartySuggestions();
+    });
+  }, 200);
+}
+function renderPartySuggestions(list, containerId, onPick){
+  const box = document.getElementById(containerId);
+  if(!list.length){ box.style.display="none"; return; }
+  box.innerHTML = list.map((p,i)=>`<div data-i="${i}" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #eee" onmouseover="this.style.background='#f0f4fb'" onmouseout="this.style.background='#fff'">${p.name}</div>`).join("");
+  [...box.children].forEach((el,i)=>el.onclick=()=>onPick(list[i]));
+  box.style.display = "block";
+}
+function hidePartySuggestions(){ document.getElementById("partySuggestions").style.display="none"; }
+
+/* ===== SAVE OR FIND PARTY ===== */
+async function findOrCreateParty(name, gstin, addr){
+  name = name.trim();
+  if(!name) throw new Error("Customer name is required to save.");
+  // Try exact match first (case-insensitive)
+  const { data: existing, error: findErr } = await sb.from("parties").select("id").ilike("name", name).limit(1);
+  if(findErr) throw findErr;
+  if(existing && existing.length){
+    return existing[0].id;
+  }
+  const { data: created, error: createErr } = await sb.from("parties")
+    .insert({ name, gstin: gstin||null, address: addr||null }).select("id").single();
+  if(createErr) throw createErr;
+  return created.id;
+}
+
+/* ===== ATOMIC PER-PARTY SERIAL ===== */
+async function getNextSerialForParty(partyId, docType, year){
+  const { data, error } = await sb.rpc("next_party_serial", { p_party_id: partyId, p_doc_type: docType, p_year: year });
+  if(error) throw error;
+  return data;
+}
+
+/* ===== COLLECT CURRENT LINE ITEMS FROM TABLE ===== */
+function collectItemsFromTable(){
+  return [...tbody.rows].map(r=>({
+    sno: r.cells[0].innerText,
+    brand: r.cells[1].innerText,
+    description: r.cells[2].innerText,
+    colour: r.cells[3].innerText,
+    hsn: r.cells[4].innerText,
+    unit: r.cells[5].innerText,
+    qty: r.cells[6].innerText,
+    mrp: r.cells[7].innerText,
+    discount: r.cells[8].innerText,
+    rate: r.cells[9].innerText,
+    perMtr: r.cells[10].innerText,
+    amount: r.cells[11].innerText
+  }));
+}
+
+/* ===== SAVE QUOTATION (assigns party-specific serial + persists everything) ===== */
+async function saveQuotation(){
+  const btn = document.getElementById("saveQuotationBtn");
+  const status = document.getElementById("saveStatus");
+  try{
+    if(!custName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
+    if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
+    btn.disabled = true; status.textContent = "Saving…";
+
+    const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
+    currentPartyId = partyId;
+
+    const year = new Date(qdate.value || new Date()).getFullYear();
+    const serial = await getNextSerialForParty(partyId, currentDocType, year);
+    const prefix = DOC_TYPES[currentDocType].prefix;
+    const docNo = `${prefix}/${year}/${serial}`;
+    qno.value = docNo;
+
+    const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
+    const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
+
+    const payload = {
+      party_id: partyId,
+      doc_type: currentDocType,
+      doc_no: docNo,
+      doc_date: qdate.value || new Date().toISOString().slice(0,10),
+      cust_name: custName.value.trim(),
+      cust_gst: custGST.value.trim(),
+      cust_addr: custAddr.value.trim(),
+      gst_applied: !!gstToggle.checked,
+      cash_disc_pct: cashPct,
+      validity: document.getElementById("validityInput")?.value || "",
+      remarks: document.getElementById("remarksInput")?.value || "",
+      items: collectItemsFromTable(),
+      sub_total: +(sub.innerText||0),
+      cash_disc_amt: +cashAmt.toFixed(2),
+      taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
+      gst_amt: +(gst.innerText||0),
+      grand_total: +(gt.innerText||0),
+      round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
+      net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
+    };
+
+    const { error: saveErr } = await sb.from("quotations").insert(payload);
+    if(saveErr) throw saveErr;
+
+    status.textContent = `Saved as ${docNo} ✓`;
+    setTimeout(()=>status.textContent="", 5000);
+  }catch(err){
+    console.error(err);
+    alert("Could not save: " + (err.message||err));
+    status.textContent = "";
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ===== PARTY HISTORY MODAL ===== */
+function openPartyHistory(){
+  document.getElementById("partyHistoryModal").style.display = "flex";
+  document.getElementById("historyPartySearch").value = "";
+  document.getElementById("historyList").innerHTML = "Select a party to see their past quotations.";
+  document.getElementById("historyPartySearch").focus();
+}
+function closePartyHistory(){
+  document.getElementById("partyHistoryModal").style.display = "none";
+}
+let historySearchTimer = null;
+function onHistoryPartySearch(){
+  clearTimeout(historySearchTimer);
+  const q = document.getElementById("historyPartySearch").value.trim();
+  const box = document.getElementById("historyPartySuggestions");
+  if(!q){ box.style.display="none"; return; }
+  historySearchTimer = setTimeout(async ()=>{
+    const { data, error } = await sb.from("parties").select("id,name").ilike("name", `%${q}%`).limit(8);
+    if(error){ console.error(error); return; }
+    renderPartySuggestions(data||[], "historyPartySuggestions", (p)=>{
+      document.getElementById("historyPartySearch").value = p.name;
+      box.style.display = "none";
+      loadPartyQuotations(p.id, p.name);
+    });
+  }, 200);
+}
+async function loadPartyQuotations(partyId, partyName){
+  const list = document.getElementById("historyList");
+  list.innerHTML = "Loading…";
+  const { data, error } = await sb.from("quotations")
+    .select("id,doc_type,doc_no,doc_date,net_payable,grand_total")
+    .eq("party_id", partyId)
+    .order("created_at", { ascending:false });
+  if(error){ list.innerHTML = "Error loading history."; console.error(error); return; }
+  if(!data.length){ list.innerHTML = `No saved quotations yet for <b>${partyName}</b>.`; return; }
+  list.innerHTML = `<div style="margin-bottom:8px;font-weight:700;color:#1a3c6e">${partyName} — ${data.length} record(s)</div>` +
+    `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px;text-align:left">Doc No</th><th style="padding:6px;text-align:left">Type</th><th style="padding:6px;text-align:left">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px"></th></tr>` +
+    data.map(q=>`<tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">${q.doc_no}</td>
+        <td style="padding:6px">${q.doc_type}</td>
+        <td style="padding:6px">${q.doc_date}</td>
+        <td style="padding:6px;text-align:right">₹ ${(+q.net_payable).toLocaleString("en-IN")}</td>
+        <td style="padding:6px"><button onclick="reopenQuotation(${q.id})" style="background:#1b7a4a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">Open</button></td>
+      </tr>`).join("") +
+    `</table>`;
+}
+
+/* ===== REOPEN A SAVED QUOTATION (rebuilds the form so you can re-Print) ===== */
+async function reopenQuotation(id){
+  const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
+  if(error){ alert("Could not load that quotation."); console.error(error); return; }
+
+  switchDocType(q.doc_type);
+  qno.value = q.doc_no;
+  qdate.value = q.doc_date;
+  custName.value = q.cust_name || "";
+  custGST.value = q.cust_gst || "";
+  custAddr.value = q.cust_addr || "";
+  currentPartyId = q.party_id;
+  gstToggle.checked = q.gst_applied;
+  if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value = q.cash_disc_pct || "";
+  if(document.getElementById("validityInput")) document.getElementById("validityInput").value = q.validity || "7 DAYS";
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value = q.remarks || "";
+  if(typeof updateTCDisplay === "function") updateTCDisplay();
+
+  tbody.innerHTML = "";
+  (q.items||[]).forEach(it=>{
+    const r = tbody.insertRow();
+    r.innerHTML = `<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button onclick="delRow(this)">Delete</button></td>`;
+  });
+  renumber(); calc();
+  closePartyHistory();
+  document.getElementById("saveStatus").textContent = `Loaded ${q.doc_no} — review, then Print to re-export.`;
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+</script>
 
 <script>
 /* ===== TERMS & CONDITIONS LOGIC ===== */
