@@ -492,39 +492,49 @@ async function saveQuotation(){
     currentPartyId = partyId;
 
     const year = new Date(qdate.value || new Date()).getFullYear();
-    const serial = await getNextSerialForParty(partyId, currentDocType, year);
     const prefix = DOC_TYPES[currentDocType].prefix;
-    const docNo = `${prefix}/${year}/${serial}`;
-    qno.value = docNo;
 
     const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
 
-    const payload = {
-      party_id: partyId,
-      doc_type: currentDocType,
-      doc_no: docNo,
-      doc_date: qdate.value || new Date().toISOString().slice(0,10),
-      cust_name: custName.value.trim(),
-      cust_gst: custGST.value.trim(),
-      cust_addr: custAddr.value.trim(),
-      gst_applied: !!gstToggle.checked,
-      cash_disc_pct: cashPct,
-      validity: document.getElementById("validityInput")?.value || "",
-      remarks: document.getElementById("remarksInput")?.value || "",
-      items: collectItemsFromTable(),
-      sub_total: +(sub.innerText||0),
-      cash_disc_amt: +cashAmt.toFixed(2),
-      taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
-      gst_amt: +(gst.innerText||0),
-      grand_total: +(gt.innerText||0),
-      round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
-      net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
-    };
+    // Retry loop: if a doc_no collision happens (e.g. counter drifted from an earlier
+    // failed attempt), just grab the next serial again instead of showing an error.
+    let docNo, lastErr;
+    for(let attempt=0; attempt<5; attempt++){
+      const serial = await getNextSerialForParty(partyId, currentDocType, year);
+      docNo = `${prefix}/${year}/${serial}`;
 
-    const { error: saveErr } = await sb.from("quotations").insert(payload);
-    if(saveErr) throw saveErr;
+      const payload = {
+        party_id: partyId,
+        doc_type: currentDocType,
+        doc_no: docNo,
+        doc_date: qdate.value || new Date().toISOString().slice(0,10),
+        cust_name: custName.value.trim(),
+        cust_gst: custGST.value.trim(),
+        cust_addr: custAddr.value.trim(),
+        gst_applied: !!gstToggle.checked,
+        cash_disc_pct: cashPct,
+        validity: document.getElementById("validityInput")?.value || "",
+        remarks: document.getElementById("remarksInput")?.value || "",
+        items: collectItemsFromTable(),
+        sub_total: +(sub.innerText||0),
+        cash_disc_amt: +cashAmt.toFixed(2),
+        taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
+        gst_amt: +(gst.innerText||0),
+        grand_total: +(gt.innerText||0),
+        round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
+        net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
+      };
 
+      const { error: saveErr } = await sb.from("quotations").insert(payload);
+      if(!saveErr){ lastErr = null; break; } // success
+      lastErr = saveErr;
+      // Only retry on the specific "doc_no already exists" collision; any other error, stop immediately.
+      if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
+    }
+    if(lastErr) throw lastErr;
+
+    qno.value = docNo;
     status.textContent = `Saved as ${docNo} ✓`;
     setTimeout(()=>status.textContent="", 5000);
   }catch(err){
