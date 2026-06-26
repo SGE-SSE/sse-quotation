@@ -82,7 +82,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 /* Print */
 .no-print{}.entry-only{}.pdf-hide{display:none!important}
 @media print{
-  @page{size:A4 landscape;margin:8mm}
+  @page{size:A4 portrait;margin:8mm}
   .no-print,.entry-only{display:none!important}
   #docTypeBanner{display:block!important}
   body{background:#fff!important;padding:0;margin:0}
@@ -98,7 +98,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   .section-title{color:#1a3c6e!important;border-left:3px solid #f0a500!important}
   th{background:#1a3c6e!important;color:#fff!important;border:1px solid #2a5298!important}
   tbody tr:nth-child(even){background:#f0f4fb!important}
-  td{border:1px solid #c5d3e8!important}
+  td{border:1px solid #c5d3e8!important;color:#1a1a2e!important}
+  .totals-table td{color:#1a1a2e!important}
   .totals-table .gst-row td{background:#fff8e1!important;color:#7a5000!important}
   .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#fff!important}
   .totals-table .roundoff-row td{background:#fff3e0!important;color:#7a4000!important}
@@ -107,13 +108,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   .totals-table{table-layout:fixed!important}
   .totals-table td:first-child{width:55%!important;white-space:nowrap!important}
   .totals-table td:last-child{width:45%!important;text-align:right!important;white-space:nowrap!important}
-  .table-wrapper{margin:0 6px!important;overflow:visible!important}
-  .tc-totals-row{display:table!important;width:calc(100% - 12px)!important;border-collapse:separate!important;border-spacing:6px 0!important;margin:10px 6px 0!important;page-break-inside:avoid!important}
-  .tc-totals-row .tc-box{display:table-cell!important;width:57%!important;vertical-align:top!important;border:1px solid #c5d3e8!important;border-radius:4px!important;overflow:visible!important;padding:4px!important}
-  .tc-totals-row .totals-box{display:table-cell!important;width:43%!important;vertical-align:top!important;overflow:visible!important}
-  .totals-table{width:100%!important;table-layout:auto!important}
-  .totals-table td:first-child{width:auto!important;white-space:nowrap!important;padding:5px 8px!important}
-  .totals-table td:last-child{width:auto!important;text-align:right!important;white-space:nowrap!important;padding:5px 8px!important;min-width:90px!important}
+  .table-wrapper{margin:0 14px!important;overflow:visible!important}
+  .tc-totals-row{display:block!important;width:calc(100% - 28px)!important;margin:10px 14px 14px!important;page-break-inside:avoid!important}
+  .tc-totals-row .tc-box{display:block!important;width:100%!important;box-sizing:border-box!important}
 }
 @media (max-width:768px){
   body{padding:6px}
@@ -265,13 +262,12 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </table>
 </div>
 
-<!-- ===== TOTALS + T&C SIDE BY SIDE ===== -->
-<div class="tc-totals-row" style="margin:14px 14px 0;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:8px">
+<!-- ===== T&C + TOTALS: STACKED ===== -->
+<div style="margin:12px 14px 14px">
 
-<!-- T&C LEFT -->
-<div class="tc-box" style="width:58%;flex-shrink:0">
+<!-- T&C FULL WIDTH -->
 <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;border-radius:6px;table-layout:fixed">
-  <colgroup><col style="width:100px"><col style="width:12px"><col></colgroup>
+  <colgroup><col style="width:110px"><col style="width:12px"><col></colgroup>
   <tr style="background:#f5f8fd">
     <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">PAYMENTS</td>
     <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
@@ -309,25 +305,22 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none;text-align:left" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
   </tr>
 </table>
-</div>
 
-<!-- TOTALS RIGHT 45% -->
-<div class="totals-box" style="width:38%;flex-shrink:0">
-<table class="totals-table" style="width:100%;margin:0">
-  <tr><td style="text-align:left">Sub Total</td><td class="right" id="sub">0.00</td></tr>
-  <tr id="cashDiscRow" style="display:none"><td style="text-align:left;color:#c0392b">Cash Discount</td><td class="right" id="cashDiscAmt" style="color:#c0392b">0.00</td></tr>
-  <tr id="taxableRow" style="display:none"><td style="text-align:left">Taxable Amount</td><td class="right" id="taxableAmt">0.00</td></tr>
-  <tr class="gst-row"><td style="text-align:left">GST 18%</td><td class="right" id="gst">0.00</td></tr>
-  <tr class="grandtotal-row"><td style="text-align:left"><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
-  <tr class="roundoff-row"><td style="text-align:left">Round Off</td><td class="right" id="roundOff">0.00</td></tr>
-  <tr class="netpay-row"><td style="text-align:left"><b>Net Payable</b></td><td class="right" id="netPayable"><b>0</b></td></tr>
-  <tr class="freight-row"><td style="text-align:left">Freight</td><td class="right">Extra — As Actuals</td></tr>
+<!-- TOTALS BELOW, FULL WIDTH -->
+<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;margin-top:8px">
+  <tr><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Sub Total</td><td style="padding:5px 10px;text-align:right;color:#1a1a2e;font-weight:600;border:1px solid #c5d3e8" id="sub">0.00</td></tr>
+  <tr id="cashDiscRow" style="display:none"><td style="padding:5px 10px;text-align:left;color:#c0392b;border:1px solid #c5d3e8">Cash Discount</td><td style="padding:5px 10px;text-align:right;color:#c0392b;font-weight:600;border:1px solid #c5d3e8" id="cashDiscAmt">0.00</td></tr>
+  <tr id="taxableRow" style="display:none"><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Taxable Amount</td><td style="padding:5px 10px;text-align:right;color:#1a1a2e;font-weight:600;border:1px solid #c5d3e8" id="taxableAmt">0.00</td></tr>
+  <tr style="background:#fff8e1"><td style="padding:5px 10px;text-align:left;color:#7a5000;border:1px solid #c5d3e8">GST 18%</td><td style="padding:5px 10px;text-align:right;color:#7a5000;font-weight:600;border:1px solid #c5d3e8" id="gst">0.00</td></tr>
+  <tr style="background:#1a3c6e"><td style="padding:6px 10px;text-align:left;color:#fff;font-weight:700;border:1px solid #2a5298"><b>Grand Total</b></td><td style="padding:6px 10px;text-align:right;color:#fff;font-weight:700;border:1px solid #2a5298" id="gt">0.00</td></tr>
+  <tr style="background:#fff3e0"><td style="padding:5px 10px;text-align:left;color:#7a4000;font-style:italic;border:1px solid #c5d3e8">Round Off</td><td style="padding:5px 10px;text-align:right;color:#7a4000;font-style:italic;border:1px solid #c5d3e8" id="roundOff">0.00</td></tr>
+  <tr style="background:#1b7a4a"><td style="padding:7px 10px;text-align:left;color:#fff;font-weight:800;font-size:13px;border:1px solid #156038"><b>Net Payable</b></td><td style="padding:7px 10px;text-align:right;color:#fff;font-weight:800;font-size:13px;border:1px solid #156038" id="netPayable"><b>0</b></td></tr>
+  <tr style="background:#f5f8fd"><td style="padding:4px 10px;text-align:left;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Freight</td><td style="padding:4px 10px;text-align:right;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Extra — As Actuals</td></tr>
 </table>
-</div>
 
 </div>
 
-<div class="no-print" style="margin:10px 14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
+<div class="no-print" style="margin:12px 14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💳 Payment:</span>
   <select id="payTermSelect" onchange="handlePayTermChange()" style="width:auto;min-width:160px;font-size:11.5px">
     <option value="AGAINST DELIVERY">Against Delivery</option>
@@ -346,7 +339,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <input type="text" id="remarksInput" oninput="updateTCDisplay()" style="width:220px;font-size:11.5px" placeholder="Optional note for this quotation">
 </div>
 
-<div class="no-print action-btns" style="margin-top:10px;padding:0 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
+<div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
