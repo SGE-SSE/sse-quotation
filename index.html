@@ -84,6 +84,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 @media print{
   @page{size:A4 landscape;margin:8mm}
   .no-print,.entry-only{display:none!important}
+  #docTypeBanner{display:block!important}
   body{background:#fff!important;padding:0;margin:0}
   .card{box-shadow:none!important;border-radius:0!important;max-width:100%!important;overflow:visible!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
@@ -137,12 +138,19 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
   <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
 </div>
+<div id="docTypeBanner" style="display:none;text-align:center;padding:6px;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #1a3c6e;color:#1a3c6e;background:#f0f4fb"></div>
 
 <div class="section-panel">
-  <div class="section-title">Quotation Details</div>
+  <div class="section-title" id="docSectionTitle">Quotation Details</div>
+  <div class="no-print" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#1a3c6e">📄 Document Type:</span>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="QTN" checked onchange="switchDocType(this.value)"> Quotation</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="CB" onchange="switchDocType(this.value)"> Cash Bill</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
+  </div>
   <div class="header-grid">
-    <div><label>Quotation No</label><input type="text" id="qno"></div>
-    <div><label>Quotation Date</label><input type="date" id="qdate"></div>
+    <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
+    <div><label id="docDateLabel">Quotation Date</label><input type="date" id="qdate"></div>
   </div>
 </div>
 
@@ -164,7 +172,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <!-- ===== ENTRY AREA ===== -->
 <div class="entry-only no-print">
 <div class="entry-panel">
-<div class="section-title">Add Item to Quotation</div>
+<div class="section-title" id="addItemTitle">Add Item to Quotation</div>
 <label>Brand</label>
 <select id="brand"></select>
 <label>Item</label>
@@ -243,7 +251,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 
 <!-- TABLE -->
 <div class="table-wrapper">
-<div class="section-title" style="margin-bottom:6px">Quotation Items</div>
+<div class="section-title" id="itemsTitle" style="margin-bottom:6px">Quotation Items</div>
 <table id="qt">
 <thead>
 <tr>
@@ -307,6 +315,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <div class="totals-box" style="width:38%;flex-shrink:0">
 <table class="totals-table" style="width:100%;margin:0">
   <tr><td style="text-align:left">Sub Total</td><td class="right" id="sub">0.00</td></tr>
+  <tr id="cashDiscRow" style="display:none"><td style="text-align:left;color:#c0392b">Cash Discount</td><td class="right" id="cashDiscAmt" style="color:#c0392b">0.00</td></tr>
+  <tr id="taxableRow" style="display:none"><td style="text-align:left">Taxable Amount</td><td class="right" id="taxableAmt">0.00</td></tr>
   <tr class="gst-row"><td style="text-align:left">GST 18%</td><td class="right" id="gst">0.00</td></tr>
   <tr class="grandtotal-row"><td style="text-align:left"><b>Grand Total</b></td><td class="right" id="gt">0.00</td></tr>
   <tr class="roundoff-row"><td style="text-align:left">Round Off</td><td class="right" id="roundOff">0.00</td></tr>
@@ -328,6 +338,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">PDC Days:</span>
     <input type="number" id="pdcDays" min="1" max="365" placeholder="e.g. 30" oninput="updateTCDisplay()" style="width:70px;font-size:11.5px">
   </div>
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💰 Cash Disc %:</span>
+  <input type="number" id="cashDiscPct" min="0" max="100" step="0.01" placeholder="0" oninput="calc()" style="width:60px;font-size:11.5px" title="Cash discount applied on Sub Total before GST">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
   <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px" placeholder="e.g. 7 DAYS">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
@@ -777,12 +789,38 @@ function refreshBrandDropdown(){
   if(prevBrand && items[prevBrand]){ brandSel.value=prevBrand; brandSel.onchange(); }
 }
 
+const DOC_TYPES = {
+  QTN: { label:"QUOTATION",        noLabel:"Quotation No",  dateLabel:"Quotation Date",  section:"Quotation Details", addTitle:"Add Item to Quotation", itemsTitle:"Quotation Items",  prefix:"SSE/QTN", storageKey:"SSE_QTN", file:"SSE_Quotation"  },
+  CB:  { label:"CASH BILL",        noLabel:"Cash Bill No",  dateLabel:"Cash Bill Date",  section:"Cash Bill Details", addTitle:"Add Item",              itemsTitle:"Cash Bill Items",  prefix:"SSE/CB",  storageKey:"SSE_CB",  file:"SSE_CashBill"  },
+  PI:  { label:"PROFORMA INVOICE", noLabel:"Proforma No",   dateLabel:"Invoice Date",    section:"Proforma Details",  addTitle:"Add Item to Invoice",   itemsTitle:"Invoice Items",    prefix:"SSE/PI",  storageKey:"SSE_PI",  file:"SSE_Proforma"  }
+};
+
+let currentDocType = "QTN";
+
+function switchDocType(type){
+  currentDocType = type;
+  const d = DOC_TYPES[type];
+  document.getElementById("docSectionTitle").innerText = d.section;
+  document.getElementById("docNoLabel").innerText = d.noLabel;
+  document.getElementById("docDateLabel").innerText = d.dateLabel;
+  document.getElementById("addItemTitle").innerText = d.addTitle;
+  document.getElementById("itemsTitle").innerText = d.itemsTitle;
+  document.getElementById("docTypeBanner").innerText = d.label;
+  // Generate a new number for this doc type
+  const y = new Date().getFullYear();
+  const k = d.storageKey + "_" + y;
+  let s = parseInt(localStorage.getItem(k)||"0") + 1;
+  localStorage.setItem(k, s);
+  qno.value = `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+}
+
 function generateQuotationNo(){
-  const y=new Date().getFullYear();
-  const k="SSE_QTN_"+y;
-  let s=parseInt(localStorage.getItem(k)||"0")+1;
-  localStorage.setItem(k,s);
-  return `SSE/QTN/${y}/${String(s).padStart(3,"0")}`;
+  const d = DOC_TYPES[currentDocType];
+  const y = new Date().getFullYear();
+  const k = d.storageKey + "_" + y;
+  let s = parseInt(localStorage.getItem(k)||"0") + 1;
+  localStorage.setItem(k, s);
+  return `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
 }
 
 brandSel.onchange=()=>{
@@ -1199,8 +1237,26 @@ function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
 function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[11].innerText);
   sub.innerText=s.toFixed(2);
-  gst.innerText=gstToggle.checked?(s*0.18).toFixed(2):"0.00";
-  const grandTotal=s+(+gst.innerText);
+
+  // Cash discount applied on sub total BEFORE GST
+  const cashPct=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
+  const cashAmt=cashPct>0 ? (s*cashPct/100) : 0;
+  const taxable=s-cashAmt;
+
+  const cashDiscRow=document.getElementById("cashDiscRow");
+  const taxableRow=document.getElementById("taxableRow");
+  if(cashPct>0){
+    document.getElementById("cashDiscAmt").innerText="- "+cashAmt.toFixed(2);
+    document.getElementById("taxableAmt").innerText=taxable.toFixed(2);
+    if(cashDiscRow) cashDiscRow.style.display="";
+    if(taxableRow) taxableRow.style.display="";
+  } else {
+    if(cashDiscRow) cashDiscRow.style.display="none";
+    if(taxableRow) taxableRow.style.display="none";
+  }
+
+  gst.innerText=gstToggle.checked?(taxable*0.18).toFixed(2):"0.00";
+  const grandTotal=taxable+(+gst.innerText);
   gt.innerText=grandTotal.toFixed(2);
   const rounded=Math.round(grandTotal);
   const roundOff=rounded-grandTotal;
@@ -1221,6 +1277,11 @@ function exportExcel(){
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,12).map(c=>c.innerText)));
   data.push([]);
   data.push(["","","","","","","","","","","Sub Total",sub.innerText]);
+  const cashPctVal=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
+  if(cashPctVal>0){
+    data.push(["","","","","","","","","","","Cash Discount ("+cashPctVal+"%)",document.getElementById("cashDiscAmt").innerText]);
+    data.push(["","","","","","","","","","","Taxable Amount",document.getElementById("taxableAmt").innerText]);
+  }
   data.push(["","","","","","","","","","","GST 18%",gst.innerText]);
   data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
   data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
@@ -1232,15 +1293,16 @@ function exportExcel(){
   data.push(["Tolerance","±5% on quantity supplied is acceptable"]);
   data.push(["Validity","Subject to stock availability & price revision"]);
   if(remarksTxt) data.push(["Remarks",remarksTxt]);
+  const docD = DOC_TYPES[currentDocType];
   let wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Quotation");
-  XLSX.writeFile(wb,"SSE_Quotation.xlsx");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data), docD.label);
+  XLSX.writeFile(wb, docD.file + ".xlsx");
 }
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
   html2pdf().set({
-    margin:5,filename:"SSE_Quotation.pdf",
+    margin:5,filename:DOC_TYPES[currentDocType].file+".pdf",
     html2canvas:{scale:2,useCORS:true},
     jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
   }).from(document.getElementById("printArea")).save().then(()=>{
