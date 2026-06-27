@@ -38,15 +38,6 @@ td{border:1px solid #c5d3e8;padding:5px;text-align:center;color:var(--text)}
 tbody tr:nth-child(even){background:var(--table-alt)}
 tbody tr:hover{background:#dce8fb}
 .right{text-align:right}
-.totals-table{width:100%;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
-.totals-table td{padding:6px 10px;font-size:12.5px;border:1px solid var(--border);white-space:nowrap}
-.totals-table td:last-child{text-align:right;min-width:100px}
-.totals-table tr:first-child td{background:#f0f4fb}
-.totals-table .gst-row td{background:#fff8e1;color:#7a5000}
-.totals-table .grandtotal-row td{background:#1a3c6e;color:#ffffff!important;font-weight:800;font-size:13px}
-.totals-table .roundoff-row td{background:#fff3e0;color:#7a4000;font-style:italic}
-.totals-table .netpay-row td{background:#1b7a4a;color:#ffffff!important;font-size:14px;font-weight:800}
-.totals-table .freight-row td{background:#f5f8fd;color:var(--muted);font-style:italic;font-size:11px}
 button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;cursor:pointer;transition:all .15s}
 .btn-add{background:var(--primary);color:#fff}
 .btn-add:hover{background:var(--primary-light)}
@@ -70,19 +61,18 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 .clr-btn:hover{opacity:1;transform:scale(1.06)}
 .clr-btn.active{border-color:#fff;box-shadow:0 0 0 3px #6a1b9a;opacity:1;transform:scale(1.08)}
 
-/* ===== TERMS & CONDITIONS ===== */
-.tc-panel{background:#fffde7;border:1px solid #f9a825;border-radius:7px;padding:12px 14px;margin:0 14px 12px}
-.tc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
-.tc-table{width:100%;border-collapse:collapse;margin-top:6px}
-.tc-table td{border:none;padding:5px 8px;font-size:12px;vertical-align:middle}
-.tc-table .tc-icon{width:28px;font-size:14px;text-align:center}
-.tc-table .tc-label{width:170px;font-weight:700;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
-.tc-table .tc-value{color:var(--text);font-size:12px}
-.tc-table tr{border-bottom:1px dashed #f0c060}
-.tc-table tr:last-child{border-bottom:none}
-.tc-badge{display:inline-block;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px}
+/* ===== COMPARE TABLE STYLES ===== */
+#cmpTable th.brand-header-1{background:#1a3c6e;color:#fff}
+#cmpTable th.brand-header-2{background:#1b7a4a;color:#fff}
+#cmpTable th.brand-header-3{background:#6a1b9a;color:#fff}
+#cmpTable td.brand-col-1{background:#f0f4fb}
+#cmpTable td.brand-col-2{background:#e8f5ee}
+#cmpTable td.brand-col-3{background:#f3e5f5}
+.cmp-totals-box{border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-top:10px}
+.cmp-totals-box table{font-size:12px}
+.cmp-totals-box th{padding:6px 8px;font-size:11px}
+.cmp-totals-box td{padding:6px 8px}
 
-/* Print */
 .no-print{}.entry-only{}.pdf-hide{display:none!important}
 @media print{
   @page{size:A4 portrait;margin:8mm}
@@ -93,41 +83,30 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .company-header{background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;color:#fff!important;border-bottom:4px solid #f0a500!important}
   .company-header h2{color:#fff!important}
-  .company-header .tagline{color:#c8d8f5!important}
-  .company-header .contact{color:#e0ecff!important}
-  .company-header .contact a{color:#f0a500!important}
-  .company-header .deal-line{background:rgba(255,255,255,0.12)!important;color:#d4e8ff!important}
-  .section-panel{background:#f5f8fd!important;border:1px solid #c5d3e8!important;margin:6px 10px!important;padding:8px 10px!important}
-  .section-title{color:#1a3c6e!important;border-left:3px solid #f0a500!important}
-  th{background:#1a3c6e!important;color:#fff!important;border:1px solid #2a5298!important}
+  th{background:#1a3c6e!important;color:#fff!important}
   tbody tr:nth-child(even){background:#f0f4fb!important}
   td{border:1px solid #c5d3e8!important;color:#1a1a2e!important}
-  .totals-table td{color:#1a1a2e!important}
-  .totals-table .gst-row td{background:#fff8e1!important;color:#7a5000!important}
-  .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;font-weight:800!important;-webkit-text-fill-color:#ffffff!important}
-  .totals-table .grandtotal-row td#gt{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
-  .totals-table .roundoff-row td{background:#fff3e0!important;color:#7a4000!important}
-  .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;font-weight:800!important;-webkit-text-fill-color:#ffffff!important}
-  .totals-table .netpay-row td#netPayable{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
-  .totals-table .freight-row td{background:#f5f8fd!important;color:#5a6a85!important}
-  .totals-table{table-layout:fixed!important}
-  .totals-table td:first-child{width:55%!important;white-space:nowrap!important}
-  .totals-table td:last-child{width:45%!important;text-align:right!important;white-space:nowrap!important}
+  #cmpTable th.brand-header-1{background:#1a3c6e!important;color:#fff!important}
+  #cmpTable th.brand-header-2{background:#1b7a4a!important;color:#fff!important}
+  #cmpTable th.brand-header-3{background:#6a1b9a!important;color:#fff!important}
+  #cmpTable td.brand-col-1{background:#f0f4fb!important}
+  #cmpTable td.brand-col-2{background:#e8f5ee!important}
+  #cmpTable td.brand-col-3{background:#f3e5f5!important}
+  .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+  .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .table-wrapper{margin:0 14px!important;overflow:visible!important}
-  .tc-totals-row{display:block!important;width:calc(100% - 28px)!important;margin:10px 14px 14px!important;page-break-inside:avoid!important}
-  .tc-totals-row .tc-box{display:block!important;width:100%!important;box-sizing:border-box!important}
 }
 @media (max-width:768px){
   body{padding:6px}
-  .header-grid,.customer-grid,.tc-grid{grid-template-columns:1fr}
+  .header-grid,.customer-grid{grid-template-columns:1fr}
   .entry-grid-mobile{grid-template-columns:1fr 1fr}
   .entry-grid-mobile .btn-add-wrap{grid-column:span 2}
   .cable-info-grid{grid-template-columns:1fr 1fr}
   .table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:11px;min-width:560px}
-  .totals-table{width:100%!important}
   .action-btns{flex-wrap:wrap}
   .action-btns button{flex:1;min-width:80px}
+  .cmp-brand-grid{grid-template-columns:1fr!important}
 }
 </style>
 </head>
@@ -141,6 +120,15 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
 </div>
 <div id="docTypeBanner" style="display:none;text-align:center;padding:6px;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #1a3c6e;color:#1a3c6e;background:#f0f4fb"></div>
+
+<!-- ===== MODE TABS ===== -->
+<div class="no-print" id="modeTabs" style="display:flex;border-bottom:3px solid #1a3c6e;background:#f0f4fb">
+  <button id="tabRegular" onclick="switchMode('regular')" style="flex:1;padding:11px 0;font-size:13px;font-weight:800;border:none;border-radius:0;background:#1a3c6e;color:#fff;cursor:pointer;letter-spacing:.5px">📄 REGULAR QUOTATION</button>
+  <button id="tabCompare" onclick="switchMode('compare')" style="flex:1;padding:11px 0;font-size:13px;font-weight:800;border:none;border-radius:0;background:#f0f4fb;color:#1a3c6e;cursor:pointer;letter-spacing:.5px">⚖️ PRICE COMPARISON</button>
+</div>
+
+<!-- ===================== REGULAR SECTION ===================== -->
+<div id="regularSection">
 
 <div class="section-panel">
   <div class="section-title" id="docSectionTitle">Quotation Details</div>
@@ -172,13 +160,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
-<!-- ===== PAYMENT SELECTOR (screen only, hidden on print) ===== -->
-
-
-<!-- PLACEHOLDER so old references don't break -->
 <span id="tcPaymentVal" style="display:none">AGAINST DELIVERY</span>
 
-<!-- ===== ENTRY AREA ===== -->
+<!-- ENTRY AREA -->
 <div class="entry-only no-print">
 <div class="entry-panel">
 <div class="section-title" id="addItemTitle">Add Item to Quotation</div>
@@ -244,7 +228,6 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </div>
 </div>
 
-<!-- CUSTOM ITEM -->
 <label><input type="checkbox" id="customToggle" onchange="toggleCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
 <div id="customItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
@@ -258,7 +241,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </div>
 </div>
 
-<!-- TABLE -->
+<!-- REGULAR TABLE -->
 <div class="table-wrapper">
 <div class="section-title" id="itemsTitle" style="margin-bottom:6px">Quotation Items</div>
 <table id="qt">
@@ -274,62 +257,58 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </table>
 </div>
 
-<!-- ===== T&C + TOTALS: STACKED ===== -->
+<!-- T&C + TOTALS -->
 <div style="margin:12px 14px 14px">
-
-<!-- T&C FULL WIDTH -->
 <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;border-radius:6px;table-layout:fixed">
   <colgroup><col style="width:110px"><col style="width:12px"><col></colgroup>
   <tr style="background:#f5f8fd">
     <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">PAYMENTS</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word" id="tcBottomPayment">AGAINST DELIVERY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomPayment">AGAINST DELIVERY</td>
   </tr>
   <tr>
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">STOCK</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left">EX STOCK</td>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">STOCK</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">EX STOCK</td>
   </tr>
   <tr style="background:#f5f8fd">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">VALIDITY</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left" id="tcBottomValidity">7 DAYS</td>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">VALIDITY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0" id="tcBottomValidity">7 DAYS</td>
   </tr>
   <tr>
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">TOLERANCE</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left">+/- 5%</td>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">TOLERANCE</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">+/- 5%</td>
   </tr>
   <tr style="background:#f5f8fd">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">DELIVERY</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word">WITHIN 7 DAYS OF ORDER CONFIRMATION</td>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">DELIVERY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word">WITHIN 7 DAYS OF ORDER CONFIRMATION</td>
   </tr>
   <tr style="background:#fff8e1">
-    <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0;text-align:left" colspan="3">TRANSPORTATION EXTRA</td>
+    <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0" colspan="3">TRANSPORTATION EXTRA</td>
   </tr>
   <tr id="remarksRow" style="display:none">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap;vertical-align:top">REMARKS</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;text-align:left;vertical-align:top">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;word-wrap:break-word" id="tcBottomRemarks"></td>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap;vertical-align:top">REMARKS</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;vertical-align:top">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomRemarks"></td>
   </tr>
   <tr style="background:#f9f9f9">
-    <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none;text-align:left" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
+    <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
   </tr>
 </table>
 
-<!-- TOTALS BELOW, FULL WIDTH -->
 <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;margin-top:8px">
-  <tr><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Sub Total</td><td style="padding:5px 10px;text-align:right;color:#1a1a2e;font-weight:600;border:1px solid #c5d3e8" id="sub">0.00</td></tr>
+  <tr><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Sub Total</td><td style="padding:5px 10px;text-align:right;font-weight:600;border:1px solid #c5d3e8" id="sub">0.00</td></tr>
   <tr id="cashDiscRow" style="display:none"><td style="padding:5px 10px;text-align:left;color:#c0392b;border:1px solid #c5d3e8">Cash Discount</td><td style="padding:5px 10px;text-align:right;color:#c0392b;font-weight:600;border:1px solid #c5d3e8" id="cashDiscAmt">0.00</td></tr>
-  <tr id="taxableRow" style="display:none"><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Taxable Amount</td><td style="padding:5px 10px;text-align:right;color:#1a1a2e;font-weight:600;border:1px solid #c5d3e8" id="taxableAmt">0.00</td></tr>
+  <tr id="taxableRow" style="display:none"><td style="padding:5px 10px;text-align:left;border:1px solid #c5d3e8">Taxable Amount</td><td style="padding:5px 10px;text-align:right;font-weight:600;border:1px solid #c5d3e8" id="taxableAmt">0.00</td></tr>
   <tr style="background:#fff8e1"><td style="padding:5px 10px;text-align:left;color:#7a5000;border:1px solid #c5d3e8">GST 18%</td><td style="padding:5px 10px;text-align:right;color:#7a5000;font-weight:600;border:1px solid #c5d3e8" id="gst">0.00</td></tr>
-  <tr style="background:#1a3c6e"><td style="padding:6px 10px;text-align:left;color:#ffffff;-webkit-text-fill-color:#ffffff;font-weight:700;border:1px solid #2a5298"><b>Grand Total</b></td><td style="padding:6px 10px;text-align:right;color:#ffffff;-webkit-text-fill-color:#ffffff;font-weight:700;border:1px solid #2a5298" id="gt">0.00</td></tr>
+  <tr style="background:#1a3c6e"><td style="padding:6px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298"><b>Grand Total</b></td><td style="padding:6px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298" id="gt">0.00</td></tr>
   <tr style="background:#fff3e0"><td style="padding:5px 10px;text-align:left;color:#7a4000;font-style:italic;border:1px solid #c5d3e8">Round Off</td><td style="padding:5px 10px;text-align:right;color:#7a4000;font-style:italic;border:1px solid #c5d3e8" id="roundOff">0.00</td></tr>
-  <tr style="background:#1b7a4a"><td style="padding:7px 10px;text-align:left;color:#ffffff;-webkit-text-fill-color:#ffffff;font-weight:800;font-size:13px;border:1px solid #156038"><b>Net Payable</b></td><td style="padding:7px 10px;text-align:right;color:#ffffff;-webkit-text-fill-color:#ffffff;font-weight:800;font-size:13px;border:1px solid #156038" id="netPayable"><b>0</b></td></tr>
+  <tr style="background:#1b7a4a"><td style="padding:7px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038"><b>Net Payable</b></td><td style="padding:7px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038" id="netPayable"><b>0</b></td></tr>
   <tr style="background:#f5f8fd"><td style="padding:4px 10px;text-align:left;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Freight</td><td style="padding:4px 10px;text-align:right;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Extra — As Actuals</td></tr>
 </table>
-
 </div>
 
 <div class="no-print" style="margin:12px 14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
@@ -344,9 +323,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <input type="number" id="pdcDays" min="1" max="365" placeholder="e.g. 30" oninput="updateTCDisplay()" style="width:70px;font-size:11.5px">
   </div>
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💰 Cash Disc %:</span>
-  <input type="number" id="cashDiscPct" min="0" max="100" step="0.01" placeholder="0" oninput="calc()" style="width:60px;font-size:11.5px" title="Cash discount applied on Sub Total before GST">
+  <input type="number" id="cashDiscPct" min="0" max="100" step="0.01" placeholder="0" oninput="calc()" style="width:60px;font-size:11.5px">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
-  <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px" placeholder="e.g. 7 DAYS">
+  <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
   <input type="text" id="remarksInput" oninput="updateTCDisplay()" style="width:220px;font-size:11.5px" placeholder="Optional note for this quotation">
 </div>
@@ -362,7 +341,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
 </div>
 
-<!-- ===== EDIT PRICES MODAL ===== -->
+<!-- EDIT PRICES MODAL -->
 <div id="priceEditorOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:900px;max-height:90vh;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)">
     <div style="background:#1a3c6e;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
@@ -387,7 +366,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
-<!-- ===== PARTY HISTORY MODAL ===== -->
+<!-- PARTY HISTORY MODAL -->
 <div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:10px;width:min(700px,92vw);max-height:85vh;overflow-y:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -403,116 +382,197 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
-<!-- ===== EDIT ROW MODAL ===== -->
+<!-- EDIT ROW MODAL -->
 <div id="editRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px">
   <div style="background:#fff;width:100%;max-width:580px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
-
-    <!-- Header -->
     <div style="background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
       <strong style="font-size:15px">✏️ Edit Row</strong>
       <button onclick="closeEditRow()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
     </div>
-
-    <!-- Fields -->
     <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-
-      <!-- Brand -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">Brand</label>
-        <input type="text" id="editBrand" list="editBrandList" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px;font-weight:700;color:#1a3c6e">
-        <datalist id="editBrandList"></datalist>
-      </div>
-
-      <!-- Description / Item Name -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">Description / Item Name</label>
-        <input type="text" id="editDescription" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px">
-      </div>
-
-      <!-- Colour -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase;letter-spacing:.5px">Colour</label>
-        <input type="text" id="editColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700">
-      </div>
-
-      <!-- HSN -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px">HSN Code</label>
-        <input type="text" id="editHSN" placeholder="e.g. 8544" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px">
-      </div>
-
-      <!-- Unit -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">Unit</label>
-        <select id="editUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
-          <option>NOS</option><option>MTRS</option><option>COIL</option>
-          <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
-        </select>
-      </div>
-
-      <!-- Qty -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">Qty</label>
-        <input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
-      </div>
-
-      <!-- MRP -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">MRP</label>
-        <input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px">
-      </div>
-
-      <!-- Discount % — highlighted -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:.5px">🏷️ Discount %</label>
-        <input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5">
-      </div>
-
-      <!-- Net Rate — auto calculated -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase;letter-spacing:.5px">Net Rate <span style="font-size:9px;font-weight:400;color:#888">(MRP − Disc%)</span></label>
-        <input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4">
-      </div>
-
-      <!-- Per Mtr Rate — READ ONLY, auto from Net Rate ÷ Coil Length -->
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px">Per Mtr Rate <span style="font-size:9px;font-weight:400;color:#888">(auto)</span></label>
-        <input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed">
-      </div>
-
-      <!-- Live Amount preview -->
+      <div><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Brand</label><input type="text" id="editBrand" list="editBrandList" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px;font-weight:700;color:#1a3c6e"><datalist id="editBrandList"></datalist></div>
+      <div><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Description</label><input type="text" id="editDescription" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase">Colour</label><input type="text" id="editColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">HSN Code</label><input type="text" id="editHSN" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label><select id="editUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"><option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option></select></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase">🏷️ Discount %</label><input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate</label><input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">Per Mtr Rate</label><input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed"></div>
       <div style="grid-column:span 2;background:linear-gradient(135deg,#1a3c6e,#2a5298);border-radius:7px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
         <span style="color:#c8d8f5;font-size:12px;font-weight:700">AMOUNT (Qty × Net Rate)</span>
         <span id="editAmt" style="color:#fff;font-size:18px;font-weight:800">₹ 0.00</span>
       </div>
-
     </div>
-
-    <!-- Footer -->
     <div style="padding:10px 18px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eee">
       <span style="font-size:11px;color:#aaa">Changes only affect this row</span>
       <div style="display:flex;gap:8px">
-        <button onclick="closeEditRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:12.5px">✕ Cancel</button>
-        <button onclick="saveEditRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800;font-size:13px">💾 Save Changes</button>
+        <button onclick="closeEditRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">✕ Cancel</button>
+        <button onclick="saveEditRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800">💾 Save Changes</button>
       </div>
     </div>
-
   </div>
 </div>
+
+</div><!-- end #regularSection -->
+
+<!-- ===================== PRICE COMPARISON SECTION ===================== -->
+<div id="compareSection" style="display:none">
+
+<div class="section-panel">
+  <div class="section-title">⚖️ Price Comparison Quotation</div>
+  <div class="header-grid">
+    <div><label>Quotation No</label><input type="text" id="cmpQno"></div>
+    <div><label>Date</label><input type="date" id="cmpDate"></div>
+  </div>
+  <div class="customer-grid" style="margin-top:8px">
+    <div><label>Customer Name</label><input type="text" id="cmpCust"></div>
+    <div><label>Customer GSTIN</label><input type="text" id="cmpGST"></div>
+  </div>
+</div>
+
+<!-- Brand Setup -->
+<div class="section-panel no-print" style="background:#fff7e6;border-color:#f0c060">
+  <div class="section-title">🏷️ Select Brands to Compare (Max 3)</div>
+  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div>
+      <label>Brand 1</label>
+      <input type="text" id="cmpBrand1" list="cmpBrandList1" placeholder="e.g. POLYCAB" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1a3c6e;border-color:#1a3c6e">
+      <datalist id="cmpBrandList1"></datalist>
+    </div>
+    <div>
+      <label>Brand 2</label>
+      <input type="text" id="cmpBrand2" list="cmpBrandList2" placeholder="e.g. HAVELLS" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1b7a4a;border-color:#1b7a4a">
+      <datalist id="cmpBrandList2"></datalist>
+    </div>
+    <div>
+      <label>Brand 3 (Optional)</label>
+      <input type="text" id="cmpBrand3" list="cmpBrandList3" placeholder="e.g. FINOLEX" oninput="refreshCmpHeaders()" style="font-weight:700;color:#6a1b9a;border-color:#6a1b9a">
+      <datalist id="cmpBrandList3"></datalist>
+    </div>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% columns
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="cmpShowPerMtr" checked onchange="renderCmpTable()"> Show Per-Mtr Rate columns
+    </label>
+  </div>
+</div>
+
+<!-- Add Item Row -->
+<div class="entry-panel no-print">
+  <div class="section-title">➕ Add Item to Compare</div>
+  <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end">
+    <div><label>Description / Item Name</label><input type="text" id="cmpItemDesc" placeholder="e.g. 1.5 Sq.mm FR Wire"></div>
+    <div><label>HSN Code</label><input type="text" id="cmpItemHSN" placeholder="8544"></div>
+    <div><label>Unit</label>
+      <select id="cmpItemUnit">
+        <option>NOS</option><option>MTRS</option><option>COIL</option>
+        <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+      </select>
+    </div>
+    <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
+  </div>
+  <!-- Brand pricing row -->
+  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+    <!-- Brand 1 -->
+    <div style="background:#e8f0fb;border:1px solid #1a3c6e;border-radius:6px;padding:8px">
+      <div style="font-size:11px;font-weight:800;color:#1a3c6e;margin-bottom:6px" id="cmpPriceLabel1">BRAND 1</div>
+      <label>Item</label>
+      <select id="cmpItemSel1" onchange="cmpItemPicked(1)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>MRP</label><input type="number" id="cmpMRP1" min="0" oninput="cmpRecalcRate(1)" placeholder="0"></div>
+        <div><label>Disc %</label><input type="number" id="cmpDisc1" min="0" max="100" step="0.01" oninput="cmpRecalcRate(1)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate1" min="0" placeholder="0" oninput="cmpRateManualEdit(1)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen1" min="0" oninput="cmpRecalcRate(1)" placeholder="—" style="font-size:11px"></div>
+      </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1a3c6e;border-radius:4px;padding:4px 6px;font-size:11px;color:#1a3c6e">Per Mtr Rate: <b id="cmpPerMtr1">—</b></div>
+    </div>
+    <!-- Brand 2 -->
+    <div style="background:#e8f5ee;border:1px solid #1b7a4a;border-radius:6px;padding:8px">
+      <div style="font-size:11px;font-weight:800;color:#1b7a4a;margin-bottom:6px" id="cmpPriceLabel2">BRAND 2</div>
+      <label>Item</label>
+      <select id="cmpItemSel2" onchange="cmpItemPicked(2)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>MRP</label><input type="number" id="cmpMRP2" min="0" oninput="cmpRecalcRate(2)" placeholder="0"></div>
+        <div><label>Disc %</label><input type="number" id="cmpDisc2" min="0" max="100" step="0.01" oninput="cmpRecalcRate(2)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate2" min="0" placeholder="0" oninput="cmpRateManualEdit(2)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen2" min="0" oninput="cmpRecalcRate(2)" placeholder="—" style="font-size:11px"></div>
+      </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1b7a4a;border-radius:4px;padding:4px 6px;font-size:11px;color:#1b7a4a">Per Mtr Rate: <b id="cmpPerMtr2">—</b></div>
+    </div>
+    <!-- Brand 3 -->
+    <div style="background:#f3e5f5;border:1px solid #6a1b9a;border-radius:6px;padding:8px">
+      <div style="font-size:11px;font-weight:800;color:#6a1b9a;margin-bottom:6px" id="cmpPriceLabel3">BRAND 3</div>
+      <label>Item</label>
+      <select id="cmpItemSel3" onchange="cmpItemPicked(3)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>MRP</label><input type="number" id="cmpMRP3" min="0" oninput="cmpRecalcRate(3)" placeholder="0"></div>
+        <div><label>Disc %</label><input type="number" id="cmpDisc3" min="0" max="100" step="0.01" oninput="cmpRecalcRate(3)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate3" min="0" placeholder="0" oninput="cmpRateManualEdit(3)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen3" min="0" oninput="cmpRecalcRate(3)" placeholder="—" style="font-size:11px"></div>
+      </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #6a1b9a;border-radius:4px;padding:4px 6px;font-size:11px;color:#6a1b9a">Per Mtr Rate: <b id="cmpPerMtr3">—</b></div>
+    </div>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px">
+    <button class="btn-add" onclick="addCmpRow()" style="padding:8px 22px;font-size:13px">➕ ADD ITEM</button>
+    <button onclick="clearCmpEntry()" style="background:#eee;color:#333;padding:8px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;cursor:pointer">✕ Clear</button>
+  </div>
+</div>
+
+<!-- Comparison Table -->
+<div class="table-wrapper" style="overflow-x:auto;margin:0 14px">
+  <table id="cmpTable" style="width:100%;border-collapse:collapse;font-size:11.5px">
+    <thead id="cmpThead"></thead>
+    <tbody id="cmpTbody"></tbody>
+  </table>
+</div>
+
+<!-- Comparison Totals -->
+<div id="cmpTotalsWrap" style="margin:10px 14px"></div>
+
+<!-- Action Buttons -->
+<div class="no-print action-btns" style="margin:10px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn-print" onclick="printCmp()">🖨️ PRINT</button>
+  <button class="btn-excel" onclick="exportCmpExcel()">📊 EXCEL</button>
+  <button class="btn-pdf" onclick="exportCmpPDF()">📄 PDF</button>
+</div>
+
+</div><!-- end #compareSection -->
 
 </div><!-- end .card -->
 
 <script>
+/* ===== SUPABASE ===== */
 const SUPABASE_URL = "https://psfqruuzjwpvllahlkla.supabase.co";
 const SUPABASE_KEY = "sb_publishable_9jcUcWEowbzGG3QgEA943g_VS0BJQWl";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentPartyId = null; // set when an existing party is chosen, or after a new one is created on save
+let currentPartyId = null;
 
-/* ===== PARTY AUTOCOMPLETE (Customer Name field) ===== */
+/* ===== MODE SWITCHING ===== */
+function switchMode(mode){
+  const isRegular = mode === 'regular';
+  document.getElementById('regularSection').style.display = isRegular ? '' : 'none';
+  document.getElementById('compareSection').style.display = isRegular ? 'none' : '';
+  document.getElementById('tabRegular').style.background = isRegular ? '#1a3c6e' : '#f0f4fb';
+  document.getElementById('tabRegular').style.color = isRegular ? '#fff' : '#1a3c6e';
+  document.getElementById('tabCompare').style.background = isRegular ? '#f0f4fb' : '#1a3c6e';
+  document.getElementById('tabCompare').style.color = isRegular ? '#1a3c6e' : '#fff';
+  if(!isRegular){ populateCmpBrandLists(); }
+}
+
+/* ===== PARTY AUTOCOMPLETE ===== */
 let partySearchTimer = null;
 function onPartyNameInput(){
-  currentPartyId = null; // typing invalidates a previous exact match until re-confirmed
+  currentPartyId = null;
   clearTimeout(partySearchTimer);
   const q = custName.value.trim();
   if(!q){ hidePartySuggestions(); return; }
@@ -537,48 +597,33 @@ function renderPartySuggestions(list, containerId, onPick){
 }
 function hidePartySuggestions(){ document.getElementById("partySuggestions").style.display="none"; }
 
-/* ===== SAVE OR FIND PARTY ===== */
 async function findOrCreateParty(name, gstin, addr){
   name = name.trim();
   if(!name) throw new Error("Customer name is required to save.");
-  // Try exact match first (case-insensitive)
   const { data: existing, error: findErr } = await sb.from("parties").select("id").ilike("name", name).limit(1);
   if(findErr) throw findErr;
-  if(existing && existing.length){
-    return existing[0].id;
-  }
+  if(existing && existing.length){ return existing[0].id; }
   const { data: created, error: createErr } = await sb.from("parties")
     .insert({ name, gstin: gstin||null, address: addr||null }).select("id").single();
   if(createErr) throw createErr;
   return created.id;
 }
 
-/* ===== ATOMIC PER-PARTY SERIAL ===== */
 async function getNextSerialForParty(partyId, docType, year){
   const { data, error } = await sb.rpc("next_party_serial", { p_party_id: partyId, p_doc_type: docType, p_year: year });
   if(error) throw error;
   return data;
 }
 
-/* ===== COLLECT CURRENT LINE ITEMS FROM TABLE ===== */
 function collectItemsFromTable(){
   return [...tbody.rows].map(r=>({
-    sno: r.cells[0].innerText,
-    brand: r.cells[1].innerText,
-    description: r.cells[2].innerText,
-    colour: r.cells[3].innerText,
-    hsn: r.cells[4].innerText,
-    unit: r.cells[5].innerText,
-    qty: r.cells[6].innerText,
-    mrp: r.cells[7].innerText,
-    discount: r.cells[8].innerText,
-    rate: r.cells[9].innerText,
-    perMtr: r.cells[10].innerText,
-    amount: r.cells[11].innerText
+    sno: r.cells[0].innerText, brand: r.cells[1].innerText, description: r.cells[2].innerText,
+    colour: r.cells[3].innerText, hsn: r.cells[4].innerText, unit: r.cells[5].innerText,
+    qty: r.cells[6].innerText, mrp: r.cells[7].innerText, discount: r.cells[8].innerText,
+    rate: r.cells[9].innerText, perMtr: r.cells[10].innerText, amount: r.cells[11].innerText
   }));
 }
 
-/* ===== SAVE QUOTATION (assigns party-specific serial + persists everything) ===== */
 async function saveQuotation(){
   const btn = document.getElementById("saveQuotationBtn");
   const status = document.getElementById("saveStatus");
@@ -586,53 +631,36 @@ async function saveQuotation(){
     if(!custName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
     if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
     btn.disabled = true; status.textContent = "Saving…";
-
     const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
     currentPartyId = partyId;
-
     const year = new Date(qdate.value || new Date()).getFullYear();
     const prefix = DOC_TYPES[currentDocType].prefix;
-
     const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
-
-    // Retry loop: if a doc_no collision happens (e.g. counter drifted from an earlier
-    // failed attempt), just grab the next serial again instead of showing an error.
     let docNo, lastErr;
     for(let attempt=0; attempt<5; attempt++){
       const serial = await getNextSerialForParty(partyId, currentDocType, year);
       docNo = `${prefix}/${year}/${serial}`;
-
       const payload = {
-        party_id: partyId,
-        doc_type: currentDocType,
-        doc_no: docNo,
+        party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
-        cust_name: custName.value.trim(),
-        cust_gst: custGST.value.trim(),
-        cust_addr: custAddr.value.trim(),
-        gst_applied: !!gstToggle.checked,
-        cash_disc_pct: cashPct,
+        cust_name: custName.value.trim(), cust_gst: custGST.value.trim(), cust_addr: custAddr.value.trim(),
+        gst_applied: !!gstToggle.checked, cash_disc_pct: cashPct,
         validity: document.getElementById("validityInput")?.value || "",
         remarks: document.getElementById("remarksInput")?.value || "",
         items: collectItemsFromTable(),
-        sub_total: +(sub.innerText||0),
-        cash_disc_amt: +cashAmt.toFixed(2),
+        sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
-        gst_amt: +(gst.innerText||0),
-        grand_total: +(gt.innerText||0),
+        gst_amt: +(gst.innerText||0), grand_total: +(gt.innerText||0),
         round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
         net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
       };
-
       const { error: saveErr } = await sb.from("quotations").insert(payload);
-      if(!saveErr){ lastErr = null; break; } // success
+      if(!saveErr){ lastErr = null; break; }
       lastErr = saveErr;
-      // Only retry on the specific "doc_no already exists" collision; any other error, stop immediately.
       if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
     }
     if(lastErr) throw lastErr;
-
     qno.value = docNo;
     status.textContent = `Saved as ${docNo} ✓`;
     setTimeout(()=>status.textContent="", 5000);
@@ -640,21 +668,11 @@ async function saveQuotation(){
     console.error(err);
     alert("Could not save: " + (err.message||err));
     status.textContent = "";
-  }finally{
-    btn.disabled = false;
-  }
+  }finally{ btn.disabled = false; }
 }
 
-/* ===== PARTY HISTORY MODAL ===== */
-function openPartyHistory(){
-  document.getElementById("partyHistoryModal").style.display = "flex";
-  document.getElementById("historyPartySearch").value = "";
-  document.getElementById("historyList").innerHTML = "Select a party to see their past quotations.";
-  document.getElementById("historyPartySearch").focus();
-}
-function closePartyHistory(){
-  document.getElementById("partyHistoryModal").style.display = "none";
-}
+function openPartyHistory(){ document.getElementById("partyHistoryModal").style.display="flex"; document.getElementById("historyPartySearch").value=""; document.getElementById("historyList").innerHTML="Select a party to see their past quotations."; document.getElementById("historyPartySearch").focus(); }
+function closePartyHistory(){ document.getElementById("partyHistoryModal").style.display="none"; }
 let historySearchTimer = null;
 function onHistoryPartySearch(){
   clearTimeout(historySearchTimer);
@@ -674,501 +692,177 @@ function onHistoryPartySearch(){
 async function loadPartyQuotations(partyId, partyName){
   const list = document.getElementById("historyList");
   list.innerHTML = "Loading…";
-  const { data, error } = await sb.from("quotations")
-    .select("id,doc_type,doc_no,doc_date,net_payable,grand_total")
-    .eq("party_id", partyId)
-    .order("created_at", { ascending:false });
-  if(error){ list.innerHTML = "Error loading history."; console.error(error); return; }
+  const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).order("created_at", { ascending:false });
+  if(error){ list.innerHTML = "Error loading history."; return; }
   if(!data.length){ list.innerHTML = `No saved quotations yet for <b>${partyName}</b>.`; return; }
-  list.innerHTML = `<div style="margin-bottom:8px;font-weight:700;color:#1a3c6e">${partyName} — ${data.length} record(s)</div>` +
-    `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
-      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px;text-align:left">Doc No</th><th style="padding:6px;text-align:left">Type</th><th style="padding:6px;text-align:left">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px"></th></tr>` +
+  list.innerHTML = `<div style="margin-bottom:8px;font-weight:700;color:#1a3c6e">${partyName} — ${data.length} record(s)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px">Doc No</th><th style="padding:6px">Type</th><th style="padding:6px">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px"></th></tr>` +
     data.map(q=>`<tr style="border-bottom:1px solid #eee">
-        <td style="padding:6px">${q.doc_no}</td>
-        <td style="padding:6px">${q.doc_type}</td>
-        <td style="padding:6px">${q.doc_date}</td>
-        <td style="padding:6px;text-align:right">₹ ${(+q.net_payable).toLocaleString("en-IN")}</td>
-        <td style="padding:6px"><button onclick="reopenQuotation(${q.id})" style="background:#1b7a4a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">Open</button></td>
-      </tr>`).join("") +
-    `</table>`;
+      <td style="padding:6px">${q.doc_no}</td><td style="padding:6px">${q.doc_type}</td>
+      <td style="padding:6px">${q.doc_date}</td><td style="padding:6px;text-align:right">₹ ${(+q.net_payable).toLocaleString("en-IN")}</td>
+      <td style="padding:6px"><button onclick="reopenQuotation(${q.id})" style="background:#1b7a4a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">Open</button></td>
+      </tr>`).join("") + `</table>`;
 }
-
-/* ===== REOPEN A SAVED QUOTATION (rebuilds the form so you can re-Print) ===== */
 async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
-  if(error){ alert("Could not load that quotation."); console.error(error); return; }
-
+  if(error){ alert("Could not load that quotation."); return; }
   switchDocType(q.doc_type);
-  qno.value = q.doc_no;
-  qdate.value = q.doc_date;
-  custName.value = q.cust_name || "";
-  custGST.value = q.cust_gst || "";
-  custAddr.value = q.cust_addr || "";
-  currentPartyId = q.party_id;
-  gstToggle.checked = q.gst_applied;
-  if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value = q.cash_disc_pct || "";
-  if(document.getElementById("validityInput")) document.getElementById("validityInput").value = q.validity || "7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value = q.remarks || "";
-  if(typeof updateTCDisplay === "function") updateTCDisplay();
-
-  tbody.innerHTML = "";
+  qno.value=q.doc_no; qdate.value=q.doc_date; custName.value=q.cust_name||"";
+  custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
+  currentPartyId=q.party_id; gstToggle.checked=q.gst_applied;
+  if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
+  if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=q.remarks||"";
+  if(typeof updateTCDisplay==="function") updateTCDisplay();
+  tbody.innerHTML="";
   (q.items||[]).forEach(it=>{
-    const r = tbody.insertRow();
-    // Derive coil length from rate ÷ perMtr if perMtr exists
-    const perMtrNum = parseFloat(it.perMtr);
-    const rateNum   = parseFloat(it.rate);
-    if(!isNaN(perMtrNum) && perMtrNum > 0 && !isNaN(rateNum) && rateNum > 0){
-      r.dataset.coilLen = (rateNum / perMtrNum).toFixed(2);
-    }
-    r.innerHTML = `<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+    const r=tbody.insertRow();
+    const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
+    if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
+    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
   closePartyHistory();
-  document.getElementById("saveStatus").textContent = `Loaded ${q.doc_no} — review, then Print to re-export.`;
-  window.scrollTo({top:0, behavior:"smooth"});
+  document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.`;
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 </script>
 
 <script>
-/* ===== TERMS & CONDITIONS LOGIC ===== */
+/* ===== T&C ===== */
 function handlePayTermChange(){
-  const v = document.getElementById("payTermSelect").value;
-  const pdcWrap = document.getElementById("pdcDaysWrap");
-  pdcWrap.style.display = (v === "PDC") ? "flex" : "none";
+  const v=document.getElementById("payTermSelect").value;
+  document.getElementById("pdcDaysWrap").style.display=(v==="PDC")?"flex":"none";
   updateTCDisplay();
 }
-
 function updateTCDisplay(){
-  const v = document.getElementById("payTermSelect").value;
-  const days = document.getElementById("pdcDays").value;
-  let display = "";
-  if(v === "100% ADVANCE"){
-    display = "100% ADVANCE";
-  } else if(v === "AGAINST DELIVERY"){
-    display = "AGAINST DELIVERY";
-  } else if(v === "PDC"){
-    display = days ? `PDC — ${days} DAYS` : "PDC (POST DATED CHEQUE)";
-  }
-  document.getElementById("tcBottomPayment").innerText = display;
-  document.getElementById("tcPaymentVal").innerText = display;
-  const vEl = document.getElementById("validityInput");
-  if(vEl) document.getElementById("tcBottomValidity").innerText = vEl.value.toUpperCase() || "7 DAYS";
-  const rEl = document.getElementById("remarksInput");
-  const remarksRow = document.getElementById("remarksRow");
-  if(rEl && remarksRow){
-    const txt = rEl.value.trim();
-    document.getElementById("tcBottomRemarks").innerText = txt;
-    remarksRow.style.display = txt ? "" : "none";
-  }
+  const v=document.getElementById("payTermSelect").value;
+  const days=document.getElementById("pdcDays").value;
+  let display=v==="100% ADVANCE"?"100% ADVANCE":v==="PDC"?(days?`PDC — ${days} DAYS`:"PDC (POST DATED CHEQUE)"):"AGAINST DELIVERY";
+  document.getElementById("tcBottomPayment").innerText=display;
+  document.getElementById("tcPaymentVal").innerText=display;
+  const vEl=document.getElementById("validityInput");
+  if(vEl) document.getElementById("tcBottomValidity").innerText=vEl.value.toUpperCase()||"7 DAYS";
+  const rEl=document.getElementById("remarksInput");
+  const remarksRow=document.getElementById("remarksRow");
+  if(rEl&&remarksRow){ const txt=rEl.value.trim(); document.getElementById("tcBottomRemarks").innerText=txt; remarksRow.style.display=txt?"":"none"; }
 }
 
-/* ===== INVENTORY ===== */
-/* FALLBACK_ITEMS is the built-in catalog used only if the live Google Sheet
-   can't be reached (e.g. no internet, sheet not published). Normal day-to-day
-   price edits should be made in the Google Sheet, NOT here. */
+/* ===== FALLBACK INVENTORY ===== */
 const FALLBACK_ITEMS={
   "GREATWHITE":[
     {"name":"BLANK PLATE","mrp":38.0},{"name":"DOWN LIGHT 2M","mrp":511.0},{"name":"DOWN LIGHT 4M","mrp":644.0},
-    {"name":"RJ-11 WITH SHUTTER SINGLE","mrp":168.0},{"name":"RJ-45 SINGLE CAT6","mrp":814.0},
-    {"name":"6AMS 1WAY SWITCH","mrp":137.0},{"name":"6AMS 2WAY SWITCH","mrp":195.0},
-    {"name":"BELL PUSH 1M","mrp":189.0},{"name":"BELL PUSH 2M","mrp":238.0},
-    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":266.0},{"name":"6AMS SOCKET","mrp":198.0},
-    {"name":"16AMS SOCKET","mrp":380.0},{"name":"FAN DIMMER 1M","mrp":537.0},{"name":"FAN DIMMER 2M","mrp":756.0},
-    {"name":"18 MODULE PLATE","mrp":489.0},{"name":"16 MODULE PLATE","mrp":461.0},{"name":"12 MODULE PLATE","mrp":420.0},
-    {"name":"9 MODULE PLATE","mrp":0.0},{"name":"8 MODULE PLATE","mrp":352.0},{"name":"6 MODULE PLATE","mrp":272.0},
-    {"name":"4 MODULE PLATE","mrp":201.0},{"name":"3 MODULE PLATE","mrp":165.0},{"name":"2 MODULE PLATE","mrp":131.0}
+    {"name":"6AMS 1WAY SWITCH","mrp":137.0},{"name":"6AMS 2WAY SWITCH","mrp":195.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":266.0},
+    {"name":"6AMS SOCKET","mrp":198.0},{"name":"16AMS SOCKET","mrp":380.0}
   ],
   "ANCHOR PENTA":[
     {"name":"6AMS 1WAY SWITCH","mrp":46.0},{"name":"6AMS 2WAY SWITCH","mrp":106.0},{"name":"16AMS 1WAY SWITCH","mrp":131.0},
-    {"name":"16AMS 2WAY SWITCH","mrp":172.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":144.0},{"name":"25AMS 1WAY SWITCH","mrp":188.0},
-    {"name":"32AMS DP SWITCH IND","mrp":263.0},{"name":"6AMS BELL PUSH","mrp":111.0},{"name":"6AMS MEGA BELL PUSH","mrp":155.0},
-    {"name":"1M STEP REGUATOR","mrp":422.0},{"name":"2M STEP REGUATOR","mrp":501.0},{"name":"3PIN SOCKET","mrp":143.0},
-    {"name":"16A SOCKET","mrp":224.0},{"name":"INDICATOR","mrp":120.0},{"name":"TV SOCKET","mrp":143.0},{"name":"TP SOCKET","mrp":150.0},
-    {"name":"RJ 45","mrp":871.0},{"name":"USB SOCKET","mrp":1532.0},{"name":"FOOT LAMP","mrp":811.0},{"name":"MINI MCB MODULAR","mrp":365.0},
-    {"name":"BLANK PLATE 1M","mrp":34.0},{"name":"1 MODULE PLATE","mrp":108.0},{"name":"2 MODULE PLATE","mrp":108.0},
-    {"name":"3 MODULE PLATE","mrp":152.0},{"name":"4 MODULE PLATE","mrp":168.0},{"name":"6 MODULE PLATE","mrp":244.0},
-    {"name":"8 MODULE PLATE","mrp":320.0},{"name":"12 MODULE PLATE","mrp":383.0},{"name":"16 MODULE PLATE","mrp":407.0},{"name":"18 MODULE PLATE","mrp":429.0}
+    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":144.0},{"name":"3PIN SOCKET","mrp":143.0},{"name":"16A SOCKET","mrp":224.0}
   ],
   "ANCHOR ROMA":[
     {"name":"6AMS 1WAY SWITCH","mrp":77.0},{"name":"6AMS 2WAY SWITCH","mrp":186.0},{"name":"16AMS 1WAY SWITCH","mrp":206.0},
-    {"name":"16AMS 2WAY SWITCH","mrp":235.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":245.0},{"name":"25AMS 1WAY SWITCH","mrp":314.0},
-    {"name":"32AMS DP SWITCH IND","mrp":406.0},{"name":"6AMS BELL PUSH","mrp":193.0},{"name":"6AMS MEGA BELL PUSH","mrp":206.0},
-    {"name":"1M STEP REGUATOR","mrp":441.0},{"name":"2M STEP REGUATOR","mrp":616.0},{"name":"3PIN SOCKET","mrp":179.0},
-    {"name":"16A SOCKET","mrp":319.0},{"name":"INDICATOR","mrp":143.0},{"name":"TV SOCKET","mrp":204.0},{"name":"TP SOCKET","mrp":204.0},
-    {"name":"RJ 45","mrp":842.0},{"name":"USB SOCKET","mrp":1652.0},{"name":"FOOT LAMP 3M","mrp":722.0},{"name":"MINI MCB MODULAR","mrp":0.0},
-    {"name":"BLANK PLATE 1M","mrp":45.0},{"name":"1 MODULE PLATE","mrp":149.0},{"name":"2 MODULE PLATE","mrp":149.0},
-    {"name":"3 MODULE PLATE","mrp":191.0},{"name":"4 MODULE PLATE","mrp":223.0},{"name":"6 MODULE PLATE","mrp":307.0},
-    {"name":"8 MODULE PLATE","mrp":392.0},{"name":"12 MODULE PLATE","mrp":485.0},{"name":"16 MODULE PLATE","mrp":545.0},{"name":"18 MODULE PLATE","mrp":570.0}
-  ],
-  "LEGRAND ARTEOR":[
-    {"name":"6A 1W SWITCH","mrp":232.0},{"name":"6A 2W SWITCH","mrp":382.0},{"name":"6A 1W SWITCH IND","mrp":432.0},
-    {"name":"16A 1W SWITCH","mrp":520.0},{"name":"16A 2WAY","mrp":750.0},{"name":"16A 1W SWITCH W/I","mrp":536.0},
-    {"name":"20A DP SWITCH W/I","mrp":1154.0},{"name":"32A DP SWITCH W/I","mrp":1646.0},{"name":"25A SP 1W 1M","mrp":696.0},
-    {"name":"BELL PUSH","mrp":418.0},{"name":"BELL WITH IND (1M)","mrp":556.0},{"name":"BELL PUSH W/IN(2M)","mrp":792.0},
-    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":356.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
-    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":722.0},{"name":"16A SOCKET (3M)","mrp":864.0},
-    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":1416.0},{"name":"2M STEP REG(100W)","mrp":1746.0},
-    {"name":"2M STEP REG(120W)","mrp":1868.0},{"name":"INDICATOR","mrp":1054.0},{"name":"SKIRTING LIGHT 3M","mrp":1420.0},
-    {"name":"T.V SOCKET","mrp":390.0},{"name":"TELEPHONE RJ11","mrp":374.0},{"name":"RJ 45 CAT 5e 1M","mrp":739.0},
-    {"name":"RJ 45 CAT 6e 1M","mrp":1127.0},{"name":"25A MOTOR STARTER","mrp":0.0},{"name":"USB CHARGER ( 1M)","mrp":0.0},
-    {"name":"Blanking Plate","mrp":72.0},{"name":"MCB16/25A Modular","mrp":5126.0},
-    {"name":"1M PLATE","mrp":326.0},{"name":"2M PLATE","mrp":344.0},{"name":"3M PLATE","mrp":386.0},{"name":"4M PLATE","mrp":404.0},
-    {"name":"6M PLATE","mrp":738.0},{"name":"8M PLATE","mrp":820.0},{"name":"8M SQ PLATE","mrp":1034.0},
-    {"name":"12M PLATE","mrp":1264.0},{"name":"16M PLATE","mrp":1514.0},{"name":"18M PLATE","mrp":1676.0}
-  ],
-  "LEGRAND LYNCUS":[
-    {"name":"6A 1W SWITCH","mrp":98.0},{"name":"6A 2W SWITCH","mrp":204.0},{"name":"6A 1W SWITCH IND","mrp":204.0},
-    {"name":"16A 1W SWITCH","mrp":236.0},{"name":"16A 2WAY","mrp":290.0},{"name":"16A 1W SWITCH W/I","mrp":300.0},
-    {"name":"20A DP SWITCH W/I","mrp":512.0},{"name":"32A DP SWITCH W/I","mrp":690.0},{"name":"25A SP 1W 1M","mrp":358.0},
-    {"name":"BELL PUSH","mrp":216.0},{"name":"BELL WITH IND (1M)","mrp":254.0},{"name":"BELL PUSH W/IN(2M)","mrp":290.0},
-    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":202.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
-    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":410.0},{"name":"16A SOCKET (3M)","mrp":488.0},
-    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":680.0},{"name":"2M STEP REG(100W)","mrp":844.0},
-    {"name":"2M STEP REG(120W)","mrp":960.0},{"name":"INDICATOR","mrp":588.0},{"name":"SKIRTING LIGHT 3M","mrp":666.0},
-    {"name":"T.V SOCKET","mrp":230.0},{"name":"TELEPHONE RJ11","mrp":216.0},{"name":"RJ 45 CAT 5e 1M","mrp":530.0},
-    {"name":"RJ 45 CAT 6e 1M","mrp":740.0},{"name":"25A MOTOR STARTER","mrp":796.0},{"name":"USB CHARGER ( 1M)","mrp":1356.0},
-    {"name":"Blanking Plate","mrp":54.0},{"name":"MCB16/25A Modular","mrp":546.0},
-    {"name":"1M PLATE","mrp":170.0},{"name":"2M PLATE","mrp":170.0},{"name":"3M PLATE","mrp":218.0},{"name":"4M PLATE","mrp":254.0},
-    {"name":"6M PLATE","mrp":308.0},{"name":"8M PLATE","mrp":394.0},{"name":"8M SQ PLATE","mrp":412.0},
-    {"name":"12M PLATE","mrp":574.0},{"name":"16M PLATE","mrp":668.0},{"name":"18M PLATE","mrp":902.0}
-  ],
-  "LEGRAND MYRIUS":[
-    {"name":"6A 1W SWITCH","mrp":174.0},{"name":"6A 2W SWITCH","mrp":306.0},{"name":"6A 1W SWITCH IND","mrp":282.0},
-    {"name":"16A 1W SWITCH","mrp":414.0},{"name":"16A 2WAY","mrp":478.0},{"name":"16A 1W SWITCH W/I","mrp":500.0},
-    {"name":"20A DP SWITCH W/I","mrp":876.0},{"name":"32A DP SWITCH W/I","mrp":1418.0},{"name":"25A SP 1W 1M","mrp":606.0},
-    {"name":"BELL PUSH","mrp":340.0},{"name":"BELL WITH IND (1M)","mrp":448.0},{"name":"BELL PUSH W/IN(2M)","mrp":606.0},
-    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":284.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
-    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":642.0},{"name":"16A SOCKET (3M)","mrp":768.0},
-    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":1208.0},{"name":"2M STEP REG(100W)","mrp":1390.0},
-    {"name":"2M STEP REG(120W)","mrp":1494.0},{"name":"INDICATOR","mrp":0.0},{"name":"SKIRTING LIGHT 3M","mrp":1220.0},
-    {"name":"T.V SOCKET","mrp":312.0},{"name":"TELEPHONE RJ11","mrp":310.0},{"name":"RJ 45 CAT 5e 1M","mrp":626.0},
-    {"name":"RJ 45 CAT 6e 1M","mrp":977.0},{"name":"25A MOTOR STARTER","mrp":996.0},{"name":"USB CHARGER ( 1M)","mrp":2190.0},
-    {"name":"Blanking Plate","mrp":80.0},{"name":"MCB16/25A Modular","mrp":592.0},
-    {"name":"1M PLATE","mrp":300.0},{"name":"2M PLATE","mrp":318.0},{"name":"3M PLATE","mrp":346.0},{"name":"4M PLATE","mrp":366.0},
-    {"name":"6M PLATE","mrp":716.0},{"name":"8M PLATE","mrp":764.0},{"name":"8M SQ PLATE","mrp":958.0},
-    {"name":"12M PLATE","mrp":1162.0},{"name":"16M PLATE","mrp":1352.0},{"name":"18M PLATE","mrp":1552.0}
-  ],
-  "LEGRAND MYLINC":[
-    {"name":"6A 1W SWITCH","mrp":112.0},{"name":"6A 2W SWITCH","mrp":226.0},{"name":"6A 1W SWITCH IND","mrp":254.0},
-    {"name":"16A 1W SWITCH","mrp":256.0},{"name":"16A 2WAY","mrp":322.0},{"name":"16A 1W SWITCH W/I","mrp":336.0},
-    {"name":"20A DP SWITCH W/I","mrp":0.0},{"name":"32A DP SWITCH W/I","mrp":764.0},{"name":"25A SP 1W 1M","mrp":518.0},
-    {"name":"BELL PUSH","mrp":236.0},{"name":"BELL WITH IND (1M)","mrp":1378.0},{"name":"BELL PUSH W/IN(2M)","mrp":468.0},
-    {"name":"6A 2 PIN SOCKET","mrp":0.0},{"name":"6A SOCKET 3 PIN ISI","mrp":310.0},{"name":"6A SOCKET 2/3 PIN","mrp":0.0},
-    {"name":"13A MULTI SOCKET","mrp":0.0},{"name":"16A SOCKET (2M)","mrp":476.0},{"name":"16A SOCKET (3M)","mrp":0.0},
-    {"name":"25A SOCKET (2M)","mrp":0.0},{"name":"1M STEP REGULATOR","mrp":794.0},{"name":"2M STEP REG(100W)","mrp":1062.0},
-    {"name":"2M STEP REG(120W)","mrp":868.0},{"name":"INDICATOR","mrp":326.0},{"name":"SKIRTING LIGHT 3M","mrp":1044.0},
-    {"name":"T.V SOCKET","mrp":264.0},{"name":"TELEPHONE RJ11","mrp":248.0},{"name":"RJ 45 CAT 5e 1M","mrp":562.0},
-    {"name":"RJ 45 CAT 6e 1M","mrp":818.0},{"name":"25A MOTOR STARTER","mrp":848.0},{"name":"USB CHARGER ( 1M)","mrp":1412.0},
-    {"name":"Blanking Plate","mrp":64.0},{"name":"MCB16/25A Modular","mrp":562.0},
-    {"name":"1M PLATE","mrp":186.0},{"name":"2M PLATE","mrp":186.0},{"name":"3M PLATE","mrp":254.0},{"name":"4M PLATE","mrp":282.0},
-    {"name":"6M PLATE","mrp":350.0},{"name":"8M PLATE","mrp":450.0},{"name":"8M SQ PLATE","mrp":458.0},
-    {"name":"12M PLATE","mrp":660.0},{"name":"16M PLATE","mrp":770.0},{"name":"18M PLATE","mrp":1030.0}
-  ],
-  "LEGRAND SPN DB D/D":[
-    {"name":"4 WAY SPN DB ","mrp":2788.0},{"name":"8WAY SPN DB","mrp":3597.0},{"name":"12WAY SPN DB","mrp":4322.0},
-    {"name":"16WAY SPN DB","mrp":5415.0},{"name":"18WAY SPN DB","mrp":5690.0},{"name":"20WAY SPN DB","mrp":6573.0}
-  ],
-  "LEGRAND ETPN HORIZONTAL DB D/D":[
-    {"name":"4 WAY ETPN DB ","mrp":7335.0},{"name":"6 WAY ETPN DB","mrp":8841.0},{"name":"8 WAY ETPN DB","mrp":10593.0},
-    {"name":"12 WAY ETPN DB","mrp":15709.0},{"name":"16 WAY ETPN DB","mrp":19664.0},{"name":"18 WAY ETPN DB","mrp":27398.0}
-  ],
-  "LEGRAND VTPN MCB DB D/D":[
-    {"name":"4 WAY VTPN MCB DB ","mrp":17350.0},{"name":"6 WAY VTPN MCB DB","mrp":19215.0},
-    {"name":"8 WAY VTPN MCB DB","mrp":22365.0},{"name":"12 WAY VTPN MCB DB","mrp":30090.0}
-  ],
-  "LEGRAND VTPN MCCB DB DPX160 D/D":[
-    {"name":"4 WAY VTPN MCCB DPX160 DB ","mrp":21185.0},{"name":"6 WAY VTPN MCCB DPX160 DB","mrp":24044.0},
-    {"name":"8 WAY VTPN MCCB DPX160 DB","mrp":26489.0},{"name":"12 WAY VTPN MCCB DPX160 DB","mrp":36113.0}
-  ],
-  "LEGRAND VTPN MCCB DB DPX250 D/D":[
-    {"name":"4 WAY VTPN MCCB DPX250 DB ","mrp":32495.0},{"name":"8 WAY VTPN MCCB DPX250 DB","mrp":34268.0},{"name":"12 WAY VTPN MCCB DPX250 DB","mrp":38723.0}
-  ],
-  "LEGRAND METAL ENCLOSER BOX":[
-    {"name":"SP ","mrp":761.0},{"name":"DP","mrp":1097.0},{"name":"TP","mrp":1097.0},
-    {"name":"FP","mrp":1097.0},{"name":"507794 FP RCBO(8M) FP","mrp":1835.0}
-  ],
-  "LEGRAND MCCB ENCLOSER BOX":[
-    {"name":"DPX3 160A 3P-4P ","mrp":6242.0},{"name":"DPX3 250A 3P-4P","mrp":10976.0},{"name":"DPX3 630A","mrp":17050.0},
-    {"name":"DRX 100A TP","mrp":3370.0},{"name":"DRX 100A FP","mrp":3370.0}
-  ],
-  "LEGRAND MCB DX3 (C)":[
-    {"name":"2-4AMS SP MCB ","mrp":729.0},{"name":"2-4AMS DP MCB ","mrp":1999.0},{"name":"2-4AMS TP MCB ","mrp":2944.0},{"name":"2-4AMS FP MCB ","mrp":3687.0},
-    {"name":"6-32AMS SP MCB ","mrp":499.0},{"name":"6-32AMS DP MCB ","mrp":1472.0},{"name":"6-32AMS TP MCB","mrp":2387.0},{"name":"6-32AMS FP MCB","mrp":3243.0},
-    {"name":"40-63AMS SP MCB","mrp":1026.0},{"name":"40-63AMS DP MCB","mrp":2316.0},{"name":"40-63AMS TP MCB","mrp":3623.0},{"name":"40-63AMS FP MCB","mrp":4614.0},
-    {"name":"80AMS SP MCB","mrp":3977.0},{"name":"80AMS DP MCB","mrp":8814.0},{"name":"80AMS TP MCB","mrp":14163.0},{"name":"80AMS FP MCB","mrp":18264.0},
-    {"name":"100AMS SP MCB","mrp":4352.0},{"name":"100AMS DP MCB","mrp":9393.0},{"name":"100AMS TP MCB","mrp":15086.0},{"name":"100AMS FP MCB","mrp":19030.0},
-    {"name":"125AMS SP MCB","mrp":4722.0},{"name":"125AMS DP MCB","mrp":10228.0},{"name":"125AMS TP MCB","mrp":16581.0},{"name":"125AMS FP MCB","mrp":21319.0}
-  ],
-  "LEGRAND ISOLATER DX3 ":[
-    {"name":"32AMS DP  ","mrp":780.0},{"name":"32AMS TP ","mrp":1405.0},{"name":"32AMS FP ","mrp":1541.0},
-    {"name":"40AMS DP ","mrp":858.0},{"name":"40AMS TP ","mrp":1507.0},{"name":"40AMS FP ","mrp":1914.0},
-    {"name":"63AMS DP","mrp":1134.0},{"name":"63AMS TP ","mrp":1794.0},{"name":"63AMS FP ","mrp":2111.0},
-    {"name":"100AMS DP ","mrp":1557.0},{"name":"100AMS TP ","mrp":1980.0},{"name":"100AMS FP ","mrp":2551.0},
-    {"name":"125AMS DP","mrp":1771.0},{"name":"125AMS TP ","mrp":2284.0},{"name":"125AMS FP ","mrp":2811.0}
-  ],
-  "KEI - IND COPPER WIRE":[
-    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3060.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4570.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7300.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10840.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":16410.0},
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6120},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9140},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14600.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":21680},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":32820},
-    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":11160.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":16980.0},
-    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":27590.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":27470.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":41960.0}
-  ],
-  "FINOLEX - FR-LSH 180MTR - IND COPPER WIRE":[
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":4460.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":6515.0},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":10630.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":16475},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":24685}
-  ],
-  "FINOLEX - FR-LSH 300 & 200 MTR - IND COPPER WIRE":[
-    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":7435.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":10860.0},
-    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":17715.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":18305.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":27430.0}
-  ],
-  "SUDHAKAR - FR IND COPPER WIRE":[
-    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3095.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4590.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7160.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10900.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":15835.0},
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6190.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9180.0},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14320.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":21800},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":31670}
-  ],
-  "SUDHAKAR - FRLS IND COPPER WIRE":[
-    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3140.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4655.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7365.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":11415.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":16745.0},
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6280.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9310.0},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14730.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":22830},{"name":"6SQMM 180MTR IND COPPER WIRE","mrp":33490}
-  ],
-  "RR KABEL - FRLS IND COPPER WIRE":[
-    {"name":"1SQMM 200MTR IND COPPER WIRE","mrp":7009.0},{"name":"1.5SQMM 200MTR IND COPPER WIRE","mrp":10126.0},
-    {"name":"2.5SQMM 200MTR IND COPPER WIRE","mrp":16500.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":25363},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":37623}
-  ],
-  "HAVELLS - FRLS IND COPPER WIRE":[
-    {"name":"1SQMM 200MTR IND COPPER WIRE","mrp":0.0},{"name":"1.5SQMM 200MTR IND COPPER WIRE","mrp":0.0},
-    {"name":"2.5SQMM 200MTR IND COPPER WIRE","mrp":0.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":0}
-  ],
-  "KEI - GREEN PLUS WIRE":[
-    {"name":"1SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":3110},{"name":"1.5SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":4590},
-    {"name":"2.5SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":7410},{"name":"4SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":10950},{"name":"6SQMM 90MTR GREEN PLUS IND COPPER WIRE","mrp":16580},
-    {"name":"1SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":6020.0},{"name":"1.5SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":8980.0},
-    {"name":"2.5SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":14390.0},{"name":"4SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":21360.0},{"name":"6SQMM 180MTR GREEN PLUS IND COPPER WIRE","mrp":32320.0}
+    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":245.0},{"name":"3PIN SOCKET","mrp":179.0},{"name":"16A SOCKET","mrp":319.0}
   ],
   "POLYCAB - IND COPPER WIRE":[
     {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":2980.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4355.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":6880.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10070.0},{"name":"6SQMM 90MTR IND COPPER WIRE","mrp":15050.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":6880.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10070.0},
     {"name":"1SQMM 180MTR LF IND COPPER WIRE","mrp":5960.0},{"name":"1.5SQMM 180MTR LF IND COPPER WIRE","mrp":8710.0},
-    {"name":"2.5SQMM 180MTR LF IND COPPER WIRE","mrp":13760.0},{"name":"4SQMM 180MTR LF IND COPPER WIRE","mrp":20140.0},{"name":"6SQMM 180MTR LF IND COPPER WIRE","mrp":30100.0},
-    {"name":"1SQMM 300MTR IND COPPER WIRE","mrp":12155.0},{"name":"1.5SQMM 300MTR IND COPPER WIRE","mrp":17835.0},
-    {"name":"2.5SQMM 300MTR IND COPPER WIRE","mrp":29515.0},{"name":"4SQMM 200MTR IND COPPER WIRE","mrp":30345.0},{"name":"6SQMM 200MTR IND COPPER WIRE","mrp":45410.0}
+    {"name":"2.5SQMM 180MTR LF IND COPPER WIRE","mrp":13760.0}
   ],
-  "POLYCAB - COPPER ARMOURED":[
-    {"name":"4X2CORE COPPER ARMOURED CABLE","mrp":487},{"name":"4X3CORE COPPER ARMOURED CABLE","mrp":675},{"name":"4X4CORE COPPER ARMOURED CABLE","mrp":878},{"name":"4X5CORE COPPER ARMOURED CABLE","mrp":1225},{"name":"4X6CORE COPPER ARMOURED CABLE","mrp":1455},{"name":"4X7CORE COPPER ARMOURED CABLE","mrp":1669},
-    {"name":"6X2CORE COPPER ARMOURED CABLE","mrp":693},{"name":"6X3CORE COPPER ARMOURED CABLE","mrp":978},{"name":"6X4CORE COPPER ARMOURED CABLE","mrp":1271},{"name":"6X5CORE COPPER ARMOURED CABLE","mrp":1820},{"name":"6X6CORE COPPER ARMOURED CABLE","mrp":2189},{"name":"6X7CORE COPPER ARMOURED CABLE","mrp":2553},
-    {"name":"10X2CORE COPPER ARMOURED CABLE","mrp":1096},{"name":"10X3CORE COPPER ARMOURED CABLE","mrp":1561},{"name":"10X4CORE COPPER ARMOURED CABLE","mrp":2066},{"name":"10X5CORE COPPER ARMOURED CABLE","mrp":2734},
-    {"name":"16X1CORE COPPER ARMOURED CABLE","mrp":953},{"name":"16X2CORE COPPER ARMOURED CABLE","mrp":1550},{"name":"16X3CORE COPPER ARMOURED CABLE","mrp":2319},{"name":"16X4CORE COPPER ARMOURED CABLE","mrp":3047},{"name":"16X5CORE COPPER ARMOURED CABLE","mrp":4073},
-    {"name":"1.5X2CORE COPPER ARMOURED CABLE","mrp":251},{"name":"1.5X3CORE COPPER ARMOURED CABLE","mrp":319},{"name":"1.5X4CORE COPPER ARMOURED CABLE","mrp":401},{"name":"1.5X5CORE COPPER ARMOURED CABLE","mrp":510},{"name":"1.5X6CORE COPPER ARMOURED CABLE","mrp":616},{"name":"1.5X7CORE COPPER ARMOURED CABLE","mrp":641},{"name":"1.5X8CORE COPPER ARMOURED CABLE","mrp":729},{"name":"1.5X10CORE COPPER ARMOURED CABLE","mrp":913},{"name":"1.5X12CORE COPPER ARMOURED CABLE","mrp":1027},{"name":"1.5X14CORE COPPER ARMOURED CABLE","mrp":1179},{"name":"1.5X16CORE COPPER ARMOURED CABLE","mrp":1348},{"name":"1.5X19CORE COPPER ARMOURED CABLE","mrp":1598},{"name":"1.5X24CORE COPPER ARMOURED CABLE","mrp":1999},{"name":"1.5X27CORE COPPER ARMOURED CABLE","mrp":2266},{"name":"1.5X30CORE COPPER ARMOURED CABLE","mrp":2526},{"name":"1.5X37CORE COPPER ARMOURED CABLE","mrp":3277},{"name":"1.5X44CORE COPPER ARMOURED CABLE","mrp":3827},{"name":"1.5X61CORE COPPER ARMOURED CABLE","mrp":5635},
-    {"name":"2.5X2CORE COPPER ARMOURED CABLE","mrp":353},{"name":"2.5X3CORE COPPER ARMOURED CABLE","mrp":469},{"name":"2.5X4CORE COPPER ARMOURED CABLE","mrp":605},{"name":"2.5X5CORE COPPER ARMOURED CABLE","mrp":751},{"name":"2.5X6CORE COPPER ARMOURED CABLE","mrp":881},{"name":"2.5X7CORE COPPER ARMOURED CABLE","mrp":1024},{"name":"2.5X8CORE COPPER ARMOURED CABLE","mrp":1181},{"name":"2.5X10CORE COPPER ARMOURED CABLE","mrp":1403},{"name":"2.5X12CORE COPPER ARMOURED CABLE","mrp":1661},{"name":"2.5X14CORE COPPER ARMOURED CABLE","mrp":1947},{"name":"2.5X16CORE COPPER ARMOURED CABLE","mrp":2201},{"name":"2.5X19CORE COPPER ARMOURED CABLE","mrp":2586},{"name":"2.5X24CORE COPPER ARMOURED CABLE","mrp":3258},{"name":"2.5X27CORE COPPER ARMOURED CABLE","mrp":3712},{"name":"2.5X30CORE COPPER ARMOURED CABLE","mrp":4464},{"name":"2.5X37CORE COPPER ARMOURED CABLE","mrp":5214},{"name":"2.5X44CORE COPPER ARMOURED CABLE","mrp":6090},{"name":"2.5X61CORE COPPER ARMOURED CABLE","mrp":8829},
-    {"name":"25X1CORE COPPER ARMOURED CABLE","mrp":1467},{"name":"25X2CORE COPPER ARMOURED CABLE","mrp":2414},{"name":"25X3CORE COPPER ARMOURED CABLE","mrp":3624},{"name":"25X3.5CORE COPPER ARMOURED CABLE","mrp":4397},{"name":"25X4CORE COPPER ARMOURED CABLE","mrp":4821},{"name":"25X5CORE COPPER ARMOURED CABLE","mrp":7437},
-    {"name":"35X1CORECOPPER ARMOURED CABLE","mrp":2003},{"name":"35X2CORECOPPER ARMOURED CABLE","mrp":3565},{"name":"35X3CORECOPPER ARMOURED CABLE","mrp":5229},{"name":"35X3.5CORECOPPER ARMOURED CABLE","mrp":5987},{"name":"35X4CORECOPPER ARMOURED CABLE","mrp":6918},{"name":"35X5CORECOPPER ARMOURED CABLE","mrp":10250},
-    {"name":"50X1CORECOPPER ARMOURED CABLE","mrp":2805},{"name":"50X2CORECOPPER ARMOURED CABLE","mrp":4812},{"name":"50X3CORECOPPER ARMOURED CABLE","mrp":7054},{"name":"50X3.5CORECOPPER ARMOURED CABLE","mrp":8306},{"name":"50X4CORECOPPER ARMOURED CABLE","mrp":9428},{"name":"50X5CORECOPPER ARMOURED CABLE","mrp":14094},
-    {"name":"70X1CORECOPPER ARMOURED CABLE","mrp":3865},{"name":"70X2CORECOPPER ARMOURED CABLE","mrp":7149},{"name":"70X3CORECOPPER ARMOURED CABLE","mrp":10230},{"name":"70X3.5CORECOPPER ARMOURED CABLE","mrp":11944},{"name":"70X4CORECOPPER ARMOURED CABLE","mrp":13700},{"name":"70X5CORECOPPER ARMOURED CABLE","mrp":22166},
-    {"name":"95X1CORECOPPER ARMOURED CABLE","mrp":5159},{"name":"95X3CORECOPPER ARMOURED CABLE","mrp":14325},{"name":"95X3.5CORECOPPER ARMOURED CABLE","mrp":16596},{"name":"95X4CORECOPPER ARMOURED CABLE","mrp":18926},
-    {"name":"120X1CORECOPPER ARMOURED CABLE","mrp":6467},{"name":"120X3CORECOPPER ARMOURED CABLE","mrp":17666},{"name":"120X3.5CORECOPPER ARMOURED CABLE","mrp":21050},{"name":"120X4CORECOPPER ARMOURED CABLE","mrp":23556},
-    {"name":"150X1CORECOPPER ARMOURED CABLE","mrp":8035},{"name":"150X3CORECOPPER ARMOURED CABLE","mrp":21742},{"name":"150X3.5CORECOPPER ARMOURED CABLE","mrp":25186},{"name":"150X4CORECOPPER ARMOURED CABLE","mrp":29151},
-    {"name":"185X1CORECOPPER ARMOURED CABLE","mrp":9883},{"name":"185X3CORECOPPER ARMOURED CABLE","mrp":27537},{"name":"185X3.5CORECOPPER ARMOURED CABLE","mrp":32190},{"name":"185X4CORECOPPER ARMOURED CABLE","mrp":36470},
-    {"name":"240X1CORECOPPER ARMOURED CABLE","mrp":12747},{"name":"240X3CORECOPPER ARMOURED CABLE","mrp":35916},{"name":"240X3.5CORECOPPER ARMOURED CABLE","mrp":41488},{"name":"240X4CORECOPPER ARMOURED CABLE","mrp":47684},
-    {"name":"300X1CORECOPPER ARMOURED CABLE","mrp":15875},{"name":"300X3CORECOPPER ARMOURED CABLE","mrp":45875},{"name":"300X3.5CORECOPPER ARMOURED CABLE","mrp":52462},{"name":"300X4CORECOPPER ARMOURED CABLE","mrp":60514},
-    {"name":"400X1CORECOPPER ARMOURED CABLE","mrp":21097},{"name":"400X3CORECOPPER ARMOURED CABLE","mrp":59329},{"name":"400X3.5CORECOPPER ARMOURED CABLE","mrp":66416},{"name":"400X4CORECOPPER ARMOURED CABLE","mrp":82647},
-    {"name":"500X1CORECOPPER ARMOURED CABLE","mrp":26269},{"name":"630X1CORECOPPER ARMOURED CABLE","mrp":33024},{"name":"800X1CORECOPPER ARMOURED CABLE","mrp":41821},{"name":"1000X1CORECOPPER ARMOURED CABLE","mrp":52138}
+  "KEI - IND COPPER WIRE":[
+    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3060.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4570.0},
+    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7300.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10840.0},
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6120.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9140.0},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14600.0}
   ],
-  "POLYCAB - ALU ARMOURED":[
-    {"name":"2.5X2CORE ALU ARMOURED CABLE","mrp":204},{"name":"2.5X3CORE ALU ARMOURED CABLE","mrp":221},{"name":"2.5X4CORE ALU ARMOURED CABLE","mrp":252},
-    {"name":"4X2CORE ALU ARMOURED CABLE","mrp":221},{"name":"4X3CORE ALU ARMOURED CABLE","mrp":256},{"name":"4X4CORE ALU ARMOURED CABLE","mrp":300},
-    {"name":"6X2CORE ALU ARMOURED CABLE","mrp":278},{"name":"6X3CORE ALU ARMOURED CABLE","mrp":321},{"name":"6X4CORE ALU ARMOURED CABLE","mrp":360},
-    {"name":"10X2CORE ALU ARMOURED CABLE","mrp":336},{"name":"10X3CORE ALU ARMOURED CABLE","mrp":400},{"name":"10X4CORE ALU ARMOURED CABLE","mrp":524},
-    {"name":"16X1CORE ALU ARMOURED CABLE","mrp":231},{"name":"16X2CORE ALU ARMOURED CABLE","mrp":388},{"name":"16X3CORE ALU ARMOURED CABLE","mrp":444},{"name":"16X4CORE ALU ARMOURED CABLE","mrp":568},
-    {"name":"25X1CORE ALU ARMOURED CABLE","mrp":287},{"name":"25X2CORE ALU ARMOURED CABLE","mrp":401},{"name":"25X3CORE ALU ARMOURED CABLE","mrp":534},{"name":"25X3.5CORE ALU ARMOURED CABLE","mrp":626},{"name":"25X4CORE ALU ARMOURED CABLE","mrp":673},
-    {"name":"35X1COREALU ARMOURED CABLE","mrp":359},{"name":"35X2COREALU ARMOURED CABLE","mrp":513},{"name":"35X3COREALU ARMOURED CABLE","mrp":731},{"name":"35X3.5COREALU ARMOURED CABLE","mrp":809},{"name":"35X4COREALU ARMOURED CABLE","mrp":921},
-    {"name":"50X1COREALU ARMOURED CABLE","mrp":457},{"name":"50X2COREALU ARMOURED CABLE","mrp":694},{"name":"50X3COREALU ARMOURED CABLE","mrp":945},{"name":"50X3.5COREALU ARMOURED CABLE","mrp":1078},{"name":"50X4COREALU ARMOURED CABLE","mrp":1214},
-    {"name":"70X1COREALU ARMOURED CABLE","mrp":581},{"name":"70X2COREALU ARMOURED CABLE","mrp":880},{"name":"70X3COREALU ARMOURED CABLE","mrp":1268},{"name":"70X3.5COREALU ARMOURED CABLE","mrp":1469},{"name":"70X4COREALU ARMOURED CABLE","mrp":1646},
-    {"name":"95X1COREALU ARMOURED CABLE","mrp":710},{"name":"95X2COREALU ARMOURED CABLE","mrp":1137},{"name":"95X3COREALU ARMOURED CABLE","mrp":1610},{"name":"95X3.5COREALU ARMOURED CABLE","mrp":1860},{"name":"95X4COREALU ARMOURED CABLE","mrp":2171},
-    {"name":"120X1COREALU ARMOURED CABLE","mrp":850},{"name":"120X2COREALU ARMOURED CABLE","mrp":1401},{"name":"120X3COREALU ARMOURED CABLE","mrp":1997},{"name":"120X3.5COREALU ARMOURED CABLE","mrp":2332},{"name":"120X4COREALU ARMOURED CABLE","mrp":2656},
-    {"name":"150X1COREALU ARMOURED CABLE","mrp":1013},{"name":"150X2COREALU ARMOURED CABLE","mrp":1715},{"name":"150X3COREALU ARMOURED CABLE","mrp":2474},{"name":"150X3.5COREALU ARMOURED CABLE","mrp":2720},{"name":"150X4COREALU ARMOURED CABLE","mrp":3209},
-    {"name":"185X1COREALU ARMOURED CABLE","mrp":1228},{"name":"185X2COREALU ARMOURED CABLE","mrp":2093},{"name":"185X3COREALU ARMOURED CABLE","mrp":3060},{"name":"185X3.5COREALU ARMOURED CABLE","mrp":3441},{"name":"185X4COREALU ARMOURED CABLE","mrp":4043},
-    {"name":"240X1COREALU ARMOURED CABLE","mrp":1526},{"name":"240X2COREALU ARMOURED CABLE","mrp":2648},{"name":"240X3COREALU ARMOURED CABLE","mrp":3959},{"name":"240X3.5COREALU ARMOURED CABLE","mrp":4386},{"name":"240X4COREALU ARMOURED CABLE","mrp":5228},
-    {"name":"300X1COREALU ARMOURED CABLE","mrp":1855},{"name":"300X2COREALU ARMOURED CABLE","mrp":3257},{"name":"300X3COREALU ARMOURED CABLE","mrp":4896},{"name":"300X3.5COREALU ARMOURED CABLE","mrp":5440},{"name":"300X4COREALU ARMOURED CABLE","mrp":6462},
-    {"name":"400X1COREALU ARMOURED CABLE","mrp":2395},{"name":"400X2COREALU ARMOURED CABLE","mrp":4269},{"name":"400X3COREALU ARMOURED CABLE","mrp":6214},{"name":"400X3.5COREALU ARMOURED CABLE","mrp":6902},{"name":"400X4COREALU ARMOURED CABLE","mrp":8309},
-    {"name":"500X1COREALU ARMOURED CABLE","mrp":2905},{"name":"500X2COREALU ARMOURED CABLE","mrp":5928},{"name":"500X3COREALU ARMOURED CABLE","mrp":8348},{"name":"500X3.5COREALU ARMOURED CABLE","mrp":9832},{"name":"500X4COREALU ARMOURED CABLE","mrp":11025},
-    {"name":"630X1COREALU ARMOURED CABLE","mrp":3585},{"name":"630X2COREALU ARMOURED CABLE","mrp":7292},{"name":"630X3COREALU ARMOURED CABLE","mrp":10613},{"name":"630X3.5COREALU ARMOURED CABLE","mrp":12047},{"name":"630X4COREALU ARMOURED CABLE","mrp":14472},
-    {"name":"800X1COREALU ARMOURED CABLE","mrp":4461},{"name":"1000X1COREALU ARMOURED CABLE","mrp":5440}
+  "FINOLEX - FR-LSH 180MTR - IND COPPER WIRE":[
+    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":4460.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":6515.0},
+    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":10630.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":16475.0}
   ],
-  "POLYCAB - COPPER FLEXIBLE":[
-    {"name":"0.5X1CORE COPPER FLEXIBLE CABLE","mrp":20.80},{"name":"0.5X2CORE COPPER FLEXIBLE CABLE","mrp":53.9},{"name":"0.5X3CORE COPPER FLEXIBLE CABLE","mrp":72.6},{"name":"0.5X4CORE COPPER FLEXIBLE CABLE","mrp":92},{"name":"0.5X5CORE COPPER FLEXIBLE CABLE","mrp":115.75},{"name":"0.5X6CORE COPPER FLEXIBLE CABLE","mrp":138.82},
-    {"name":"0.75X1CORE COPPER FLEXIBLE CABLE","mrp":29.4},{"name":"0.75X2CORE COPPER FLEXIBLE CABLE","mrp":71.80},{"name":"0.75X3CORE COPPER FLEXIBLE CABLE","mrp":97.90},{"name":"0.75X4CORE COPPER FLEXIBLE CABLE","mrp":125.15},{"name":"0.75X5CORE COPPER FLEXIBLE CABLE","mrp":164},{"name":"0.75X6CORE COPPER FLEXIBLE CABLE","mrp":198.82},
-    {"name":"1X1CORE COPPER FLEXIBLE CABLE","mrp":36.35},{"name":"1X2CORE COPPER FLEXIBLE CABLE","mrp":89.95},{"name":"1X3CORE COPPER FLEXIBLE CABLE","mrp":124},{"name":"1X4CORE COPPER FLEXIBLE CABLE","mrp":159},{"name":"1X5CORE COPPER FLEXIBLE CABLE","mrp":212},{"name":"1X6CORE COPPER FLEXIBLE CABLE","mrp":254.25},
-    {"name":"1.5X1CORE COPPER FLEXIBLE CABLE","mrp":52.10},{"name":"1.5X2CORE COPPER FLEXIBLE CABLE","mrp":123},{"name":"1.5X3CORE COPPER FLEXIBLE CABLE","mrp":175},{"name":"1.5X4CORE COPPER FLEXIBLE CABLE","mrp":223},{"name":"1.5X5CORE COPPER FLEXIBLE CABLE","mrp":289},{"name":"1.5X6CORE COPPER FLEXIBLE CABLE","mrp":350},
-    {"name":"2.5X1CORE COPPER FLEXIBLE CABLE","mrp":86.15},{"name":"2.5X2CORE COPPER FLEXIBLE CABLE","mrp":200.50},{"name":"2.5X3CORE COPPER FLEXIBLE CABLE","mrp":277},{"name":"2.5X4CORE COPPER FLEXIBLE CABLE","mrp":371},{"name":"2.5X5CORE COPPER FLEXIBLE CABLE","mrp":469},{"name":"2.5X6CORE COPPER FLEXIBLE CABLE","mrp":566},
-    {"name":"4X1CORE COPPER FLEXIBLE CABLE","mrp":133.5},{"name":"4X2CORE COPPER FLEXIBLE CABLE","mrp":294},{"name":"4X3CORE COPPER FLEXIBLE CABLE","mrp":421},{"name":"4X4CORE COPPER FLEXIBLE CABLE","mrp":556},{"name":"4X5CORE COPPER FLEXIBLE CABLE","mrp":744},{"name":"4X6CORE COPPER FLEXIBLE CABLE","mrp":890},
-    {"name":"6X1CORE COPPER FLEXIBLE CABLE","mrp":200},{"name":"6X2CORE COPPER FLEXIBLE CABLE","mrp":432},{"name":"6X3CORE COPPER FLEXIBLE CABLE","mrp":617},{"name":"6X4CORE COPPER FLEXIBLE CABLE","mrp":815},{"name":"6X5CORE COPPER FLEXIBLE CABLE","mrp":1093},{"name":"6X6CORE COPPER FLEXIBLE CABLE","mrp":1315},
-    {"name":"10X1CORE COPPER FLEXIBLE CABLE","mrp":351},{"name":"10X2CORE COPPER FLEXIBLE CABLE","mrp":731},{"name":"10X3CORE COPPER FLEXIBLE CABLE","mrp":1074},{"name":"10X4CORE COPPER FLEXIBLE CABLE","mrp":1418},{"name":"10X5CORE COPPER FLEXIBLE CABLE","mrp":1887},
-    {"name":"16X1CORE COPPER FLEXIBLE CABLE","mrp":542},{"name":"16X2CORE COPPER FLEXIBLE CABLE","mrp":1161},{"name":"16X3CORE COPPER FLEXIBLE CABLE","mrp":1691},{"name":"16X4CORE COPPER FLEXIBLE CABLE","mrp":2225},{"name":"16X5CORE COPPER FLEXIBLE CABLE","mrp":2887},
-    {"name":"25X1CORE COPPER FLEXIBLE CABLE","mrp":843},{"name":"25X2CORE COPPER FLEXIBLE CABLE","mrp":1925},{"name":"25X3CORE COPPER FLEXIBLE CABLE","mrp":2796},{"name":"25X4CORE COPPER FLEXIBLE CABLE","mrp":3656},{"name":"25X5CORE COPPER FLEXIBLE CABLE","mrp":5240},
-    {"name":"35X1CORE COPPER FLEXIBLE CABLE","mrp":1178},{"name":"35X2CORE COPPER FLEXIBLE CABLE","mrp":2678},{"name":"35X3CORE COPPER FLEXIBLE CABLE","mrp":3882},{"name":"35X4CORE COPPER FLEXIBLE CABLE","mrp":5114},{"name":"35X5CORE COPPER FLEXIBLE CABLE","mrp":7183},
-    {"name":"50X1CORE COPPER FLEXIBLE CABLE","mrp":1680},{"name":"50X2CORE COPPER FLEXIBLE CABLE","mrp":3801},{"name":"50X3CORE COPPER FLEXIBLE CABLE","mrp":5531},{"name":"50X4CORE COPPER FLEXIBLE CABLE","mrp":7302},{"name":"50X5CORE COPPER FLEXIBLE CABLE","mrp":10398},
-    {"name":"70X1CORE COPPER FLEXIBLE CABLE","mrp":2375},{"name":"70X2CORE COPPER FLEXIBLE CABLE","mrp":5393},{"name":"70X3CORE COPPER FLEXIBLE CABLE","mrp":7674},{"name":"70X4CORE COPPER FLEXIBLE CABLE","mrp":10148},{"name":"70X5CORE COPPER FLEXIBLE CABLE","mrp":14221},
-    {"name":"95X1CORE COPPER FLEXIBLE CABLE","mrp":3163},{"name":"95X3CORE COPPER FLEXIBLE CABLE","mrp":10670},{"name":"95X4CORE COPPER FLEXIBLE CABLE","mrp":14077},
-    {"name":"120X1CORE COPPER FLEXIBLE CABLE","mrp":4160},{"name":"120X3CORE COPPER FLEXIBLE CABLE","mrp":13550},{"name":"120X4CORE COPPER FLEXIBLE CABLE","mrp":17882},
-    {"name":"150X1CORE COPPER FLEXIBLE CABLE","mrp":5205},{"name":"150X3CORE COPPER FLEXIBLE CABLE","mrp":16937},{"name":"150X4CORE COPPER FLEXIBLE CABLE","mrp":22355},
-    {"name":"185X1CORE COPPER FLEXIBLE CABLE","mrp":6600},{"name":"185X3CORE COPPER FLEXIBLE CABLE","mrp":20858},{"name":"185X4CORE COPPER FLEXIBLE CABLE","mrp":27569},
-    {"name":"240X1CORE COPPER FLEXIBLE CABLE","mrp":8452},{"name":"240X3CORE COPPER FLEXIBLE CABLE","mrp":26926},{"name":"240X4CORE COPPER FLEXIBLE CABLE","mrp":35641},
-    {"name":"300X1CORE COPPER FLEXIBLE CABLE","mrp":10576},{"name":"300X3CORE COPPER FLEXIBLE CABLE","mrp":33598},{"name":"300X4CORE COPPER FLEXIBLE CABLE","mrp":44490},
-    {"name":"400X1CORE COPPER FLEXIBLE CABLE","mrp":14093},{"name":"400X3CORE COPPER FLEXIBLE CABLE","mrp":44767},{"name":"400X4CORE COPPER FLEXIBLE CABLE","mrp":58931},
-    {"name":"500X1CORECOPPER FLEXIBLE CABLE","mrp":17631},{"name":"630X1CORECOPPER FLEXIBLE CABLE","mrp":22739}
-  ],
-  "KEI - COPPER ARMOURED":[
-    {"name":"4X2CORE COPPER ARMOURED CABLE","mrp":507},{"name":"4X3CORE COPPER ARMOURED CABLE","mrp":659},{"name":"4X4CORE COPPER ARMOURED CABLE","mrp":835},
-    {"name":"6X2CORE COPPER ARMOURED CABLE","mrp":689},{"name":"6X3CORE COPPER ARMOURED CABLE","mrp":906},{"name":"6X4CORE COPPER ARMOURED CABLE","mrp":1185},
-    {"name":"10X2CORE COPPER ARMOURED CABLE","mrp":1052},{"name":"10X3CORE COPPER ARMOURED CABLE","mrp":1461},{"name":"10X4CORE COPPER ARMOURED CABLE","mrp":1898},
-    {"name":"16X1CORE COPPER ARMOURED CABLE","mrp":868},{"name":"16X2CORE COPPER ARMOURED CABLE","mrp":1591},{"name":"16X3CORE COPPER ARMOURED CABLE","mrp":2340},{"name":"16X4CORE COPPER ARMOURED CABLE","mrp":3018},
-    {"name":"1.5X2CORE COPPER ARMOURED CABLE","mrp":247},{"name":"1.5X3CORE COPPER ARMOURED CABLE","mrp":307},{"name":"1.5X4CORE COPPER ARMOURED CABLE","mrp":382},{"name":"1.5X5CORE COPPER ARMOURED CABLE","mrp":508},{"name":"1.5X6CORE COPPER ARMOURED CABLE","mrp":586},{"name":"1.5X7CORE COPPER ARMOURED CABLE","mrp":655},{"name":"1.5X8CORE COPPER ARMOURED CABLE","mrp":744},{"name":"1.5X10CORE COPPER ARMOURED CABLE","mrp":900},{"name":"1.5X12CORE COPPER ARMOURED CABLE","mrp":920},{"name":"1.5X14CORE COPPER ARMOURED CABLE","mrp":1062},{"name":"1.5X16CORE COPPER ARMOURED CABLE","mrp":1209},{"name":"1.5X19CORE COPPER ARMOURED CABLE","mrp":1420},{"name":"1.5X24CORE COPPER ARMOURED CABLE","mrp":1804},{"name":"1.5X27CORE COPPER ARMOURED CABLE","mrp":2012},{"name":"1.5X30CORE COPPER ARMOURED CABLE","mrp":2228},{"name":"1.5X37CORE COPPER ARMOURED CABLE","mrp":2731},
-    {"name":"2.5X2CORE COPPER ARMOURED CABLE","mrp":332},{"name":"2.5X3CORE COPPER ARMOURED CABLE","mrp":446},{"name":"2.5X4CORE COPPER ARMOURED CABLE","mrp":557},{"name":"2.5X5CORE COPPER ARMOURED CABLE","mrp":751},{"name":"2.5X6CORE COPPER ARMOURED CABLE","mrp":886},{"name":"2.5X7CORE COPPER ARMOURED CABLE","mrp":998},{"name":"2.5X8CORE COPPER ARMOURED CABLE","mrp":1133},{"name":"2.5X10CORE COPPER ARMOURED CABLE","mrp":1335},{"name":"2.5X12CORE COPPER ARMOURED CABLE","mrp":1569},{"name":"2.5X14CORE COPPER ARMOURED CABLE","mrp":1819},{"name":"2.5X16CORE COPPER ARMOURED CABLE","mrp":2061},{"name":"2.5X19CORE COPPER ARMOURED CABLE","mrp":2410},{"name":"2.5X24CORE COPPER ARMOURED CABLE","mrp":3024},{"name":"2.5X27CORE COPPER ARMOURED CABLE","mrp":3365},{"name":"2.5X30CORE COPPER ARMOURED CABLE","mrp":3721},{"name":"2.5X37CORE COPPER ARMOURED CABLE","mrp":4549},
-    {"name":"25X1CORE COPPER ARMOURED CABLE","mrp":1448},{"name":"25X2CORE COPPER ARMOURED CABLE","mrp":2639},{"name":"25X3CORE COPPER ARMOURED CABLE","mrp":3835},{"name":"25X3.5CORE COPPER ARMOURED CABLE","mrp":4734},{"name":"25X4CORE COPPER ARMOURED CABLE","mrp":5201},
-    {"name":"35X1CORECOPPER ARMOURED CABLE","mrp":1969},{"name":"35X2CORECOPPER ARMOURED CABLE","mrp":3623},{"name":"35X3CORECOPPER ARMOURED CABLE","mrp":5293},{"name":"35X3.5CORECOPPER ARMOURED CABLE","mrp":6238},{"name":"35X4CORECOPPER ARMOURED CABLE","mrp":7184},
-    {"name":"50X1CORECOPPER ARMOURED CABLE","mrp":2772},{"name":"50X2CORECOPPER ARMOURED CABLE","mrp":5162},{"name":"50X3CORECOPPER ARMOURED CABLE","mrp":7649},{"name":"50X3.5CORECOPPER ARMOURED CABLE","mrp":8908},{"name":"50X4CORECOPPER ARMOURED CABLE","mrp":10184},
-    {"name":"70X1CORECOPPER ARMOURED CABLE","mrp":3815},{"name":"70X2CORECOPPER ARMOURED CABLE","mrp":7163},{"name":"70X3CORECOPPER ARMOURED CABLE","mrp":10654},{"name":"70X3.5CORECOPPER ARMOURED CABLE","mrp":12407},{"name":"70X4CORECOPPER ARMOURED CABLE","mrp":14156},
-    {"name":"95X1CORECOPPER ARMOURED CABLE","mrp":5081},{"name":"95X2CORECOPPER ARMOURED CABLE","mrp":9649},{"name":"95X3CORECOPPER ARMOURED CABLE","mrp":14358},{"name":"95X3.5CORECOPPER ARMOURED CABLE","mrp":16871},{"name":"95X4CORECOPPER ARMOURED CABLE","mrp":19108},
-    {"name":"120X1CORECOPPER ARMOURED CABLE","mrp":6367},{"name":"120X2CORECOPPER ARMOURED CABLE","mrp":12136},{"name":"120X3CORECOPPER ARMOURED CABLE","mrp":18088},{"name":"120X3.5CORECOPPER ARMOURED CABLE","mrp":21587},{"name":"120X4CORECOPPER ARMOURED CABLE","mrp":24064},
-    {"name":"150X1CORECOPPER ARMOURED CABLE","mrp":7903},{"name":"150X2CORECOPPER ARMOURED CABLE","mrp":15128},{"name":"150X3CORECOPPER ARMOURED CABLE","mrp":22578},{"name":"150X3.5CORECOPPER ARMOURED CABLE","mrp":26063},{"name":"150X4CORECOPPER ARMOURED CABLE","mrp":30043},
-    {"name":"185X1CORECOPPER ARMOURED CABLE","mrp":9722},{"name":"185X2CORECOPPER ARMOURED CABLE","mrp":18620},{"name":"185X3CORECOPPER ARMOURED CABLE","mrp":27809},{"name":"185X3.5CORECOPPER ARMOURED CABLE","mrp":32544},{"name":"185X4CORECOPPER ARMOURED CABLE","mrp":37009},
-    {"name":"240X1CORECOPPER ARMOURED CABLE","mrp":12527},{"name":"240X2CORECOPPER ARMOURED CABLE","mrp":24086},{"name":"240X3CORECOPPER ARMOURED CABLE","mrp":35946},{"name":"240X3.5CORECOPPER ARMOURED CABLE","mrp":41924},{"name":"240X4CORECOPPER ARMOURED CABLE","mrp":47880},
-    {"name":"300X1CORECOPPER ARMOURED CABLE","mrp":15600},{"name":"300X2CORECOPPER ARMOURED CABLE","mrp":30022},{"name":"300X3CORECOPPER ARMOURED CABLE","mrp":44866},{"name":"300X3.5CORECOPPER ARMOURED CABLE","mrp":52360},{"name":"300X4CORECOPPER ARMOURED CABLE","mrp":59830},
-    {"name":"400X1CORECOPPER ARMOURED CABLE","mrp":20724},{"name":"400X2CORECOPPER ARMOURED CABLE","mrp":39913},{"name":"400X3CORECOPPER ARMOURED CABLE","mrp":59719},{"name":"400X3.5CORECOPPER ARMOURED CABLE","mrp":69224},{"name":"400X4CORECOPPER ARMOURED CABLE","mrp":79949},
-    {"name":"500X1CORECOPPER ARMOURED CABLE","mrp":25794},{"name":"630X1CORECOPPER ARMOURED CABLE","mrp":32417},{"name":"800X1CORECOPPER ARMOURED CABLE","mrp":41040},{"name":"1000X1CORECOPPER ARMOURED CABLE","mrp":51154}
-  ],
-  "KEI - ALU ARMOURED":[
-    {"name":"4X2CORE ALU ARMOURED CABLE","mrp":180},{"name":"4X3CORE ALU ARMOURED CABLE","mrp":198},{"name":"4X4CORE ALU ARMOURED CABLE","mrp":216},
-    {"name":"6X2CORE ALU ARMOURED CABLE","mrp":213},{"name":"6X3CORE ALU ARMOURED CABLE","mrp":230},{"name":"6X4CORE ALU ARMOURED CABLE","mrp":258},
-    {"name":"10X2CORE ALU ARMOURED CABLE","mrp":273},{"name":"10X3CORE ALU ARMOURED CABLE","mrp":289},{"name":"10X4CORE ALU ARMOURED CABLE","mrp":345},
-    {"name":"16X2CORE ALU ARMOURED CABLE","mrp":313},{"name":"16X3CORE ALU ARMOURED CABLE","mrp":332},{"name":"16X4CORE ALU ARMOURED CABLE","mrp":423},
-    {"name":"25X1CORE ALU ARMOURED CABLE","mrp":248},{"name":"25X2CORE ALU ARMOURED CABLE","mrp":340},{"name":"25X3CORE ALU ARMOURED CABLE","mrp":460},{"name":"25X3.5CORE ALU ARMOURED CABLE","mrp":533},{"name":"25X4CORE ALU ARMOURED CABLE","mrp":589},
-    {"name":"35X1COREALU ARMOURED CABLE","mrp":305},{"name":"35X2COREALU ARMOURED CABLE","mrp":429},{"name":"35X3COREALU ARMOURED CABLE","mrp":589},{"name":"35X3.5COREALU ARMOURED CABLE","mrp":672},{"name":"35X4COREALU ARMOURED CABLE","mrp":760},
-    {"name":"50X1COREALU ARMOURED CABLE","mrp":390},{"name":"50X2COREALU ARMOURED CABLE","mrp":564},{"name":"50X3COREALU ARMOURED CABLE","mrp":782},{"name":"50X3.5COREALU ARMOURED CABLE","mrp":898},{"name":"50X4COREALU ARMOURED CABLE","mrp":1018},
-    {"name":"70X1COREALU ARMOURED CABLE","mrp":495},{"name":"70X2COREALU ARMOURED CABLE","mrp":749},{"name":"70X3COREALU ARMOURED CABLE","mrp":1055},{"name":"70X3.5COREALU ARMOURED CABLE","mrp":1214},{"name":"70X4COREALU ARMOURED CABLE","mrp":1371},
-    {"name":"95X1COREALU ARMOURED CABLE","mrp":604},{"name":"95X2COREALU ARMOURED CABLE","mrp":961},{"name":"95X3COREALU ARMOURED CABLE","mrp":1359},{"name":"95X3.5COREALU ARMOURED CABLE","mrp":1577},{"name":"95X4COREALU ARMOURED CABLE","mrp":1759},
-    {"name":"120X1COREALU ARMOURED CABLE","mrp":721},{"name":"120X2COREALU ARMOURED CABLE","mrp":1190},{"name":"120X3COREALU ARMOURED CABLE","mrp":1690},{"name":"120X3.5COREALU ARMOURED CABLE","mrp":2006},{"name":"120X4COREALU ARMOURED CABLE","mrp":2212},
-    {"name":"150X1COREALU ARMOURED CABLE","mrp":860},{"name":"150X2COREALU ARMOURED CABLE","mrp":1447},{"name":"150X3COREALU ARMOURED CABLE","mrp":2087},{"name":"150X3.5COREALU ARMOURED CABLE","mrp":2391},{"name":"150X4COREALU ARMOURED CABLE","mrp":2727},
-    {"name":"185X1COREALU ARMOURED CABLE","mrp":1042},{"name":"185X2COREALU ARMOURED CABLE","mrp":1763},{"name":"185X3COREALU ARMOURED CABLE","mrp":2549},{"name":"185X3.5COREALU ARMOURED CABLE","mrp":2970},{"name":"185X4COREALU ARMOURED CABLE","mrp":3345},
-    {"name":"240X1COREALU ARMOURED CABLE","mrp":1293},{"name":"240X2COREALU ARMOURED CABLE","mrp":2220},{"name":"240X3COREALU ARMOURED CABLE","mrp":3236},{"name":"240X3.5COREALU ARMOURED CABLE","mrp":3738},{"name":"240X4COREALU ARMOURED CABLE","mrp":4239},
-    {"name":"300X1COREALU ARMOURED CABLE","mrp":1572},{"name":"300X2COREALU ARMOURED CABLE","mrp":2727},{"name":"300X3COREALU ARMOURED CABLE","mrp":3980},{"name":"300X3.5COREALU ARMOURED CABLE","mrp":4620},{"name":"300X4COREALU ARMOURED CABLE","mrp":5238},
-    {"name":"400X1COREALU ARMOURED CABLE","mrp":2029},{"name":"400X2COREALU ARMOURED CABLE","mrp":3564},{"name":"400X3COREALU ARMOURED CABLE","mrp":5182},{"name":"400X3.5COREALU ARMOURED CABLE","mrp":5999},{"name":"400X4COREALU ARMOURED CABLE","mrp":6860},
-    {"name":"500X1COREALU ARMOURED CABLE","mrp":2452},{"name":"630X1COREALU ARMOURED CABLE","mrp":3026},{"name":"800X1COREALU ARMOURED CABLE","mrp":3770},{"name":"1000X1COREALU ARMOURED CABLE","mrp":4598}
+  "LEGRAND LYNCUS":[
+    {"name":"6A 1W SWITCH","mrp":98.0},{"name":"6A 2W SWITCH","mrp":204.0},{"name":"16A 1W SWITCH","mrp":236.0},
+    {"name":"16A SOCKET (2M)","mrp":410.0},{"name":"1M STEP REGULATOR","mrp":680.0}
   ]
 };
 
-/* ===== CORE LOGIC ===== */
-const brandSel=document.getElementById("brand");
-const itemSel=document.getElementById("item");
-const tbody=document.querySelector("#qt tbody");
-
-/* ===== LIVE PRICE DATABASE (JSONBin) =====
-   `items` is the data actually used by the dropdowns and the Edit Prices
-   screen. It starts as a cached copy (if one exists from a previous visit)
-   or the built-in fallback, then gets replaced with fresh data fetched from
-   the shared JSONBin database. Saving from the Edit Prices screen writes
-   straight back to this same bin, so all devices stay in sync. */
 const JSONBIN_ID = "6a3637b1f5f4af5e29132730";
 const JSONBIN_MASTER_KEY = "$2a$10$MpuJTq8HXuguilKQPgM3Tu60666pOEexgLKy0In631iih1mkYOqkW";
 const JSONBIN_URL = "https://api.jsonbin.io/v3/b/" + JSONBIN_ID;
 const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V1";
 
 let items = JSON.parse(JSON.stringify(FALLBACK_ITEMS));
-try{
-  const cached = JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || "null");
-  if(cached && cached.items) items = cached.items;
-}catch(e){}
+try{ const cached=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(cached&&cached.items) items=cached.items; }catch(e){}
 
-function setPriceStatus(msg, isError){
-  const el=document.getElementById("priceStatus");
-  if(el){ el.textContent=msg; el.style.color = isError ? "#c0392b" : "var(--muted)"; }
-}
+function setPriceStatus(msg,isError){ const el=document.getElementById("priceStatus"); if(el){ el.textContent=msg; el.style.color=isError?"#c0392b":"var(--muted)"; } }
 
 async function refreshPrices(manual){
-  setPriceStatus("Refreshing prices…", false);
+  setPriceStatus("Refreshing prices…",false);
   try{
-    const res = await fetch(JSONBIN_URL + "/latest", {
-      headers: { "X-Master-Key": JSONBIN_MASTER_KEY },
-      cache: "no-store"
-    });
+    const res=await fetch(JSONBIN_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
     if(!res.ok) throw new Error("HTTP "+res.status);
-    const data = await res.json();
-    const fetched = data.record;
-    if(!fetched || typeof fetched !== "object" || !Object.keys(fetched).length) throw new Error("Database returned no data");
-    items = fetched;
-    const now = new Date();
-    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({items, fetchedAt: now.toISOString()}));
+    const data=await res.json();
+    const fetched=data.record;
+    if(!fetched||typeof fetched!=="object"||!Object.keys(fetched).length) throw new Error("No data");
+    items=fetched;
+    const now=new Date();
+    localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
     refreshBrandDropdown();
-    setPriceStatus("✓ Prices updated " + now.toLocaleString(), false);
+    populateCmpBrandLists();
+    setPriceStatus("✓ Prices updated "+now.toLocaleString(),false);
   }catch(e){
-    let cachedAt = "";
-    try{
-      const cached = JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || "null");
-      if(cached && cached.fetchedAt) cachedAt = " (showing prices from " + new Date(cached.fetchedAt).toLocaleString() + ")";
-    }catch(e2){}
-    setPriceStatus("⚠ Could not refresh prices" + cachedAt + " — " + e.message, true);
-    if(manual) alert("Could not refresh prices from the database.\n\n" + e.message + "\n\nCheck your internet connection.");
+    let ca="";
+    try{ const c=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(c&&c.fetchedAt) ca=" (cached "+new Date(c.fetchedAt).toLocaleString()+")"; }catch(e2){}
+    setPriceStatus("⚠ Could not refresh"+ca,true);
+    if(manual) alert("Could not refresh prices.\n\n"+e.message);
   }
 }
 
 async function savePricesToCloud(){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": JSONBIN_MASTER_KEY
-    },
-    body: JSON.stringify(items)
-  });
+  const res=await fetch(JSONBIN_URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(items)});
   if(!res.ok) throw new Error("HTTP "+res.status);
-  const now = new Date();
-  localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({items, fetchedAt: now.toISOString()}));
-  setPriceStatus("✓ Saved & synced " + now.toLocaleString(), false);
+  const now=new Date();
+  localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
+  setPriceStatus("✓ Saved & synced "+now.toLocaleString(),false);
 }
 
 function refreshBrandDropdown(){
-  const prevBrand = brandSel.value;
+  const prev=brandSel.value;
   brandSel.innerHTML="<option value=''>Select Brand</option>";
   Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;brandSel.appendChild(o);});
-  if(prevBrand && items[prevBrand]){ brandSel.value=prevBrand; brandSel.onchange(); }
+  if(prev&&items[prev]){ brandSel.value=prev; brandSel.onchange(); }
 }
 
-const DOC_TYPES = {
-  QTN: { label:"QUOTATION",        noLabel:"Quotation No",  dateLabel:"Quotation Date",  section:"Quotation Details", addTitle:"Add Item to Quotation", itemsTitle:"Quotation Items",  prefix:"SSE/QTN", storageKey:"SSE_QTN", file:"SSE_Quotation"  },
-  CB:  { label:"CASH BILL",        noLabel:"Cash Bill No",  dateLabel:"Cash Bill Date",  section:"Cash Bill Details", addTitle:"Add Item",              itemsTitle:"Cash Bill Items",  prefix:"SSE/CB",  storageKey:"SSE_CB",  file:"SSE_CashBill"  },
-  PI:  { label:"PROFORMA INVOICE", noLabel:"Proforma No",   dateLabel:"Invoice Date",    section:"Proforma Details",  addTitle:"Add Item to Invoice",   itemsTitle:"Invoice Items",    prefix:"SSE/PI",  storageKey:"SSE_PI",  file:"SSE_Proforma"  }
+const DOC_TYPES={
+  QTN:{label:"QUOTATION",noLabel:"Quotation No",dateLabel:"Quotation Date",section:"Quotation Details",addTitle:"Add Item to Quotation",itemsTitle:"Quotation Items",prefix:"SSE/QTN",storageKey:"SSE_QTN",file:"SSE_Quotation"},
+  CB:{label:"CASH BILL",noLabel:"Cash Bill No",dateLabel:"Cash Bill Date",section:"Cash Bill Details",addTitle:"Add Item",itemsTitle:"Cash Bill Items",prefix:"SSE/CB",storageKey:"SSE_CB",file:"SSE_CashBill"},
+  PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"}
 };
-
-let currentDocType = "QTN";
-
+let currentDocType="QTN";
 function switchDocType(type){
-  currentDocType = type;
-  const d = DOC_TYPES[type];
-  document.getElementById("docSectionTitle").innerText = d.section;
-  document.getElementById("docNoLabel").innerText = d.noLabel;
-  document.getElementById("docDateLabel").innerText = d.dateLabel;
-  document.getElementById("addItemTitle").innerText = d.addTitle;
-  document.getElementById("itemsTitle").innerText = d.itemsTitle;
-  document.getElementById("docTypeBanner").innerText = d.label;
-  // Generate a new number for this doc type
-  const y = new Date().getFullYear();
-  const k = d.storageKey + "_" + y;
-  let s = parseInt(localStorage.getItem(k)||"0") + 1;
-  localStorage.setItem(k, s);
-  qno.value = `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+  currentDocType=type;
+  const d=DOC_TYPES[type];
+  document.getElementById("docSectionTitle").innerText=d.section;
+  document.getElementById("docNoLabel").innerText=d.noLabel;
+  document.getElementById("docDateLabel").innerText=d.dateLabel;
+  document.getElementById("addItemTitle").innerText=d.addTitle;
+  document.getElementById("itemsTitle").innerText=d.itemsTitle;
+  document.getElementById("docTypeBanner").innerText=d.label;
+  const y=new Date().getFullYear(), k=d.storageKey+"_"+y;
+  let s=parseInt(localStorage.getItem(k)||"0")+1;
+  localStorage.setItem(k,s);
+  qno.value=`${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
 }
-
 function generateQuotationNo(){
-  const d = DOC_TYPES[currentDocType];
-  const y = new Date().getFullYear();
-  const k = d.storageKey + "_" + y;
-  let s = parseInt(localStorage.getItem(k)||"0") + 1;
-  localStorage.setItem(k, s);
+  const d=DOC_TYPES[currentDocType], y=new Date().getFullYear(), k=d.storageKey+"_"+y;
+  let s=parseInt(localStorage.getItem(k)||"0")+1;
+  localStorage.setItem(k,s);
   return `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
 }
+
+const brandSel=document.getElementById("brand");
+const itemSel=document.getElementById("item");
+const tbody=document.querySelector("#qt tbody");
 
 brandSel.onchange=()=>{
   itemSel.innerHTML="<option value=''>Select Item</option>";
@@ -1186,377 +880,170 @@ window.onload=()=>{
   refreshBrandDropdown();
   qdate.valueAsDate=new Date();
   qno.value=generateQuotationNo();
+  document.getElementById("cmpDate").valueAsDate=new Date();
+  document.getElementById("cmpQno").value="SSE/CMP/"+new Date().getFullYear()+"/001";
   refreshPrices(false);
 };
 
-/* ===== EDIT PRICES PANEL ===== */
-let peWorkingCopy = null; // working draft, only written to `items`/cloud on Save
-let peDirty = false;
-
-function openPriceEditor(){
-  peWorkingCopy = JSON.parse(JSON.stringify(items));
-  peDirty = false;
-  document.getElementById("peSearch").value = "";
-  document.getElementById("peStatus").textContent = "";
-  document.getElementById("priceEditorOverlay").style.display = "flex";
-  renderPriceEditorRows();
-}
-
-function closePriceEditor(){
-  if(peDirty && !confirm("Discard unsaved changes?")) return;
-  document.getElementById("priceEditorOverlay").style.display = "none";
-  peWorkingCopy = null;
-}
-
+/* ===== PRICE EDITOR ===== */
+let peWorkingCopy=null, peDirty=false;
+function openPriceEditor(){ peWorkingCopy=JSON.parse(JSON.stringify(items)); peDirty=false; document.getElementById("peSearch").value=""; document.getElementById("peStatus").textContent=""; document.getElementById("priceEditorOverlay").style.display="flex"; renderPriceEditorRows(); }
+function closePriceEditor(){ if(peDirty&&!confirm("Discard unsaved changes?")) return; document.getElementById("priceEditorOverlay").style.display="none"; peWorkingCopy=null; }
 function renderPriceEditorRows(){
-  const q = document.getElementById("peSearch").value.trim().toLowerCase();
-  const list = document.getElementById("peList");
-  list.innerHTML = "";
-  const brands = Object.keys(peWorkingCopy).sort();
+  const q=document.getElementById("peSearch").value.trim().toLowerCase();
+  const list=document.getElementById("peList"); list.innerHTML="";
+  const brands=Object.keys(peWorkingCopy).sort();
   brands.forEach(brand=>{
-    const brandMatches = brand.toLowerCase().includes(q);
-    const rows = peWorkingCopy[brand].filter((it,idx)=>{
-      if(!q) return true;
-      return brandMatches || it.name.toLowerCase().includes(q);
-    });
+    const brandMatches=brand.toLowerCase().includes(q);
+    const rows=peWorkingCopy[brand].filter(it=>!q||brandMatches||it.name.toLowerCase().includes(q));
     if(!rows.length) return;
-
-    const section = document.createElement("div");
-    section.style.marginBottom = "14px";
-
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
-    header.innerHTML = `<strong style="color:#1a3c6e;font-size:13px">${brand}</strong>`;
-    const delBrandBtn = document.createElement("button");
-    delBrandBtn.textContent = "Delete brand";
-    delBrandBtn.style.cssText = "background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline";
-    delBrandBtn.onclick = ()=>peDeleteBrand(brand);
-    header.appendChild(delBrandBtn);
-    section.appendChild(header);
-
-    const table = document.createElement("table");
-    table.style.cssText = "width:100%;border-collapse:collapse;font-size:13px";
-    peWorkingCopy[brand].forEach((it, idx)=>{
-      if(q && !brandMatches && !it.name.toLowerCase().includes(q)) return;
-      const tr = document.createElement("tr");
-      tr.style.borderBottom = "1px solid #eee";
-      const tdName = document.createElement("td");
-      tdName.style.cssText = "padding:7px 8px;width:42%";
-      tdName.textContent = it.name;
-      const tdPrice = document.createElement("td");
-      tdPrice.style.cssText = "padding:7px 8px;width:20%";
-      const priceInput = document.createElement("input");
-      priceInput.type = "number";
-      priceInput.step = "0.01";
-      priceInput.value = it.mrp;
-      priceInput.style.cssText = "width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px" + (it.mrp===0 ? ";border-color:#e0a020;background:#fff8ea" : "");
-      priceInput.oninput = ()=>{
-        peWorkingCopy[brand][idx].mrp = parseFloat(priceInput.value)||0;
-        peDirty = true;
-        priceInput.style.borderColor = peWorkingCopy[brand][idx].mrp===0 ? "#e0a020" : "#ccc";
-        priceInput.style.background = peWorkingCopy[brand][idx].mrp===0 ? "#fff8ea" : "#fff";
-      };
-      const tdHSN = document.createElement("td");
-      tdHSN.style.cssText = "padding:7px 8px;width:18%";
-      const hsnInput = document.createElement("input");
-      hsnInput.type = "text";
-      hsnInput.placeholder = "HSN";
-      hsnInput.value = it.hsn || "";
-      hsnInput.title = it.hsn ? "" : "No HSN saved — currently auto-guessed on the quotation";
-      hsnInput.style.cssText = "width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px" + (!it.hsn ? ";border-color:#e0a020;background:#fff8ea" : "");
-      hsnInput.oninput = ()=>{
-        peWorkingCopy[brand][idx].hsn = hsnInput.value.trim();
-        peDirty = true;
-        hsnInput.style.borderColor = peWorkingCopy[brand][idx].hsn ? "#ccc" : "#e0a020";
-        hsnInput.style.background = peWorkingCopy[brand][idx].hsn ? "#fff" : "#fff8ea";
-      };
-      const tdDel = document.createElement("td");
-      tdDel.style.cssText = "padding:7px 8px;width:12%;text-align:right";
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "Remove";
-      delBtn.style.cssText = "background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline";
-      delBtn.onclick = ()=>{
-        peWorkingCopy[brand].splice(idx,1);
-        peDirty = true;
-        renderPriceEditorRows();
-      };
-      tdPrice.appendChild(priceInput);
-      tdHSN.appendChild(hsnInput);
-      tdDel.appendChild(delBtn);
+    const section=document.createElement("div"); section.style.marginBottom="14px";
+    const header=document.createElement("div"); header.style.cssText="display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
+    header.innerHTML=`<strong style="color:#1a3c6e;font-size:13px">${brand}</strong>`;
+    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); header.appendChild(delBrandBtn); section.appendChild(header);
+    const table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
+    peWorkingCopy[brand].forEach((it,idx)=>{
+      if(q&&!brandMatches&&!it.name.toLowerCase().includes(q)) return;
+      const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
+      const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:42%"; tdName.textContent=it.name;
+      const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:20%";
+      const priceInput=document.createElement("input"); priceInput.type="number"; priceInput.step="0.01"; priceInput.value=it.mrp; priceInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px"; priceInput.oninput=()=>{ peWorkingCopy[brand][idx].mrp=parseFloat(priceInput.value)||0; peDirty=true; };
+      const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:18%";
+      const hsnInput=document.createElement("input"); hsnInput.type="text"; hsnInput.placeholder="HSN"; hsnInput.value=it.hsn||""; hsnInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; hsnInput.oninput=()=>{ peWorkingCopy[brand][idx].hsn=hsnInput.value.trim(); peDirty=true; };
+      const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:12%;text-align:right";
+      const delBtn=document.createElement("button"); delBtn.textContent="Remove"; delBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBtn.onclick=()=>{ peWorkingCopy[brand].splice(idx,1); peDirty=true; renderPriceEditorRows(); };
+      tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdDel.appendChild(delBtn);
       tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
       table.appendChild(tr);
     });
-    section.appendChild(table);
-    list.appendChild(section);
+    section.appendChild(table); list.appendChild(section);
   });
-  if(!list.children.length){
-    list.innerHTML = "<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
-  }
+  if(!list.children.length) list.innerHTML="<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
 }
-
 function peAddItemPrompt(){
-  const brands = Object.keys(peWorkingCopy).sort();
-  const brand = prompt("Add item to which brand? (type exact brand name)\n\nExisting brands:\n" + brands.join(", "));
-  if(!brand) return;
-  if(!peWorkingCopy[brand]){ alert("That brand doesn't exist. Use '+ Add Brand' first, or check spelling."); return; }
-  const name = prompt("New item name:");
-  if(!name) return;
-  const mrpStr = prompt("Price (MRP) for this item:", "0");
-  const mrp = parseFloat(mrpStr) || 0;
-  const guessedHSN = getHSN(brand, name.trim());
-  const hsnStr = prompt(
-    "HSN Code for this item:\n\n(Suggested based on similar items — please confirm or correct it. This will be saved permanently with this item.)",
-    guessedHSN
-  );
-  const hsn = (hsnStr||"").trim() || guessedHSN;
-  peWorkingCopy[brand].push({name: name.trim(), mrp, hsn});
-  peDirty = true;
-  document.getElementById("peSearch").value = "";
-  renderPriceEditorRows();
+  const brands=Object.keys(peWorkingCopy).sort();
+  const brand=prompt("Add item to which brand?\n\nBrands:\n"+brands.join(", ")); if(!brand) return;
+  if(!peWorkingCopy[brand]){ alert("That brand doesn't exist."); return; }
+  const name=prompt("New item name:"); if(!name) return;
+  const mrpStr=prompt("Price (MRP):","0"); const mrpVal=parseFloat(mrpStr)||0;
+  const guessedHSN=getHSN(brand,name.trim());
+  const hsnStr=prompt("HSN Code:",guessedHSN); const hsn=(hsnStr||"").trim()||guessedHSN;
+  peWorkingCopy[brand].push({name:name.trim(),mrp:mrpVal,hsn}); peDirty=true;
+  document.getElementById("peSearch").value=""; renderPriceEditorRows();
 }
-
-function peAddBrandPrompt(){
-  const brand = prompt("New brand name:");
-  if(!brand) return;
-  if(peWorkingCopy[brand]){ alert("That brand already exists."); return; }
-  peWorkingCopy[brand] = [];
-  peDirty = true;
-  renderPriceEditorRows();
-}
-
-function peDeleteBrand(brand){
-  if(!confirm(`Delete the entire brand "${brand}" and all its items? This cannot be undone after you save.`)) return;
-  delete peWorkingCopy[brand];
-  peDirty = true;
-  renderPriceEditorRows();
-}
-
+function peAddBrandPrompt(){ const brand=prompt("New brand name:"); if(!brand) return; if(peWorkingCopy[brand]){ alert("Brand already exists."); return; } peWorkingCopy[brand]=[]; peDirty=true; renderPriceEditorRows(); }
+function peDeleteBrand(brand){ if(!confirm(`Delete "${brand}" and all its items?`)) return; delete peWorkingCopy[brand]; peDirty=true; renderPriceEditorRows(); }
 function peImportCSV(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = (e)=>{
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
     try{
-      const rows = parseCSVForImport(e.target.result);
-      if(!rows.length) throw new Error("Empty file");
-      const header = rows[0].map(h=>h.trim().toLowerCase());
-      const bIdx=header.indexOf("brand"), nIdx=header.indexOf("item name"), mIdx=header.indexOf("mrp");
-      const hIdx=header.indexOf("hsn"); // optional column
+      const rows=parseCSVForImport(e.target.result); if(!rows.length) throw new Error("Empty file");
+      const header=rows[0].map(h=>h.trim().toLowerCase());
+      const bIdx=header.indexOf("brand"),nIdx=header.indexOf("item name"),mIdx=header.indexOf("mrp"),hIdx=header.indexOf("hsn");
       if(bIdx===-1||nIdx===-1||mIdx===-1) throw new Error("CSV must have Brand, Item Name, MRP columns");
-      let updated=0, added=0;
+      let updated=0,added=0;
       for(let i=1;i<rows.length;i++){
-        const r=rows[i];
-        const brand=(r[bIdx]||"").trim();
-        const name=(r[nIdx]||"").trim();
-        const mrp=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0;
-        const hsn=hIdx!==-1?(r[hIdx]||"").trim():"";
+        const r=rows[i]; const brand=(r[bIdx]||"").trim(),name=(r[nIdx]||"").trim(),mrpVal=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0,hsn=hIdx!==-1?(r[hIdx]||"").trim():"";
         if(!brand||!name) continue;
         if(!peWorkingCopy[brand]) peWorkingCopy[brand]=[];
-        const existing = peWorkingCopy[brand].find(it=>it.name===name);
-        if(existing){ existing.mrp = mrp; if(hsn) existing.hsn = hsn; updated++; }
-        else { const newItem={name, mrp}; if(hsn) newItem.hsn=hsn; peWorkingCopy[brand].push(newItem); added++; }
+        const existing=peWorkingCopy[brand].find(it=>it.name===name);
+        if(existing){ existing.mrp=mrpVal; if(hsn) existing.hsn=hsn; updated++; }
+        else{ const newItem={name,mrp:mrpVal}; if(hsn) newItem.hsn=hsn; peWorkingCopy[brand].push(newItem); added++; }
       }
-      peDirty = true;
-      renderPriceEditorRows();
-      document.getElementById("peStatus").textContent = `CSV import: ${updated} updated, ${added} added (not yet saved)`;
-    }catch(err){
-      alert("Could not import this CSV: " + err.message + "\n\nMake sure it has columns named Brand, Item Name, MRP (HSN column is optional).");
-    }
-    event.target.value = "";
+      peDirty=true; renderPriceEditorRows();
+      document.getElementById("peStatus").textContent=`CSV import: ${updated} updated, ${added} added`;
+    }catch(err){ alert("Could not import CSV: "+err.message); }
+    event.target.value="";
   };
   reader.readAsText(file);
 }
-
 function parseCSVForImport(text){
-  const rows=[];
-  let row=[],field="",inQuotes=false;
+  const rows=[]; let row=[],field="",inQuotes=false;
   for(let i=0;i<text.length;i++){
     const c=text[i];
-    if(inQuotes){
-      if(c=='"'){ if(text[i+1]=='"'){field+='"';i++;} else inQuotes=false; }
-      else field+=c;
-    }else{
-      if(c=='"') inQuotes=true;
-      else if(c==','){row.push(field);field="";}
-      else if(c=='\n'){row.push(field);rows.push(row);row=[];field="";}
-      else if(c=='\r'){}
-      else field+=c;
-    }
+    if(inQuotes){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;}else inQuotes=false; }else field+=c; }
+    else{ if(c==='"') inQuotes=true; else if(c===','){row.push(field);field="";} else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";} else if(c==='\r'){} else field+=c; }
   }
   if(field.length||row.length){row.push(field);rows.push(row);}
-  return rows.filter(r=>r.length && r.some(f=>f.trim()!==""));
+  return rows.filter(r=>r.length&&r.some(f=>f.trim()!==""));
 }
-
 async function savePriceEditorChanges(){
-  const btn = document.getElementById("peSaveBtn");
-  const status = document.getElementById("peStatus");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
+  const btn=document.getElementById("peSaveBtn"),status=document.getElementById("peStatus");
+  btn.disabled=true; btn.textContent="Saving…";
   try{
-    items = peWorkingCopy;
-    await savePricesToCloud();
-    refreshBrandDropdown();
-    peDirty = false;
-    status.textContent = "✓ Saved! Synced to all devices.";
-    status.style.color = "#156038";
-    setTimeout(()=>{ document.getElementById("priceEditorOverlay").style.display="none"; }, 900);
-  }catch(e){
-    status.textContent = "⚠ Could not save: " + e.message;
-    status.style.color = "#c0392b";
-    alert("Could not save changes to the shared database.\n\n" + e.message + "\n\nYour edits are still here in the editor — check your internet connection and try Save again.");
-  }finally{
-    btn.disabled = false;
-    btn.textContent = "💾 Save & Sync";
-  }
+    items=peWorkingCopy; await savePricesToCloud(); refreshBrandDropdown(); populateCmpBrandLists(); peDirty=false;
+    status.textContent="✓ Saved! Synced to all devices."; status.style.color="#156038";
+    setTimeout(()=>{ document.getElementById("priceEditorOverlay").style.display="none"; },900);
+  }catch(e){ status.textContent="⚠ Could not save: "+e.message; status.style.color="#c0392b"; alert("Could not save.\n\n"+e.message); }
+  finally{ btn.disabled=false; btn.textContent="💾 Save & Sync"; }
 }
 
-function getCoilLength(itemName){
-  const n=itemName.toUpperCase();
-  if(n.includes("90MTR")) return 90;
-  if(n.includes("180MTR")) return 180;
-  if(n.includes("200MTR")) return 200;
-  if(n.includes("300MTR")) return 300;
-  return null;
-}
-function isWireCoilBrand(b){const u=(b||"").toUpperCase().trim();return u.includes("IND COPPER")||u.includes("GREEN PLUS");}
-function isPolycabCable(b){const u=(b||"").toUpperCase();return u.includes("POLYCAB - IND COPPER")||u.includes("POLYCAB - COPPER ARMOURED")||u.includes("POLYCAB - ALU ARMOURED")||u.includes("POLYCAB - COPPER FLEXIBLE");}
-function isKEICable(b){const u=(b||"").toUpperCase();return u.includes("KEI - COPPER ARMOURED")||u.includes("KEI - ALU ARMOURED");}
-function getDisplayBrand(b){
-  if(b.startsWith("POLYCAB")) return "POLYCAB";
-  if(b.startsWith("KEI")) return "KEI";
-  return b.split(" - ")[0].trim();
-}
+/* ===== WIRE / CABLE HELPERS ===== */
+function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes("90MTR")) return 90; if(n.includes("180MTR")) return 180; if(n.includes("200MTR")) return 200; if(n.includes("300MTR")) return 300; return null; }
+function isWireCoilBrand(b){ const u=(b||"").toUpperCase().trim(); return u.includes("IND COPPER")||u.includes("GREEN PLUS"); }
+function isPolycabCable(b){ const u=(b||"").toUpperCase(); return u.includes("POLYCAB - IND COPPER")||u.includes("POLYCAB - COPPER ARMOURED")||u.includes("POLYCAB - ALU ARMOURED")||u.includes("POLYCAB - COPPER FLEXIBLE"); }
+function isKEICable(b){ const u=(b||"").toUpperCase(); return u.includes("KEI - COPPER ARMOURED")||u.includes("KEI - ALU ARMOURED"); }
+function getDisplayBrand(b){ if(b.startsWith("POLYCAB")) return "POLYCAB"; if(b.startsWith("KEI")) return "KEI"; return b.split(" - ")[0].trim(); }
 
 function updateIndCopperBox(){
-  const brand=brandSel.value;
-  const indBox=document.getElementById("indCopperBox");
-  const b=brand.toUpperCase();
-  const isWire=isWireCoilBrand(brand);
-  const isPolycab=isPolycabCable(brand);
-  const isKEICab=isKEICable(brand);
+  const brand=brandSel.value; const indBox=document.getElementById("indCopperBox"); const b=brand.toUpperCase();
+  const isWire=isWireCoilBrand(brand),isPolycab=isPolycabCable(brand),isKEICab=isKEICable(brand);
   if(!isWire&&!isPolycab&&!isKEICab){indBox.style.display="none";return;}
-  const coilMRP=+mrp.value;
-  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
-  const len=getCoilLength(itemName);
-  const shortBrand=getDisplayBrand(brand);
-  const titleEl=document.getElementById("cableBoxTitle");
-  if(isWire) titleEl.innerText=`📦 ${shortBrand} — COIL INFO`;
-  else if(b.includes("COPPER ARMOURED")) titleEl.innerText=`📦 ${shortBrand} COPPER ARMOURED — INFO`;
-  else if(b.includes("ALU ARMOURED")) titleEl.innerText=`📦 ${shortBrand} ALU ARMOURED — INFO`;
-  else if(b.includes("COPPER FLEXIBLE")) titleEl.innerText=`📦 ${shortBrand} COPPER FLEXIBLE — INFO`;
+  const coilMRP=+mrp.value, itemName=itemSel.options[itemSel.selectedIndex]?.text||"", len=getCoilLength(itemName), shortBrand=getDisplayBrand(brand);
+  document.getElementById("cableBoxTitle").innerText=isWire?`📦 ${shortBrand} — COIL INFO`:b.includes("COPPER ARMOURED")?`📦 ${shortBrand} COPPER ARMOURED`:b.includes("ALU ARMOURED")?`📦 ${shortBrand} ALU ARMOURED`:`📦 ${shortBrand} COPPER FLEXIBLE`;
   document.getElementById("frToggleBox").style.display="block";
   const coilInfoRow=document.getElementById("coilInfoRow");
-  if(isWire&&len&&coilMRP){
-    document.getElementById("coilLen").value=len;
-    document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2);
-    updateNetPerMtr();
-    if(coilInfoRow) coilInfoRow.style.display="";
-  } else {if(coilInfoRow) coilInfoRow.style.display="none";}
+  if(isWire&&len&&coilMRP){ document.getElementById("coilLen").value=len; document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2); updateNetPerMtr(); if(coilInfoRow) coilInfoRow.style.display=""; }
+  else{ if(coilInfoRow) coilInfoRow.style.display="none"; }
   indBox.style.display="block";
 }
+function updateNetPerMtr(){ const coilMRP=+mrp.value,len=+document.getElementById("coilLen").value; if(!len||!coilMRP) return; let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP); document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2); }
+function updateQtyLabel(){ const qtyLabel=document.getElementById("qtyLabel"),b=(brandSel.value||"").toUpperCase(),isWire=b.includes("IND COPPER")||b.includes("GREEN PLUS"); if(isWire&&unit.value==="MTRS") qtyLabel.innerText="Qty (Metres)"; else if(isWire&&unit.value==="COIL") qtyLabel.innerText="Qty (No. of Coils)"; else qtyLabel.innerText="Qty"; }
 
-function updateNetPerMtr(){
-  const coilMRP=+mrp.value;
-  const len=+document.getElementById("coilLen").value;
-  if(!len||!coilMRP) return;
-  let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-  document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2);
-}
-
-function updateQtyLabel(){
-  const qtyLabel=document.getElementById("qtyLabel");
-  const b=(brandSel.value||"").toUpperCase();
-  const isWire=b.includes("IND COPPER")||b.includes("GREEN PLUS");
-  if(isWire && unit.value==="MTRS"){
-    qtyLabel.innerText="Qty (Metres)";
-  } else if(isWire && unit.value==="COIL"){
-    qtyLabel.innerText="Qty (No. of Coils)";
-  } else {
-    qtyLabel.innerText="Qty";
-  }
-}
-
-itemSel.onchange=()=>{mrp.value=itemSel.value;updateIndCopperBox();updateQtyLabel();};
-document.getElementById("disc").addEventListener("input",()=>{updateNetPerMtr();});
-document.getElementById("net").addEventListener("input",()=>{updateNetPerMtr();});
+itemSel.onchange=()=>{ mrp.value=itemSel.value; updateIndCopperBox(); updateQtyLabel(); };
+document.getElementById("disc").addEventListener("input",()=>{ updateNetPerMtr(); });
+document.getElementById("net").addEventListener("input",()=>{ updateNetPerMtr(); });
 
 function getHSN(brand,itemName){
   const b=brand.toUpperCase(),n=itemName.toUpperCase();
   if(b.includes("IND COPPER")||b.includes("GREEN PLUS")||b.includes("POLYCAB COPPER")||b.includes("KEI")) return "85446090";
-  if(n.includes("COPPER ARMOURED")||n.includes("CU ARM")||n.includes("ALU ARMOURED")||b.includes("ALU ARM")||n.includes("COPPER FLEXIBLE")||b.includes("COPPER FLEXIBLE")) return "85446090";
-  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||n.includes("BELL PUSH")||n.includes("INDICATOR")||n.includes("BELL WITH IND")) return "85365020";
+  if(n.includes("COPPER ARMOURED")||n.includes("ALU ARMOURED")||n.includes("COPPER FLEXIBLE")) return "85446090";
+  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||n.includes("BELL PUSH")||n.includes("INDICATOR")) return "85365020";
   if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT")) return "85362000";
-  if(n.includes(" DB ")||n.endsWith("DB")||n.includes("PANEL")||n.includes("ENCLOSER")||n.includes("ENCLOSURE")) return "85371000";
-  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")||n.includes("FRAME")) return "85389000";
+  if(n.includes(" DB ")||n.endsWith("DB")||n.includes("PANEL")||n.includes("ENCLOSER")) return "85371000";
+  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")) return "85389000";
   if(n.includes("DOWN LIGHT")||n.includes("SKIRTING LIGHT")||n.includes("FOOT LAMP")) return "94051090";
   if(n.includes("RJ")||n.includes("TV SOCKET")||n.includes("TELEPHONE")||n.includes("USB")) return "85363090";
-  if(n.includes("CABLE TRAY")||n.includes("TRAY")) return "73089090";
-  if(n.includes("METAL BOX")||n.includes("JUNCTION BOX")||n.includes("BOX")) return "85389000";
   return "85369090";
 }
 
 let selectedColour="";
-function selectColour(colour){
-  if(selectedColour===colour&&colour!=='CUSTOM'){clearColour();return;}
-  selectedColour=colour;
-  document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById("clr-"+colour).classList.add("active");
-  const ci=document.getElementById("customColourInput");
-  if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();selectedColour=ci.value.toUpperCase()||"";}
-  else{ci.style.display="none";document.getElementById("selectedColourDisplay").innerText=colour;}
-}
-function clearColour(){
-  selectedColour="";
-  document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById("customColourInput").style.display="none";
-  document.getElementById("customColourInput").value="";
-  document.getElementById("selectedColourDisplay").innerText="—";
-}
-function getSelectedColour(){
-  if(document.getElementById("clr-CUSTOM").classList.contains("active"))
-    return document.getElementById("customColourInput").value.trim().toUpperCase()||"";
-  return selectedColour;
-}
-function getColourStyle(colour){
-  const map={'RED':'background:#fff0f0;color:#c62828;font-weight:700','YELLOW':'background:#fffde7;color:#f57f17;font-weight:700','BLUE':'background:#e3f2fd;color:#1565c0;font-weight:700','BLACK':'background:#f5f5f5;color:#212121;font-weight:700','GREEN':'background:#e8f5e9;color:#2e7d32;font-weight:700'};
-  return map[colour.toUpperCase()]||'background:#f3e5f5;color:#6a1b9a;font-weight:700';
-}
+function selectColour(colour){ if(selectedColour===colour&&colour!=='CUSTOM'){clearColour();return;} selectedColour=colour; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("clr-"+colour).classList.add("active"); const ci=document.getElementById("customColourInput"); if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();selectedColour=ci.value.toUpperCase()||"";}else{ci.style.display="none";document.getElementById("selectedColourDisplay").innerText=colour;} }
+function clearColour(){ selectedColour=""; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("customColourInput").style.display="none"; document.getElementById("customColourInput").value=""; document.getElementById("selectedColourDisplay").innerText="—"; }
+function getSelectedColour(){ if(document.getElementById("clr-CUSTOM").classList.contains("active")) return document.getElementById("customColourInput").value.trim().toUpperCase()||""; return selectedColour; }
+function getColourStyle(colour){ const map={'RED':'background:#fff0f0;color:#c62828;font-weight:700','YELLOW':'background:#fffde7;color:#f57f17;font-weight:700','BLUE':'background:#e3f2fd;color:#1565c0;font-weight:700','BLACK':'background:#f5f5f5;color:#212121;font-weight:700','GREEN':'background:#e8f5e9;color:#2e7d32;font-weight:700'}; return map[colour.toUpperCase()]||'background:#f3e5f5;color:#6a1b9a;font-weight:700'; }
 
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
-  const coilMRP=+mrp.value;
-  let coilRate,perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false,finalRate,finalQty=+qty.value;
-  const itemName=itemSel.options[itemSel.selectedIndex].text.trim();
-  const brand=brandSel.value;
-  const b=brand.toUpperCase();
-  const frType=document.getElementById("frType")?.value||"";
-  const colourVal=getSelectedColour();
-  const displayBrand=getDisplayBrand(brand);
-  const isIndCopper=b.includes("IND COPPER")||b.includes("GREEN PLUS");
-  const isArmFlx=b.includes("ARMOURED")||b.includes("FLEXIBLE");
+  const coilMRP=+mrp.value; let perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false,finalRate,finalQty=+qty.value;
+  const itemName=itemSel.options[itemSel.selectedIndex].text.trim(), brand=brandSel.value, b=brand.toUpperCase();
+  const frType=document.getElementById("frType")?.value||"", colourVal=getSelectedColour(), displayBrand=getDisplayBrand(brand);
+  const isIndCopper=b.includes("IND COPPER")||b.includes("GREEN PLUS"), isArmFlx=b.includes("ARMOURED")||b.includes("FLEXIBLE");
   const buildSuffix=base=>frType?`${base} ${frType}`:base;
   if(isIndCopper){
     const len=+document.getElementById("coilLen").value||1;
-    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate=(coilRate/len).toFixed(2);
     description=buildSuffix(itemName);
-    if(unit.value==="MTRS"){
-      // Selling by the metre: Qty = metres required, rate used is the per-metre rate.
-      displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;
-      finalRate=+perMtrRate;
-    } else {
-      // Selling whole coils: Qty = number of coils, rate used is the per-coil rate.
-      displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;
-      finalRate=coilRate;
-    }
-  } else if(isArmFlx){
-    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);
-    finalRate=coilRate;
-  } else {
-    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;
-    finalRate=coilRate;
+    if(unit.value==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
+    else{ displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;finalRate=coilRate; }
+  }else if(isArmFlx){
+    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);finalRate=coilRate;
+  }else{
+    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
   }
   const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
   const colourStyle=colourVal?getColourStyle(colourVal):"";
@@ -1564,7 +1051,7 @@ function addItem(){
   const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
-  r.dataset.coilLen = isIndCopper ? (+document.getElementById("coilLen").value||1) : '';
+  r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||1):'';
   r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
@@ -1573,128 +1060,68 @@ function toggleCustomItem(){customItemBox.style.display=customToggle.checked?"bl
 function addCustomItem(){
   const brand=c_brand.value||"NA",item=c_item.value,unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
   if(!item||!unit||!qty||!rate) return;
-  const amt=qty*rate;
   const r=tbody.insertRow();
-  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();c_item.value=c_rate.value="";
 }
-
 function delRow(b){b.closest("tr").remove();renumber();calc();}
 
 function editRow(btn){
-  const r = btn.closest("tr");
-  const cells = r.cells;
-  document.getElementById("editBrand").value       = cells[1].innerText;
-  document.getElementById("editDescription").value = cells[2].innerText;
-  const colRaw = cells[3].innerText.trim();
-  document.getElementById("editColour").value      = (colRaw === '-' || colRaw === '—') ? '' : colRaw;
-  document.getElementById("editHSN").value         = (cells[4].innerText === '-') ? '' : cells[4].innerText;
-  document.getElementById("editUnit").value        = cells[5].innerText;
-  document.getElementById("editQty").value         = cells[6].innerText;
-  document.getElementById("editMRP").value         = (cells[7].innerText === '-') ? '' : cells[7].innerText;
-  document.getElementById("editDisc").value        = (cells[8].innerText === '-') ? '' : cells[8].innerText;
-  document.getElementById("editRate").value        = cells[9].innerText;
-  document.getElementById("editPerMtr").value      = (cells[10].innerText === '-' || cells[10].innerText === '') ? '' : cells[10].innerText;
-  // Populate brand datalist from loaded items
-  const brandList = document.getElementById("editBrandList");
-  brandList.innerHTML = Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
-  document.getElementById("editRowModal")._targetRow = r;
-  document.getElementById("editRowModal").style.display = "flex";
+  const r=btn.closest("tr"),cells=r.cells;
+  document.getElementById("editBrand").value=cells[1].innerText;
+  document.getElementById("editDescription").value=cells[2].innerText;
+  const colRaw=cells[3].innerText.trim();
+  document.getElementById("editColour").value=(colRaw==='-'||colRaw==='—')?'':colRaw;
+  document.getElementById("editHSN").value=(cells[4].innerText==='-')?'':cells[4].innerText;
+  document.getElementById("editUnit").value=cells[5].innerText;
+  document.getElementById("editQty").value=cells[6].innerText;
+  document.getElementById("editMRP").value=(cells[7].innerText==='-')?'':cells[7].innerText;
+  document.getElementById("editDisc").value=(cells[8].innerText==='-')?'':cells[8].innerText;
+  document.getElementById("editRate").value=cells[9].innerText;
+  document.getElementById("editPerMtr").value=(cells[10].innerText==='-'||cells[10].innerText==='')?'':cells[10].innerText;
+  document.getElementById("editBrandList").innerHTML=Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
+  document.getElementById("editRowModal")._targetRow=r;
+  document.getElementById("editRowModal").style.display="flex";
   recalcEditAmt();
   document.getElementById("editDisc").focus();
   document.getElementById("editDisc").select();
 }
-
 function recalcEditRate(){
-  const mrp  = parseFloat(document.getElementById("editMRP").value);
-  const disc = parseFloat(document.getElementById("editDisc").value);
-  if(!isNaN(mrp) && mrp > 0 && !isNaN(disc)){
-    const netRate = mrp - mrp * disc / 100;
-    document.getElementById("editRate").value = netRate.toFixed(2);
-    // Auto-recalc Per Mtr Rate from Net Rate ÷ Coil Length (read-only)
-    const targetRow = document.getElementById("editRowModal")._targetRow;
-    const coilLen = parseFloat(targetRow && targetRow.dataset.coilLen);
-    if(!isNaN(coilLen) && coilLen > 0){
-      document.getElementById("editPerMtr").value = (netRate / coilLen).toFixed(2);
-    }
-  }
+  const mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value);
+  if(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV)){ const netRate=mrpV-mrpV*discV/100; document.getElementById("editRate").value=netRate.toFixed(2); const targetRow=document.getElementById("editRowModal")._targetRow; const coilLen=parseFloat(targetRow&&targetRow.dataset.coilLen); if(!isNaN(coilLen)&&coilLen>0) document.getElementById("editPerMtr").value=(netRate/coilLen).toFixed(2); }
   recalcEditAmt();
 }
-
-function recalcEditAmt(){
-  const qty  = parseFloat(document.getElementById("editQty").value)  || 0;
-  const rate = parseFloat(document.getElementById("editRate").value) || 0;
-  document.getElementById("editAmt").innerText = "₹ " + (qty * rate).toFixed(2);
-}
-
+function recalcEditAmt(){ const qty=parseFloat(document.getElementById("editQty").value)||0,rate=parseFloat(document.getElementById("editRate").value)||0; document.getElementById("editAmt").innerText="₹ "+(qty*rate).toFixed(2); }
 function saveEditRow(){
-  const modal = document.getElementById("editRowModal");
-  const r = modal._targetRow;
-  if(!r){ closeEditRow(); return; }
-  const cells = r.cells;
-  const mrp   = parseFloat(document.getElementById("editMRP").value);
-  const disc  = parseFloat(document.getElementById("editDisc").value);
-  const qty   = parseFloat(document.getElementById("editQty").value) || 0;
-  let rate;
-  if(!isNaN(mrp) && mrp > 0 && !isNaN(disc)){
-    rate = mrp - mrp * disc / 100;
-  } else {
-    rate = parseFloat(document.getElementById("editRate").value) || 0;
-  }
-  const amt = (qty * rate).toFixed(2);
-  const colourVal = document.getElementById("editColour").value.trim().toUpperCase();
-  const colourStyle = colourVal ? getColourStyle(colourVal) : "";
-
-  cells[1].innerText = document.getElementById("editBrand").value.trim() || cells[1].innerText;
-  cells[2].innerText = document.getElementById("editDescription").value.trim() || cells[2].innerText;
-  cells[3].innerText = colourVal || '-';
-  cells[3].style.cssText = colourStyle;
-  cells[4].innerText = document.getElementById("editHSN").value.trim() || '-';
-  cells[5].innerText = document.getElementById("editUnit").value;
-  cells[6].innerText = qty;
-  cells[7].innerText = isNaN(mrp) ? '-' : mrp;
-  cells[8].innerText = isNaN(disc) ? '-' : disc;
-  cells[9].innerText = rate.toFixed(2);
-  // Per Mtr Rate: auto from Net Rate ÷ coil length (never manual)
-  const coilLen = parseFloat(r.dataset.coilLen);
-  const perMtrAuto = (!isNaN(coilLen) && coilLen > 0) ? (rate / coilLen).toFixed(2) : '-';
-  cells[10].innerText = perMtrAuto;
-  cells[11].innerText = amt;
-  closeEditRow();
-  calc();
+  const modal=document.getElementById("editRowModal"),r=modal._targetRow; if(!r){closeEditRow();return;}
+  const cells=r.cells,mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value),qty=parseFloat(document.getElementById("editQty").value)||0;
+  let rate=(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV))?mrpV-mrpV*discV/100:(parseFloat(document.getElementById("editRate").value)||0);
+  const colourVal=document.getElementById("editColour").value.trim().toUpperCase(),colourStyle=colourVal?getColourStyle(colourVal):"";
+  cells[1].innerText=document.getElementById("editBrand").value.trim()||cells[1].innerText;
+  cells[2].innerText=document.getElementById("editDescription").value.trim()||cells[2].innerText;
+  cells[3].innerText=colourVal||'-'; cells[3].style.cssText=colourStyle;
+  cells[4].innerText=document.getElementById("editHSN").value.trim()||'-';
+  cells[5].innerText=document.getElementById("editUnit").value;
+  cells[6].innerText=qty; cells[7].innerText=isNaN(mrpV)?'-':mrpV; cells[8].innerText=isNaN(discV)?'-':discV; cells[9].innerText=rate.toFixed(2);
+  const coilLen=parseFloat(r.dataset.coilLen); cells[10].innerText=(!isNaN(coilLen)&&coilLen>0)?(rate/coilLen).toFixed(2):'-';
+  cells[11].innerText=(qty*rate).toFixed(2);
+  closeEditRow(); calc();
 }
-
-function closeEditRow(){
-  document.getElementById("editRowModal").style.display = "none";
-}
+function closeEditRow(){ document.getElementById("editRowModal").style.display="none"; }
 function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
 
 function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[11].innerText);
   sub.innerText=s.toFixed(2);
-
-  // Cash discount applied on sub total BEFORE GST
   const cashPct=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
-  const cashAmt=cashPct>0 ? (s*cashPct/100) : 0;
-  const taxable=s-cashAmt;
-
-  const cashDiscRow=document.getElementById("cashDiscRow");
-  const taxableRow=document.getElementById("taxableRow");
-  if(cashPct>0){
-    document.getElementById("cashDiscAmt").innerText="- "+cashAmt.toFixed(2);
-    document.getElementById("taxableAmt").innerText=taxable.toFixed(2);
-    if(cashDiscRow) cashDiscRow.style.display="";
-    if(taxableRow) taxableRow.style.display="";
-  } else {
-    if(cashDiscRow) cashDiscRow.style.display="none";
-    if(taxableRow) taxableRow.style.display="none";
-  }
-
+  const cashAmt=cashPct>0?(s*cashPct/100):0,taxable=s-cashAmt;
+  const cashDiscRow=document.getElementById("cashDiscRow"),taxableRow=document.getElementById("taxableRow");
+  if(cashPct>0){ document.getElementById("cashDiscAmt").innerText="- "+cashAmt.toFixed(2); document.getElementById("taxableAmt").innerText=taxable.toFixed(2); if(cashDiscRow) cashDiscRow.style.display=""; if(taxableRow) taxableRow.style.display=""; }
+  else{ if(cashDiscRow) cashDiscRow.style.display="none"; if(taxableRow) taxableRow.style.display="none"; }
   gst.innerText=gstToggle.checked?(taxable*0.18).toFixed(2):"0.00";
   const grandTotal=taxable+(+gst.innerText);
   gt.innerText=grandTotal.toFixed(2);
-  const rounded=Math.round(grandTotal);
-  const roundOff=rounded-grandTotal;
+  const rounded=Math.round(grandTotal),roundOff=rounded-grandTotal;
   document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
   document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
   document.querySelectorAll(".mrpCol").forEach(c=>c.style.display=showMRP.checked?"":"none");
@@ -1704,45 +1131,370 @@ function calc(){
 }
 
 function exportExcel(){
-  const tcPay=document.getElementById("tcPaymentVal").innerText;
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
-  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],
-    ["Customer",custName.value,"GSTIN",custGST.value],[],
-    ["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
+  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,12).map(c=>c.innerText)));
   data.push([]);
   data.push(["","","","","","","","","","","Sub Total",sub.innerText]);
   const cashPctVal=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
-  if(cashPctVal>0){
-    data.push(["","","","","","","","","","","Cash Discount ("+cashPctVal+"%)",document.getElementById("cashDiscAmt").innerText]);
-    data.push(["","","","","","","","","","","Taxable Amount",document.getElementById("taxableAmt").innerText]);
-  }
+  if(cashPctVal>0){ data.push(["","","","","","","","","","","Cash Discount ("+cashPctVal+"%)","- "+document.getElementById("cashDiscAmt").innerText]); data.push(["","","","","","","","","","","Taxable Amount",document.getElementById("taxableAmt").innerText]); }
   data.push(["","","","","","","","","","","GST 18%",gst.innerText]);
   data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
   data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
-  data.push([]);
-  data.push(["TERMS & CONDITIONS"]);
-  data.push(["Payment Terms",tcPay]);
-  data.push(["Freight","Extra — charged at actuals"]);
-  data.push(["Delivery","Within 7 working days of order confirmation"]);
-  data.push(["Tolerance","±5% on quantity supplied is acceptable"]);
-  data.push(["Validity","Subject to stock availability & price revision"]);
   if(remarksTxt) data.push(["Remarks",remarksTxt]);
-  const docD = DOC_TYPES[currentDocType];
-  let wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data), docD.label);
-  XLSX.writeFile(wb, docD.file + ".xlsx");
+  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,DOC_TYPES[currentDocType].file+".xlsx");
 }
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({
-    margin:5,filename:DOC_TYPES[currentDocType].file+".pdf",
-    html2canvas:{scale:2,useCORS:true},
-    jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
-  }).from(document.getElementById("printArea")).save().then(()=>{
-    document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide"));
+  html2pdf().set({margin:5,filename:DOC_TYPES[currentDocType].file+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
+}
+</script>
+
+<script>
+/* ====================================================================
+   PRICE COMPARISON — completely self-contained, separate data store
+   ==================================================================== */
+
+/* cmpRows stores each added comparison row:
+   { desc, hsn, unit, qty, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3], perMtr:[p1,p2,p3] }
+*/
+let cmpRows = [];
+
+function populateCmpBrandLists(){
+  const brands = Object.keys(items);
+  [1,2,3].forEach(n=>{
+    const dl = document.getElementById("cmpBrandList"+n);
+    if(dl) dl.innerHTML = brands.map(b=>`<option value="${b}">`).join("");
   });
+  populateCmpItemDropdowns();
+}
+
+/* Populate each brand's Item <select> from the master inventory list,
+   matched against whatever the user typed/picked in the Brand input. */
+function populateCmpItemDropdowns(){
+  [1,2,3].forEach(n=>{
+    const brandInput=(document.getElementById("cmpBrand"+n).value||"").trim();
+    const sel=document.getElementById("cmpItemSel"+n);
+    if(!sel) return;
+    const prevVal=sel.value;
+    sel.innerHTML="<option value=''>— Select Item —</option>";
+    // exact match first, then case-insensitive contains match against known brand keys
+    let matchedKey=null;
+    if(items[brandInput]) matchedKey=brandInput;
+    else{
+      const upperInput=brandInput.toUpperCase();
+      matchedKey=Object.keys(items).find(k=>k.toUpperCase()===upperInput)
+              || Object.keys(items).find(k=>upperInput&&k.toUpperCase().includes(upperInput));
+    }
+    if(matchedKey){
+      items[matchedKey].forEach(it=>{
+        const o=document.createElement("option");
+        o.textContent=it.name; o.value=it.name; o.dataset.mrp=it.mrp; o.dataset.brandKey=matchedKey;
+        sel.appendChild(o);
+      });
+      if([...sel.options].some(o=>o.value===prevVal)) sel.value=prevVal;
+    }
+  });
+}
+
+/* When an item is picked from a brand's dropdown: auto-fill MRP, detect coil length,
+   compute per-mtr rate, and (if Description is empty) auto-fill Description. */
+function cmpItemPicked(n){
+  const sel=document.getElementById("cmpItemSel"+n);
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value) return;
+  const mrpVal=parseFloat(opt.dataset.mrp)||0;
+  const brandKey=opt.dataset.brandKey||"";
+  document.getElementById("cmpMRP"+n).value=mrpVal||"";
+
+  const coilLen=getCoilLength(opt.value); // reuse existing helper (90/180/200/300mtr detection)
+  const coilLenInput=document.getElementById("cmpCoilLen"+n);
+  if(coilLen && isWireCoilBrand(brandKey)){
+    coilLenInput.value=coilLen;
+  }else{
+    coilLenInput.value="";
+  }
+
+  // auto-fill shared Description if still blank, so brands with different
+  // coil lengths (90/180/200/300mtr) still line up under one row
+  const descEl=document.getElementById("cmpItemDesc");
+  if(!descEl.value.trim()){
+    descEl.value=opt.value.replace(/\b(90|180|200|300)MTR\b\s*/i,"").trim();
+  }
+
+  cmpRecalcRate(n);
+}
+
+function getCmpBrandNames(){
+  return [1,2,3].map(n=>(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase()||("BRAND "+n));
+}
+
+function refreshCmpHeaders(){
+  const names = getCmpBrandNames();
+  [1,2,3].forEach((n,i)=>{
+    document.getElementById("cmpPriceLabel"+n).innerText = names[i];
+    document.getElementById("cmpPriceLabel"+n).style.color = ["#1a3c6e","#1b7a4a","#6a1b9a"][i];
+  });
+  populateCmpItemDropdowns();
+  renderCmpTable();
+}
+
+let cmpRateManuallyEdited=[false,false,false];
+function cmpRateManualEdit(n){ cmpRateManuallyEdited[n-1]=true; cmpUpdatePerMtrDisplay(n); }
+
+function cmpRecalcRate(n){
+  const mrpEl=document.getElementById("cmpMRP"+n), discEl=document.getElementById("cmpDisc"+n), rateEl=document.getElementById("cmpRate"+n);
+  const m=parseFloat(mrpEl.value)||0, d=parseFloat(discEl.value)||0;
+  if(m>0 && !cmpRateManuallyEdited[n-1]) rateEl.value=(m-m*d/100).toFixed(2);
+  cmpUpdatePerMtrDisplay(n);
+}
+
+function cmpUpdatePerMtrDisplay(n){
+  const rate=parseFloat(document.getElementById("cmpRate"+n).value)||0;
+  const len=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
+  const disp=document.getElementById("cmpPerMtr"+n);
+  if(rate>0 && len>0) disp.innerText="₹ "+(rate/len).toFixed(2)+" /mtr";
+  else disp.innerText="—";
+}
+
+function clearCmpEntry(){
+  document.getElementById("cmpItemDesc").value="";
+  document.getElementById("cmpItemHSN").value="";
+  document.getElementById("cmpItemQty").value="1";
+  cmpRateManuallyEdited=[false,false,false];
+  [1,2,3].forEach(n=>{
+    document.getElementById("cmpItemSel"+n).value="";
+    document.getElementById("cmpMRP"+n).value="";
+    document.getElementById("cmpDisc"+n).value="";
+    document.getElementById("cmpRate"+n).value="";
+    document.getElementById("cmpCoilLen"+n).value="";
+    document.getElementById("cmpPerMtr"+n).innerText="—";
+  });
+}
+
+function addCmpRow(){
+  const desc=(document.getElementById("cmpItemDesc").value||"").trim();
+  const hsn=(document.getElementById("cmpItemHSN").value||"").trim();
+  const unit=document.getElementById("cmpItemUnit").value;
+  const qty=parseFloat(document.getElementById("cmpItemQty").value)||1;
+
+  if(!desc){ alert("Please enter a Description."); return; }
+
+  const mrpArr=[],discArr=[],rateArr=[],coilArr=[],perMtrArr=[];
+  [1,2,3].forEach(n=>{
+    mrpArr.push(parseFloat(document.getElementById("cmpMRP"+n).value)||0);
+    discArr.push(parseFloat(document.getElementById("cmpDisc"+n).value)||0);
+    const rateEl=document.getElementById("cmpRate"+n);
+    let rate=parseFloat(rateEl.value)||0;
+    // if rate empty but mrp entered, calculate it
+    if(!rate && mrpArr[n-1]>0) rate=mrpArr[n-1]-mrpArr[n-1]*discArr[n-1]/100;
+    rateArr.push(rate);
+    const coilLen=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
+    coilArr.push(coilLen);
+    perMtrArr.push((rate>0&&coilLen>0) ? +(rate/coilLen).toFixed(2) : 0);
+  });
+
+  cmpRows.push({ desc, hsn, unit, qty, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
+  clearCmpEntry();
+  renderCmpTable();
+  calcCmpTotals();
+}
+
+function deleteCmpRow(idx){
+  cmpRows.splice(idx,1);
+  renderCmpTable();
+  calcCmpTotals();
+}
+
+function renderCmpTable(){
+  const thead=document.getElementById("cmpThead");
+  const tbody=document.getElementById("cmpTbody");
+  const brandNames=getCmpBrandNames();
+  const showMRPCols=document.getElementById("cmpShowMRP").checked;
+  const showPerMtrCols=document.getElementById("cmpShowPerMtr")?document.getElementById("cmpShowPerMtr").checked:true;
+  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
+  const hasB3=brand3Name.length>0;
+  const anyCoilData=cmpRows.some(r=>r.coil&&r.coil.some(c=>c>0));
+  const showPerMtr=showPerMtrCols&&anyCoilData;
+
+  /* ---- build header ---- */
+  const colColors=["brand-header-1","brand-header-2","brand-header-3"];
+  const colBg=["brand-col-1","brand-col-2","brand-col-3"];
+
+  let headerHTML=`<tr>
+    <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:140px">S.No</th>
+    <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:160px">Description</th>
+    <th rowspan="2" style="background:#1a3c6e;color:#fff">HSN</th>
+    <th rowspan="2" style="background:#1a3c6e;color:#fff">Unit</th>
+    <th rowspan="2" style="background:#1a3c6e;color:#fff">Qty</th>`;
+
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    let colCount = 2; // Rate + Amount
+    if(showMRPCols) colCount += 2; // + MRP + Disc%
+    if(showPerMtr) colCount += 1; // + Per-Mtr Rate
+    headerHTML += `<th colspan="${colCount}" class="${colColors[i]}">${brandNames[i]}</th>`;
+  });
+  headerHTML+=`<th rowspan="2" class="no-print" style="background:#1a3c6e;color:#fff">Del</th></tr><tr>`;
+
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    if(showMRPCols){
+      headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">MRP</th><th class="${colColors[i]}" style="font-size:10px">Disc%</th>`;
+    }
+    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Net Rate</th>`;
+    if(showPerMtr) headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">₹/Mtr</th>`;
+    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Amount</th>`;
+  });
+  headerHTML+=`</tr>`;
+  thead.innerHTML=headerHTML;
+
+  /* ---- build body ---- */
+  let bodyHTML="";
+  cmpRows.forEach((row,idx)=>{
+    bodyHTML+=`<tr>
+      <td>${idx+1}</td>
+      <td style="text-align:left">${row.desc}</td>
+      <td>${row.hsn||"-"}</td>
+      <td>${row.unit}</td>
+      <td>${row.qty}</td>`;
+
+    [0,1,2].forEach(i=>{
+      if(i===2&&!hasB3) return;
+      const rate=row.rate[i]||0;
+      const amt=rate>0?rate*row.qty:0;
+      if(showMRPCols){
+        bodyHTML+=`<td class="${colBg[i]}">${row.mrp[i]||"-"}</td><td class="${colBg[i]}">${row.disc[i]||"-"}</td>`;
+      }
+      bodyHTML+=`<td class="${colBg[i]}">${rate>0?rate.toFixed(2):"-"}</td>`;
+      if(showPerMtr){
+        const pm=(row.perMtr&&row.perMtr[i])?row.perMtr[i]:0;
+        bodyHTML+=`<td class="${colBg[i]}" style="font-size:10.5px;color:#555">${pm>0?pm.toFixed(2):"-"}</td>`;
+      }
+      bodyHTML+=`<td class="${colBg[i]}">${amt>0?amt.toFixed(2):"-"}</td>`;
+    });
+
+    bodyHTML+=`<td class="no-print"><button onclick="deleteCmpRow(${idx})" style="background:#c0392b;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px">✕</button></td></tr>`;
+  });
+
+  if(!cmpRows.length){
+    const perBrandCols=2+(showMRPCols?2:0)+(showPerMtr?1:0);
+    const totalCols=5+((hasB3?3:2)*perBrandCols)+1;
+    bodyHTML=`<tr><td colspan="${totalCols}" style="text-align:center;color:#999;padding:20px;font-style:italic">No items added yet. Use the form above to add items.</td></tr>`;
+  }
+
+  tbody.innerHTML=bodyHTML;
+}
+
+function calcCmpTotals(){
+  const wrap=document.getElementById("cmpTotalsWrap");
+  const brandNames=getCmpBrandNames();
+  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
+  const hasB3=brand3Name.length>0;
+  const gstOn=document.getElementById("cmpShowGST").checked;
+  const colColors=["#1a3c6e","#1b7a4a","#6a1b9a"];
+
+  if(!cmpRows.length){ wrap.innerHTML=""; return; }
+
+  /* compute per-brand totals */
+  const subTotals=[0,0,0];
+  cmpRows.forEach(row=>{
+    [0,1,2].forEach(i=>{
+      const rate=row.rate[i]||0;
+      if(rate>0) subTotals[i]+=rate*row.qty;
+    });
+  });
+
+  const gstAmts=subTotals.map(s=>gstOn?s*0.18:0);
+  const grandTotals=subTotals.map((s,i)=>s+gstAmts[i]);
+  const netPayables=grandTotals.map(g=>Math.round(g));
+
+  const lightBg=["#eef3fb","#eaf6f0","#f6eefa"];      // pale brand tints, used throughout
+
+  let html=`<div class="cmp-totals-box"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead>
+      <tr>
+        <th style="background:#f0f4fb;color:#1a3c6e;padding:8px 10px;text-align:left;border:1px solid #c5d3e8">Summary</th>`;
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    html+=`<th style="background:${lightBg[i]};color:${colColors[i]};padding:8px 10px;text-align:right;border:1px solid #c5d3e8;border-bottom:2px solid ${colColors[i]}">${brandNames[i]}</th>`;
+  });
+  html+=`</tr></thead><tbody>
+    <tr>
+      <td style="padding:7px 10px;border:1px solid #c5d3e8;color:#1a1a2e">Sub Total</td>`;
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:600">₹ ${subTotals[i]>0?subTotals[i].toFixed(2):"-"}</td>`;
+  });
+  html+=`</tr>`;
+
+  if(gstOn){
+    html+=`<tr><td style="padding:7px 10px;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">GST 18%</td>`;
+    [0,1,2].forEach(i=>{
+      if(i===2&&!hasB3) return;
+      html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">₹ ${gstAmts[i]>0?gstAmts[i].toFixed(2):"-"}</td>`;
+    });
+    html+=`</tr>`;
+  }
+
+  html+=`<tr>`;
+  html+=`<td style="padding:7px 10px;border:1px solid #c5d3e8;background:#f5f8fd;color:#1a3c6e;font-weight:700">Grand Total</td>`;
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800">${grandTotals[i]>0?"₹ "+grandTotals[i].toFixed(2):"-"}</td>`;
+  });
+  html+=`</tr>`;
+
+  html+=`<tr>`;
+  html+=`<td style="padding:8px 10px;border:1px solid #c5d3e8;background:#f0f9f4;color:#156038;font-weight:800;font-size:13px">Net Payable</td>`;
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    html+=`<td style="padding:8px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800;font-size:13px">${netPayables[i]>0?"₹ "+netPayables[i].toLocaleString("en-IN"):"-"}</td>`;
+  });
+  html+=`</tr>`;
+
+  html+=`</tbody></table></div>`;
+  wrap.innerHTML=html;
+}
+
+function printCmp(){ window.print(); }
+
+function exportCmpExcel(){
+  const brandNames=getCmpBrandNames();
+  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
+  const hasB3=brand3Name.length>0;
+  const gstOn=document.getElementById("cmpShowGST").checked;
+
+  const brands=hasB3?brandNames:brandNames.slice(0,2);
+  let data=[
+    ["SAI GANESH ELECTRICALS – SSE — PRICE COMPARISON"],
+    ["Quotation No",document.getElementById("cmpQno").value,"Date",document.getElementById("cmpDate").value],
+    ["Customer",document.getElementById("cmpCust").value],
+    [],
+    ["S.No","Description","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Rate/Mtr",b+" Amt"])]
+  ];
+
+  cmpRows.forEach((row,idx)=>{
+    const rowData=[idx+1,row.desc,row.hsn,row.unit,row.qty];
+    [0,1,2].forEach(i=>{ if(i===2&&!hasB3) return; rowData.push(row.mrp[i]||"",row.disc[i]||"",row.rate[i]||"",(row.perMtr&&row.perMtr[i])||"",row.rate[i]>0?(row.rate[i]*row.qty).toFixed(2):""); });
+    data.push(rowData);
+  });
+
+  data.push([]);
+  data.push(["TOTALS",""," "," "," ",...brands.flatMap(b=>["","","","",""])]);
+  const subTotals=[0,0,0]; cmpRows.forEach(row=>{ [0,1,2].forEach(i=>{ if(row.rate[i]>0) subTotals[i]+=row.rate[i]*row.qty; }); });
+  const subRow=["Sub Total",""," "," "," "]; brands.forEach((_,i)=>subRow.push("","","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
+  data.push(subRow);
+  if(gstOn){ const gstRow=["GST 18%",""," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
+  const gtRow=["Net Payable",""," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
+
+  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Price Comparison"); XLSX.writeFile(wb,"SSE_PriceComparison.xlsx");
+}
+
+function exportCmpPDF(){
+  document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
+  html2pdf().set({margin:5,filename:"SSE_PriceComparison.pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
 }
 </script>
 </body>
