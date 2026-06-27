@@ -404,33 +404,99 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 </div>
 
 <!-- ===== EDIT ROW MODAL ===== -->
-<div id="editRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1100;align-items:center;justify-content:center;padding:16px">
-  <div style="background:#fff;width:100%;max-width:520px;border-radius:10px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)">
-    <div style="background:#e67e22;color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center">
+<div id="editRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:580px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
       <strong style="font-size:15px">✏️ Edit Row</strong>
-      <button onclick="closeEditRow()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">×</button>
+      <button onclick="closeEditRow()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
     </div>
+
+    <!-- Fields -->
     <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div style="grid-column:span 2"><label>Description</label><input type="text" id="editDescription"></div>
-      <div><label>Colour</label><input type="text" id="editColour" placeholder="e.g. RED"></div>
-      <div><label>Unit</label>
-        <select id="editUnit">
+
+      <!-- Brand -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">Brand</label>
+        <input type="text" id="editBrand" list="editBrandList" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px;font-weight:700;color:#1a3c6e">
+        <datalist id="editBrandList"></datalist>
+      </div>
+
+      <!-- Description / Item Name -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">Description / Item Name</label>
+        <input type="text" id="editDescription" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px">
+      </div>
+
+      <!-- Colour -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase;letter-spacing:.5px">Colour</label>
+        <input type="text" id="editColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700">
+      </div>
+
+      <!-- HSN -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px">HSN Code</label>
+        <input type="text" id="editHSN" placeholder="e.g. 8544" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px">
+      </div>
+
+      <!-- Unit -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">Unit</label>
+        <select id="editUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
           <option>NOS</option><option>MTRS</option><option>COIL</option>
           <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
         </select>
       </div>
-      <div><label>Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()"></div>
-      <div><label>MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()"></div>
-      <div><label>Discount %</label><input type="number" id="editDisc" min="0" max="100" oninput="recalcEditRate()"></div>
-      <div><label>Net Rate <span style="font-size:10px;color:#888">(auto from MRP–Disc)</span></label><input type="number" id="editRate" min="0" oninput="recalcEditAmt()"></div>
-      <div style="grid-column:span 2;background:#f0f4fb;border-radius:6px;padding:8px 12px;font-size:13px;font-weight:700;color:#1a3c6e;text-align:right">
-        Amount: <span id="editAmt" style="color:#1b7a4a;font-size:15px">₹ 0.00</span>
+
+      <!-- Qty -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">Qty</label>
+        <input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
+      </div>
+
+      <!-- MRP -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px">MRP</label>
+        <input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px">
+      </div>
+
+      <!-- Discount % — highlighted -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:.5px">🏷️ Discount %</label>
+        <input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5">
+      </div>
+
+      <!-- Net Rate — auto calculated -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase;letter-spacing:.5px">Net Rate <span style="font-size:9px;font-weight:400;color:#888">(MRP − Disc%)</span></label>
+        <input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4">
+      </div>
+
+      <!-- Per Mtr Rate — READ ONLY, auto from Net Rate ÷ Coil Length -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px">Per Mtr Rate <span style="font-size:9px;font-weight:400;color:#888">(auto)</span></label>
+        <input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed">
+      </div>
+
+      <!-- Live Amount preview -->
+      <div style="grid-column:span 2;background:linear-gradient(135deg,#1a3c6e,#2a5298);border-radius:7px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#c8d8f5;font-size:12px;font-weight:700">AMOUNT (Qty × Net Rate)</span>
+        <span id="editAmt" style="color:#fff;font-size:18px;font-weight:800">₹ 0.00</span>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:10px 18px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eee">
+      <span style="font-size:11px;color:#aaa">Changes only affect this row</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEditRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:12.5px">✕ Cancel</button>
+        <button onclick="saveEditRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800;font-size:13px">💾 Save Changes</button>
       </div>
     </div>
-    <div style="padding:10px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
-      <button onclick="closeEditRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">Cancel</button>
-      <button onclick="saveEditRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:700">💾 Save Changes</button>
-    </div>
+
   </div>
 </div>
 
@@ -648,6 +714,12 @@ async function reopenQuotation(id){
   tbody.innerHTML = "";
   (q.items||[]).forEach(it=>{
     const r = tbody.insertRow();
+    // Derive coil length from rate ÷ perMtr if perMtr exists
+    const perMtrNum = parseFloat(it.perMtr);
+    const rateNum   = parseFloat(it.rate);
+    if(!isNaN(perMtrNum) && perMtrNum > 0 && !isNaN(rateNum) && rateNum > 0){
+      r.dataset.coilLen = (rateNum / perMtrNum).toFixed(2);
+    }
     r.innerHTML = `<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
@@ -1492,6 +1564,7 @@ function addItem(){
   const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
+  r.dataset.coilLen = isIndCopper ? (+document.getElementById("coilLen").value||1) : '';
   r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
@@ -1511,30 +1584,43 @@ function delRow(b){b.closest("tr").remove();renumber();calc();}
 function editRow(btn){
   const r = btn.closest("tr");
   const cells = r.cells;
-  // Populate modal fields from the row
+  document.getElementById("editBrand").value       = cells[1].innerText;
   document.getElementById("editDescription").value = cells[2].innerText;
-  document.getElementById("editColour").value     = cells[3].innerText === '-' ? '' : cells[3].innerText;
-  document.getElementById("editUnit").value       = cells[5].innerText;
-  document.getElementById("editQty").value        = cells[6].innerText;
-  document.getElementById("editMRP").value        = cells[7].innerText === '-' ? '' : cells[7].innerText;
-  document.getElementById("editDisc").value       = cells[8].innerText === '-' ? '' : cells[8].innerText;
-  document.getElementById("editRate").value       = cells[9].innerText;
-  // Store reference to the row being edited
+  const colRaw = cells[3].innerText.trim();
+  document.getElementById("editColour").value      = (colRaw === '-' || colRaw === '—') ? '' : colRaw;
+  document.getElementById("editHSN").value         = (cells[4].innerText === '-') ? '' : cells[4].innerText;
+  document.getElementById("editUnit").value        = cells[5].innerText;
+  document.getElementById("editQty").value         = cells[6].innerText;
+  document.getElementById("editMRP").value         = (cells[7].innerText === '-') ? '' : cells[7].innerText;
+  document.getElementById("editDisc").value        = (cells[8].innerText === '-') ? '' : cells[8].innerText;
+  document.getElementById("editRate").value        = cells[9].innerText;
+  document.getElementById("editPerMtr").value      = (cells[10].innerText === '-' || cells[10].innerText === '') ? '' : cells[10].innerText;
+  // Populate brand datalist from loaded items
+  const brandList = document.getElementById("editBrandList");
+  brandList.innerHTML = Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
   document.getElementById("editRowModal")._targetRow = r;
   document.getElementById("editRowModal").style.display = "flex";
   recalcEditAmt();
-  document.getElementById("editRate").focus();
+  document.getElementById("editDisc").focus();
+  document.getElementById("editDisc").select();
 }
 
 function recalcEditRate(){
   const mrp  = parseFloat(document.getElementById("editMRP").value);
   const disc = parseFloat(document.getElementById("editDisc").value);
   if(!isNaN(mrp) && mrp > 0 && !isNaN(disc)){
-    const net = mrp - (mrp * disc / 100);
-    document.getElementById("editRate").value = net.toFixed(2);
+    const netRate = mrp - mrp * disc / 100;
+    document.getElementById("editRate").value = netRate.toFixed(2);
+    // Auto-recalc Per Mtr Rate from Net Rate ÷ Coil Length (read-only)
+    const targetRow = document.getElementById("editRowModal")._targetRow;
+    const coilLen = parseFloat(targetRow && targetRow.dataset.coilLen);
+    if(!isNaN(coilLen) && coilLen > 0){
+      document.getElementById("editPerMtr").value = (netRate / coilLen).toFixed(2);
+    }
   }
   recalcEditAmt();
 }
+
 function recalcEditAmt(){
   const qty  = parseFloat(document.getElementById("editQty").value)  || 0;
   const rate = parseFloat(document.getElementById("editRate").value) || 0;
@@ -1546,26 +1632,33 @@ function saveEditRow(){
   const r = modal._targetRow;
   if(!r){ closeEditRow(); return; }
   const cells = r.cells;
-  const mrp  = parseFloat(document.getElementById("editMRP").value);
-  const disc = parseFloat(document.getElementById("editDisc").value);
-  const qty  = parseFloat(document.getElementById("editQty").value)  || 0;
-  // Recalculate net rate from MRP + discount if both are present
+  const mrp   = parseFloat(document.getElementById("editMRP").value);
+  const disc  = parseFloat(document.getElementById("editDisc").value);
+  const qty   = parseFloat(document.getElementById("editQty").value) || 0;
   let rate;
   if(!isNaN(mrp) && mrp > 0 && !isNaN(disc)){
-    rate = mrp - (mrp * disc / 100);
+    rate = mrp - mrp * disc / 100;
   } else {
     rate = parseFloat(document.getElementById("editRate").value) || 0;
   }
-  const mrpVal  = document.getElementById("editMRP").value;
-  const discVal = document.getElementById("editDisc").value;
-  const amt  = (qty * rate).toFixed(2);
-  cells[2].innerText = document.getElementById("editDescription").value || cells[2].innerText;
-  cells[3].innerText = document.getElementById("editColour").value || '-';
-  cells[5].innerText = document.getElementById("editUnit").value || cells[5].innerText;
+  const amt = (qty * rate).toFixed(2);
+  const colourVal = document.getElementById("editColour").value.trim().toUpperCase();
+  const colourStyle = colourVal ? getColourStyle(colourVal) : "";
+
+  cells[1].innerText = document.getElementById("editBrand").value.trim() || cells[1].innerText;
+  cells[2].innerText = document.getElementById("editDescription").value.trim() || cells[2].innerText;
+  cells[3].innerText = colourVal || '-';
+  cells[3].style.cssText = colourStyle;
+  cells[4].innerText = document.getElementById("editHSN").value.trim() || '-';
+  cells[5].innerText = document.getElementById("editUnit").value;
   cells[6].innerText = qty;
-  cells[7].innerText = mrpVal || '-';
-  cells[8].innerText = discVal || '-';
+  cells[7].innerText = isNaN(mrp) ? '-' : mrp;
+  cells[8].innerText = isNaN(disc) ? '-' : disc;
   cells[9].innerText = rate.toFixed(2);
+  // Per Mtr Rate: auto from Net Rate ÷ coil length (never manual)
+  const coilLen = parseFloat(r.dataset.coilLen);
+  const perMtrAuto = (!isNaN(coilLen) && coilLen > 0) ? (rate / coilLen).toFixed(2) : '-';
+  cells[10].innerText = perMtrAuto;
   cells[11].innerText = amt;
   closeEditRow();
   calc();
