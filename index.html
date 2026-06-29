@@ -332,7 +332,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 
 <div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE QUOTATION</button>
-  <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
+  <button class="btn-print" onclick="printQuotation()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
   <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
@@ -624,6 +624,11 @@ function collectItemsFromTable(){
   }));
 }
 
+function partyCodeFromName(name){
+  const firstWord = (name||"").trim().split(/\s+/)[0] || "PARTY";
+  return firstWord.toUpperCase().replace(/[^A-Z0-9]/g,"");
+}
+
 async function saveQuotation(){
   const btn = document.getElementById("saveQuotationBtn");
   const status = document.getElementById("saveStatus");
@@ -634,13 +639,14 @@ async function saveQuotation(){
     const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
     currentPartyId = partyId;
     const year = new Date(qdate.value || new Date()).getFullYear();
-    const prefix = DOC_TYPES[currentDocType].prefix;
+    const partyCode = partyCodeFromName(custName.value);
     const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
     let docNo, lastErr;
     for(let attempt=0; attempt<5; attempt++){
       const serial = await getNextSerialForParty(partyId, currentDocType, year);
-      docNo = `${prefix}/${year}/${serial}`;
+      const code = attempt===0 ? partyCode : `${partyCode}${partyId.toString().slice(-3)}`;
+      docNo = `${code} ${String(serial).padStart(3,"0")}`;
       const payload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -848,16 +854,10 @@ function switchDocType(type){
   document.getElementById("addItemTitle").innerText=d.addTitle;
   document.getElementById("itemsTitle").innerText=d.itemsTitle;
   document.getElementById("docTypeBanner").innerText=d.label;
-  const y=new Date().getFullYear(), k=d.storageKey+"_"+y;
-  let s=parseInt(localStorage.getItem(k)||"0")+1;
-  localStorage.setItem(k,s);
-  qno.value=`${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+  qno.value="(assigned on Save)";
 }
 function generateQuotationNo(){
-  const d=DOC_TYPES[currentDocType], y=new Date().getFullYear(), k=d.storageKey+"_"+y;
-  let s=parseInt(localStorage.getItem(k)||"0")+1;
-  localStorage.setItem(k,s);
-  return `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+  return "(assigned on Save)";
 }
 
 const brandSel=document.getElementById("brand");
@@ -1130,6 +1130,20 @@ function calc(){
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
 }
 
+function printQuotation(){
+  const originalTitle = document.title;
+  document.title = exportFileName();
+  window.print();
+  setTimeout(()=>{ document.title = originalTitle; }, 1000);
+}
+
+function exportFileName(){
+  const docNoVal = (qno.value||"").trim();
+  if(docNoVal) return docNoVal;
+  const code = partyCodeFromName(custName.value);
+  return code || DOC_TYPES[currentDocType].file;
+}
+
 function exportExcel(){
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
   let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
@@ -1142,12 +1156,12 @@ function exportExcel(){
   data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
   data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
   if(remarksTxt) data.push(["Remarks",remarksTxt]);
-  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,DOC_TYPES[currentDocType].file+".xlsx");
+  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,exportFileName()+".xlsx");
 }
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:DOC_TYPES[currentDocType].file+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
+  html2pdf().set({margin:5,filename:exportFileName()+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
 }
 </script>
 
