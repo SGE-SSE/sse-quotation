@@ -68,9 +68,6 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 #cmpTable td.brand-col-1{background:#f0f4fb}
 #cmpTable td.brand-col-2{background:#e8f5ee}
 #cmpTable td.brand-col-3{background:#f3e5f5}
-#cmpTable td.winner-1{background:#e8f0fb;font-weight:800;color:#1a3c6e}
-#cmpTable td.winner-2{background:#c8eedd;font-weight:800;color:#1b7a4a}
-#cmpTable td.winner-3{background:#e1d0f0;font-weight:800;color:#6a1b9a}
 .cmp-totals-box{border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-top:10px}
 .cmp-totals-box table{font-size:12px}
 .cmp-totals-box th{padding:6px 8px;font-size:11px}
@@ -95,9 +92,6 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   #cmpTable td.brand-col-1{background:#f0f4fb!important}
   #cmpTable td.brand-col-2{background:#e8f5ee!important}
   #cmpTable td.brand-col-3{background:#f3e5f5!important}
-  #cmpTable td.winner-1{background:#dce8fb!important;font-weight:800!important;color:#1a3c6e!important}
-  #cmpTable td.winner-2{background:#b8e8d0!important;font-weight:800!important;color:#1b7a4a!important}
-  #cmpTable td.winner-3{background:#d8c0f0!important;font-weight:800!important;color:#6a1b9a!important}
   .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .table-wrapper{margin:0 14px!important;overflow:visible!important}
@@ -112,6 +106,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   table{font-size:11px;min-width:560px}
   .action-btns{flex-wrap:wrap}
   .action-btns button{flex:1;min-width:80px}
+  .cmp-brand-grid{grid-template-columns:1fr!important}
 }
 </style>
 </head>
@@ -337,7 +332,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 
 <div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
   <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE QUOTATION</button>
-  <button class="btn-print" onclick="window.print()">🖨️ PRINT</button>
+  <button class="btn-print" onclick="printQuotation()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
   <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
@@ -403,7 +398,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
       <div><label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase">🏷️ Discount %</label><input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate <span style="font-size:9px;font-weight:400;color:#888">(edit directly OR use MRP−Disc above)</span></label><input type="number" id="editRate" min="0" oninput="onEditRateManual()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate</label><input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
       <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">Per Mtr Rate</label><input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed"></div>
       <div style="grid-column:span 2;background:linear-gradient(135deg,#1a3c6e,#2a5298);border-radius:7px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
         <span style="color:#c8d8f5;font-size:12px;font-weight:700">AMOUNT (Qty × Net Rate)</span>
@@ -440,7 +435,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <!-- Brand Setup -->
 <div class="section-panel no-print" style="background:#fff7e6;border-color:#f0c060">
   <div class="section-title">🏷️ Select Brands to Compare (Max 3)</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
     <div>
       <label>Brand 1</label>
       <input type="text" id="cmpBrand1" list="cmpBrandList1" placeholder="e.g. POLYCAB" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1a3c6e;border-color:#1a3c6e">
@@ -464,6 +459,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
       <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
     </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="cmpShowPerMtr" checked onchange="renderCmpTable()"> Show Per-Mtr Rate columns
+    </label>
   </div>
 </div>
 
@@ -482,33 +480,45 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
   </div>
   <!-- Brand pricing row -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
     <!-- Brand 1 -->
     <div style="background:#e8f0fb;border:1px solid #1a3c6e;border-radius:6px;padding:8px">
       <div style="font-size:11px;font-weight:800;color:#1a3c6e;margin-bottom:6px" id="cmpPriceLabel1">BRAND 1</div>
+      <label>Item</label>
+      <select id="cmpItemSel1" onchange="cmpItemPicked(1)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div><label>MRP</label><input type="number" id="cmpMRP1" min="0" oninput="cmpRecalcRate(1)" placeholder="0"></div>
         <div><label>Disc %</label><input type="number" id="cmpDisc1" min="0" max="100" step="0.01" oninput="cmpRecalcRate(1)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div style="grid-column:span 2"><label>Net Rate</label><input type="number" id="cmpRate1" min="0" placeholder="0" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate1" min="0" placeholder="0" oninput="cmpRateManualEdit(1)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen1" min="0" oninput="cmpRecalcRate(1)" placeholder="—" style="font-size:11px"></div>
       </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1a3c6e;border-radius:4px;padding:4px 6px;font-size:11px;color:#1a3c6e">Per Mtr Rate: <b id="cmpPerMtr1">—</b></div>
     </div>
     <!-- Brand 2 -->
     <div style="background:#e8f5ee;border:1px solid #1b7a4a;border-radius:6px;padding:8px">
       <div style="font-size:11px;font-weight:800;color:#1b7a4a;margin-bottom:6px" id="cmpPriceLabel2">BRAND 2</div>
+      <label>Item</label>
+      <select id="cmpItemSel2" onchange="cmpItemPicked(2)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div><label>MRP</label><input type="number" id="cmpMRP2" min="0" oninput="cmpRecalcRate(2)" placeholder="0"></div>
         <div><label>Disc %</label><input type="number" id="cmpDisc2" min="0" max="100" step="0.01" oninput="cmpRecalcRate(2)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div style="grid-column:span 2"><label>Net Rate</label><input type="number" id="cmpRate2" min="0" placeholder="0" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate2" min="0" placeholder="0" oninput="cmpRateManualEdit(2)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen2" min="0" oninput="cmpRecalcRate(2)" placeholder="—" style="font-size:11px"></div>
       </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1b7a4a;border-radius:4px;padding:4px 6px;font-size:11px;color:#1b7a4a">Per Mtr Rate: <b id="cmpPerMtr2">—</b></div>
     </div>
     <!-- Brand 3 -->
     <div style="background:#f3e5f5;border:1px solid #6a1b9a;border-radius:6px;padding:8px">
       <div style="font-size:11px;font-weight:800;color:#6a1b9a;margin-bottom:6px" id="cmpPriceLabel3">BRAND 3</div>
+      <label>Item</label>
+      <select id="cmpItemSel3" onchange="cmpItemPicked(3)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div><label>MRP</label><input type="number" id="cmpMRP3" min="0" oninput="cmpRecalcRate(3)" placeholder="0"></div>
         <div><label>Disc %</label><input type="number" id="cmpDisc3" min="0" max="100" step="0.01" oninput="cmpRecalcRate(3)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div style="grid-column:span 2"><label>Net Rate</label><input type="number" id="cmpRate3" min="0" placeholder="0" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="cmpRate3" min="0" placeholder="0" oninput="cmpRateManualEdit(3)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen3" min="0" oninput="cmpRecalcRate(3)" placeholder="—" style="font-size:11px"></div>
       </div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #6a1b9a;border-radius:4px;padding:4px 6px;font-size:11px;color:#6a1b9a">Per Mtr Rate: <b id="cmpPerMtr3">—</b></div>
     </div>
   </div>
   <div style="margin-top:10px;display:flex;gap:8px">
@@ -614,6 +624,11 @@ function collectItemsFromTable(){
   }));
 }
 
+function partyCodeFromName(name){
+  const firstWord = (name||"").trim().split(/\s+/)[0] || "PARTY";
+  return firstWord.toUpperCase().replace(/[^A-Z0-9]/g,"");
+}
+
 async function saveQuotation(){
   const btn = document.getElementById("saveQuotationBtn");
   const status = document.getElementById("saveStatus");
@@ -624,13 +639,14 @@ async function saveQuotation(){
     const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
     currentPartyId = partyId;
     const year = new Date(qdate.value || new Date()).getFullYear();
-    const prefix = DOC_TYPES[currentDocType].prefix;
+    const partyCode = partyCodeFromName(custName.value);
     const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
     let docNo, lastErr;
     for(let attempt=0; attempt<5; attempt++){
       const serial = await getNextSerialForParty(partyId, currentDocType, year);
-      docNo = `${prefix}/${year}/${serial}`;
+      const code = attempt===0 ? partyCode : `${partyCode}${partyId.toString().slice(-3)}`;
+      docNo = `${code} ${String(serial).padStart(3,"0")}`;
       const payload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -838,16 +854,10 @@ function switchDocType(type){
   document.getElementById("addItemTitle").innerText=d.addTitle;
   document.getElementById("itemsTitle").innerText=d.itemsTitle;
   document.getElementById("docTypeBanner").innerText=d.label;
-  const y=new Date().getFullYear(), k=d.storageKey+"_"+y;
-  let s=parseInt(localStorage.getItem(k)||"0")+1;
-  localStorage.setItem(k,s);
-  qno.value=`${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+  qno.value="(assigned on Save)";
 }
 function generateQuotationNo(){
-  const d=DOC_TYPES[currentDocType], y=new Date().getFullYear(), k=d.storageKey+"_"+y;
-  let s=parseInt(localStorage.getItem(k)||"0")+1;
-  localStorage.setItem(k,s);
-  return `${d.prefix}/${y}/${String(s).padStart(3,"0")}`;
+  return "(assigned on Save)";
 }
 
 const brandSel=document.getElementById("brand");
@@ -1076,35 +1086,16 @@ function editRow(btn){
   document.getElementById("editDisc").focus();
   document.getElementById("editDisc").select();
 }
-let _editRateManuallyChanged = false; // tracks if user typed directly in Net Rate field
-
-function onEditRateManual(){
-  // User typed directly in Net Rate — clear Disc% so MRP−Disc no longer overrides it
-  _editRateManuallyChanged = true;
-  document.getElementById("editDisc").value = "";
-  recalcEditAmt();
-}
 function recalcEditRate(){
-  // Only auto-fill Net Rate from MRP−Disc% if the user has NOT manually typed in Net Rate
-  if(_editRateManuallyChanged) { recalcEditAmt(); return; }
   const mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value);
-  if(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV)){
-    const netRate=mrpV-mrpV*discV/100;
-    document.getElementById("editRate").value=netRate.toFixed(2);
-    const targetRow=document.getElementById("editRowModal")._targetRow;
-    const coilLen=parseFloat(targetRow&&targetRow.dataset.coilLen);
-    if(!isNaN(coilLen)&&coilLen>0) document.getElementById("editPerMtr").value=(netRate/coilLen).toFixed(2);
-  }
+  if(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV)){ const netRate=mrpV-mrpV*discV/100; document.getElementById("editRate").value=netRate.toFixed(2); const targetRow=document.getElementById("editRowModal")._targetRow; const coilLen=parseFloat(targetRow&&targetRow.dataset.coilLen); if(!isNaN(coilLen)&&coilLen>0) document.getElementById("editPerMtr").value=(netRate/coilLen).toFixed(2); }
   recalcEditAmt();
 }
 function recalcEditAmt(){ const qty=parseFloat(document.getElementById("editQty").value)||0,rate=parseFloat(document.getElementById("editRate").value)||0; document.getElementById("editAmt").innerText="₹ "+(qty*rate).toFixed(2); }
 function saveEditRow(){
   const modal=document.getElementById("editRowModal"),r=modal._targetRow; if(!r){closeEditRow();return;}
   const cells=r.cells,mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value),qty=parseFloat(document.getElementById("editQty").value)||0;
-  // ALWAYS use whatever is in the Net Rate field — it is the final authority.
-  // recalcEditRate() already keeps it in sync when MRP/Disc change, and
-  // onEditRateManual() keeps it when the user types directly.
-  let rate=parseFloat(document.getElementById("editRate").value)||0;
+  let rate=(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV))?mrpV-mrpV*discV/100:(parseFloat(document.getElementById("editRate").value)||0);
   const colourVal=document.getElementById("editColour").value.trim().toUpperCase(),colourStyle=colourVal?getColourStyle(colourVal):"";
   cells[1].innerText=document.getElementById("editBrand").value.trim()||cells[1].innerText;
   cells[2].innerText=document.getElementById("editDescription").value.trim()||cells[2].innerText;
@@ -1139,6 +1130,20 @@ function calc(){
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
 }
 
+function printQuotation(){
+  const originalTitle = document.title;
+  document.title = exportFileName();
+  window.print();
+  setTimeout(()=>{ document.title = originalTitle; }, 1000);
+}
+
+function exportFileName(){
+  const docNoVal = (qno.value||"").trim();
+  if(docNoVal) return docNoVal;
+  const code = partyCodeFromName(custName.value);
+  return code || DOC_TYPES[currentDocType].file;
+}
+
 function exportExcel(){
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
   let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
@@ -1151,12 +1156,12 @@ function exportExcel(){
   data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
   data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
   if(remarksTxt) data.push(["Remarks",remarksTxt]);
-  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,DOC_TYPES[currentDocType].file+".xlsx");
+  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,exportFileName()+".xlsx");
 }
 
 function exportPDF(){
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:DOC_TYPES[currentDocType].file+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
+  html2pdf().set({margin:5,filename:exportFileName()+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
 }
 </script>
 
@@ -1166,7 +1171,7 @@ function exportPDF(){
    ==================================================================== */
 
 /* cmpRows stores each added comparison row:
-   { desc, hsn, unit, qty, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3] }
+   { desc, hsn, unit, qty, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3], perMtr:[p1,p2,p3] }
 */
 let cmpRows = [];
 
@@ -1176,6 +1181,63 @@ function populateCmpBrandLists(){
     const dl = document.getElementById("cmpBrandList"+n);
     if(dl) dl.innerHTML = brands.map(b=>`<option value="${b}">`).join("");
   });
+  populateCmpItemDropdowns();
+}
+
+/* Populate each brand's Item <select> from the master inventory list,
+   matched against whatever the user typed/picked in the Brand input. */
+function populateCmpItemDropdowns(){
+  [1,2,3].forEach(n=>{
+    const brandInput=(document.getElementById("cmpBrand"+n).value||"").trim();
+    const sel=document.getElementById("cmpItemSel"+n);
+    if(!sel) return;
+    const prevVal=sel.value;
+    sel.innerHTML="<option value=''>— Select Item —</option>";
+    // exact match first, then case-insensitive contains match against known brand keys
+    let matchedKey=null;
+    if(items[brandInput]) matchedKey=brandInput;
+    else{
+      const upperInput=brandInput.toUpperCase();
+      matchedKey=Object.keys(items).find(k=>k.toUpperCase()===upperInput)
+              || Object.keys(items).find(k=>upperInput&&k.toUpperCase().includes(upperInput));
+    }
+    if(matchedKey){
+      items[matchedKey].forEach(it=>{
+        const o=document.createElement("option");
+        o.textContent=it.name; o.value=it.name; o.dataset.mrp=it.mrp; o.dataset.brandKey=matchedKey;
+        sel.appendChild(o);
+      });
+      if([...sel.options].some(o=>o.value===prevVal)) sel.value=prevVal;
+    }
+  });
+}
+
+/* When an item is picked from a brand's dropdown: auto-fill MRP, detect coil length,
+   compute per-mtr rate, and (if Description is empty) auto-fill Description. */
+function cmpItemPicked(n){
+  const sel=document.getElementById("cmpItemSel"+n);
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value) return;
+  const mrpVal=parseFloat(opt.dataset.mrp)||0;
+  const brandKey=opt.dataset.brandKey||"";
+  document.getElementById("cmpMRP"+n).value=mrpVal||"";
+
+  const coilLen=getCoilLength(opt.value); // reuse existing helper (90/180/200/300mtr detection)
+  const coilLenInput=document.getElementById("cmpCoilLen"+n);
+  if(coilLen && isWireCoilBrand(brandKey)){
+    coilLenInput.value=coilLen;
+  }else{
+    coilLenInput.value="";
+  }
+
+  // auto-fill shared Description if still blank, so brands with different
+  // coil lengths (90/180/200/300mtr) still line up under one row
+  const descEl=document.getElementById("cmpItemDesc");
+  if(!descEl.value.trim()){
+    descEl.value=opt.value.replace(/\b(90|180|200|300)MTR\b\s*/i,"").trim();
+  }
+
+  cmpRecalcRate(n);
 }
 
 function getCmpBrandNames(){
@@ -1188,23 +1250,40 @@ function refreshCmpHeaders(){
     document.getElementById("cmpPriceLabel"+n).innerText = names[i];
     document.getElementById("cmpPriceLabel"+n).style.color = ["#1a3c6e","#1b7a4a","#6a1b9a"][i];
   });
+  populateCmpItemDropdowns();
   renderCmpTable();
 }
+
+let cmpRateManuallyEdited=[false,false,false];
+function cmpRateManualEdit(n){ cmpRateManuallyEdited[n-1]=true; cmpUpdatePerMtrDisplay(n); }
 
 function cmpRecalcRate(n){
   const mrpEl=document.getElementById("cmpMRP"+n), discEl=document.getElementById("cmpDisc"+n), rateEl=document.getElementById("cmpRate"+n);
   const m=parseFloat(mrpEl.value)||0, d=parseFloat(discEl.value)||0;
-  if(m>0) rateEl.value=(m-m*d/100).toFixed(2);
+  if(m>0 && !cmpRateManuallyEdited[n-1]) rateEl.value=(m-m*d/100).toFixed(2);
+  cmpUpdatePerMtrDisplay(n);
+}
+
+function cmpUpdatePerMtrDisplay(n){
+  const rate=parseFloat(document.getElementById("cmpRate"+n).value)||0;
+  const len=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
+  const disp=document.getElementById("cmpPerMtr"+n);
+  if(rate>0 && len>0) disp.innerText="₹ "+(rate/len).toFixed(2)+" /mtr";
+  else disp.innerText="—";
 }
 
 function clearCmpEntry(){
   document.getElementById("cmpItemDesc").value="";
   document.getElementById("cmpItemHSN").value="";
   document.getElementById("cmpItemQty").value="1";
+  cmpRateManuallyEdited=[false,false,false];
   [1,2,3].forEach(n=>{
+    document.getElementById("cmpItemSel"+n).value="";
     document.getElementById("cmpMRP"+n).value="";
     document.getElementById("cmpDisc"+n).value="";
     document.getElementById("cmpRate"+n).value="";
+    document.getElementById("cmpCoilLen"+n).value="";
+    document.getElementById("cmpPerMtr"+n).innerText="—";
   });
 }
 
@@ -1216,7 +1295,7 @@ function addCmpRow(){
 
   if(!desc){ alert("Please enter a Description."); return; }
 
-  const mrpArr=[],discArr=[],rateArr=[];
+  const mrpArr=[],discArr=[],rateArr=[],coilArr=[],perMtrArr=[];
   [1,2,3].forEach(n=>{
     mrpArr.push(parseFloat(document.getElementById("cmpMRP"+n).value)||0);
     discArr.push(parseFloat(document.getElementById("cmpDisc"+n).value)||0);
@@ -1225,9 +1304,12 @@ function addCmpRow(){
     // if rate empty but mrp entered, calculate it
     if(!rate && mrpArr[n-1]>0) rate=mrpArr[n-1]-mrpArr[n-1]*discArr[n-1]/100;
     rateArr.push(rate);
+    const coilLen=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
+    coilArr.push(coilLen);
+    perMtrArr.push((rate>0&&coilLen>0) ? +(rate/coilLen).toFixed(2) : 0);
   });
 
-  cmpRows.push({ desc, hsn, unit, qty, mrp:mrpArr, disc:discArr, rate:rateArr });
+  cmpRows.push({ desc, hsn, unit, qty, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
   clearCmpEntry();
   renderCmpTable();
   calcCmpTotals();
@@ -1244,8 +1326,11 @@ function renderCmpTable(){
   const tbody=document.getElementById("cmpTbody");
   const brandNames=getCmpBrandNames();
   const showMRPCols=document.getElementById("cmpShowMRP").checked;
+  const showPerMtrCols=document.getElementById("cmpShowPerMtr")?document.getElementById("cmpShowPerMtr").checked:true;
   const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
   const hasB3=brand3Name.length>0;
+  const anyCoilData=cmpRows.some(r=>r.coil&&r.coil.some(c=>c>0));
+  const showPerMtr=showPerMtrCols&&anyCoilData;
 
   /* ---- build header ---- */
   const colColors=["brand-header-1","brand-header-2","brand-header-3"];
@@ -1260,8 +1345,10 @@ function renderCmpTable(){
 
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    const colCount = showMRPCols ? 3 : 2; // MRP + Disc% + Rate  OR  Rate + Amt
-    headerHTML += `<th colspan="${showMRPCols?4:2}" class="${colColors[i]}">${brandNames[i]}</th>`;
+    let colCount = 2; // Rate + Amount
+    if(showMRPCols) colCount += 2; // + MRP + Disc%
+    if(showPerMtr) colCount += 1; // + Per-Mtr Rate
+    headerHTML += `<th colspan="${colCount}" class="${colColors[i]}">${brandNames[i]}</th>`;
   });
   headerHTML+=`<th rowspan="2" class="no-print" style="background:#1a3c6e;color:#fff">Del</th></tr><tr>`;
 
@@ -1270,7 +1357,9 @@ function renderCmpTable(){
     if(showMRPCols){
       headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">MRP</th><th class="${colColors[i]}" style="font-size:10px">Disc%</th>`;
     }
-    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Net Rate</th><th class="${colColors[i]}" style="font-size:10px">Amount</th>`;
+    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Net Rate</th>`;
+    if(showPerMtr) headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">₹/Mtr</th>`;
+    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Amount</th>`;
   });
   headerHTML+=`</tr>`;
   thead.innerHTML=headerHTML;
@@ -1278,14 +1367,6 @@ function renderCmpTable(){
   /* ---- build body ---- */
   let bodyHTML="";
   cmpRows.forEach((row,idx)=>{
-    // find which brand(s) have the lowest amount for this row (for highlighting)
-    const amounts=[0,1,2].map(i=>{
-      const r=row.rate[i]||0, q=row.qty;
-      return r>0 ? r*q : Infinity;
-    });
-    const validAmts=amounts.filter(a=>a!==Infinity&&a>0);
-    const minAmt=validAmts.length?Math.min(...validAmts):Infinity;
-
     bodyHTML+=`<tr>
       <td>${idx+1}</td>
       <td style="text-align:left">${row.desc}</td>
@@ -1297,19 +1378,23 @@ function renderCmpTable(){
       if(i===2&&!hasB3) return;
       const rate=row.rate[i]||0;
       const amt=rate>0?rate*row.qty:0;
-      const isWinner=amt>0&&Math.abs(amt-minAmt)<0.001;
-      const winCls=isWinner?`winner-${i+1}`:(rate>0?colBg[i]:"");
       if(showMRPCols){
         bodyHTML+=`<td class="${colBg[i]}">${row.mrp[i]||"-"}</td><td class="${colBg[i]}">${row.disc[i]||"-"}</td>`;
       }
-      bodyHTML+=`<td class="${winCls}">${rate>0?rate.toFixed(2):"-"}</td><td class="${winCls}">${amt>0?amt.toFixed(2):"-"}</td>`;
+      bodyHTML+=`<td class="${colBg[i]}">${rate>0?rate.toFixed(2):"-"}</td>`;
+      if(showPerMtr){
+        const pm=(row.perMtr&&row.perMtr[i])?row.perMtr[i]:0;
+        bodyHTML+=`<td class="${colBg[i]}" style="font-size:10.5px;color:#555">${pm>0?pm.toFixed(2):"-"}</td>`;
+      }
+      bodyHTML+=`<td class="${colBg[i]}">${amt>0?amt.toFixed(2):"-"}</td>`;
     });
 
     bodyHTML+=`<td class="no-print"><button onclick="deleteCmpRow(${idx})" style="background:#c0392b;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px">✕</button></td></tr>`;
   });
 
   if(!cmpRows.length){
-    const totalCols=5+((hasB3?3:2)*(showMRPCols?4:2))+1;
+    const perBrandCols=2+(showMRPCols?2:0)+(showPerMtr?1:0);
+    const totalCols=5+((hasB3?3:2)*perBrandCols)+1;
     bodyHTML=`<tr><td colspan="${totalCols}" style="text-align:center;color:#999;padding:20px;font-style:italic">No items added yet. Use the form above to add items.</td></tr>`;
   }
 
@@ -1339,57 +1424,47 @@ function calcCmpTotals(){
   const grandTotals=subTotals.map((s,i)=>s+gstAmts[i]);
   const netPayables=grandTotals.map(g=>Math.round(g));
 
-  /* find cheapest brand */
-  const validGT=grandTotals.map((g,i)=>g>0?g:Infinity);
-  const minGT=Math.min(...validGT);
+  const lightBg=["#eef3fb","#eaf6f0","#f6eefa"];      // pale brand tints, used throughout
 
   let html=`<div class="cmp-totals-box"><table style="width:100%;border-collapse:collapse;font-size:12px">
     <thead>
       <tr>
-        <th style="background:#1a3c6e;color:#fff;padding:7px 10px;text-align:left">Summary</th>`;
+        <th style="background:#f0f4fb;color:#1a3c6e;padding:8px 10px;text-align:left;border:1px solid #c5d3e8">Summary</th>`;
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    html+=`<th style="background:${colColors[i]};color:#fff;padding:7px 10px;text-align:right">${brandNames[i]}</th>`;
+    html+=`<th style="background:${lightBg[i]};color:${colColors[i]};padding:8px 10px;text-align:right;border:1px solid #c5d3e8;border-bottom:2px solid ${colColors[i]}">${brandNames[i]}</th>`;
   });
   html+=`</tr></thead><tbody>
     <tr>
-      <td style="padding:6px 10px;border:1px solid #c5d3e8">Sub Total</td>`;
+      <td style="padding:7px 10px;border:1px solid #c5d3e8;color:#1a1a2e">Sub Total</td>`;
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    const bg=["#f0f4fb","#e8f5ee","#f3e5f5"][i];
-    html+=`<td style="padding:6px 10px;text-align:right;border:1px solid #c5d3e8;background:${bg};font-weight:600">₹ ${subTotals[i]>0?subTotals[i].toFixed(2):"-"}</td>`;
+    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:600">₹ ${subTotals[i]>0?subTotals[i].toFixed(2):"-"}</td>`;
   });
   html+=`</tr>`;
 
   if(gstOn){
-    html+=`<tr><td style="padding:6px 10px;border:1px solid #c5d3e8;background:#fff8e1;color:#7a5000">GST 18%</td>`;
+    html+=`<tr><td style="padding:7px 10px;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">GST 18%</td>`;
     [0,1,2].forEach(i=>{
       if(i===2&&!hasB3) return;
-      const bg=["#fff8e1","#fff8e1","#fff8e1"][i];
-      html+=`<td style="padding:6px 10px;text-align:right;border:1px solid #c5d3e8;background:${bg};color:#7a5000">₹ ${gstAmts[i]>0?gstAmts[i].toFixed(2):"-"}</td>`;
+      html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">₹ ${gstAmts[i]>0?gstAmts[i].toFixed(2):"-"}</td>`;
     });
     html+=`</tr>`;
   }
 
   html+=`<tr>`;
-  html+=`<td style="padding:6px 10px;border:1px solid #c5d3e8;background:#1a3c6e;color:#fff;font-weight:700">Grand Total</td>`;
+  html+=`<td style="padding:7px 10px;border:1px solid #c5d3e8;background:#f5f8fd;color:#1a3c6e;font-weight:700">Grand Total</td>`;
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    const isMin=grandTotals[i]>0&&Math.abs(grandTotals[i]-minGT)<0.01;
-    const bg=isMin?colColors[i]:"#e9ecf2";
-    const fg=isMin?"#fff":"#1a1a2e";
-    html+=`<td style="padding:6px 10px;text-align:right;border:1px solid #c5d3e8;background:${bg};color:${fg};font-weight:800">${grandTotals[i]>0?"₹ "+grandTotals[i].toFixed(2):"-"}${isMin?' ✓':''}</td>`;
+    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800">${grandTotals[i]>0?"₹ "+grandTotals[i].toFixed(2):"-"}</td>`;
   });
   html+=`</tr>`;
 
   html+=`<tr>`;
-  html+=`<td style="padding:7px 10px;border:1px solid #c5d3e8;background:#1b7a4a;color:#fff;font-weight:800;font-size:13px">Net Payable</td>`;
+  html+=`<td style="padding:8px 10px;border:1px solid #c5d3e8;background:#f0f9f4;color:#156038;font-weight:800;font-size:13px">Net Payable</td>`;
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    const isMin=grandTotals[i]>0&&Math.abs(grandTotals[i]-minGT)<0.01;
-    const bg=isMin?colColors[i]:"#e8f5ee";
-    const fg=isMin?"#fff":"#1b7a4a";
-    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #156038;background:${bg};color:${fg};font-weight:800;font-size:13px">${netPayables[i]>0?"₹ "+netPayables[i].toLocaleString("en-IN"):"-"}${isMin?' ✓':''}</td>`;
+    html+=`<td style="padding:8px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800;font-size:13px">${netPayables[i]>0?"₹ "+netPayables[i].toLocaleString("en-IN"):"-"}</td>`;
   });
   html+=`</tr>`;
 
@@ -1411,22 +1486,22 @@ function exportCmpExcel(){
     ["Quotation No",document.getElementById("cmpQno").value,"Date",document.getElementById("cmpDate").value],
     ["Customer",document.getElementById("cmpCust").value],
     [],
-    ["S.No","Description","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Amt"])]
+    ["S.No","Description","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Rate/Mtr",b+" Amt"])]
   ];
 
   cmpRows.forEach((row,idx)=>{
     const rowData=[idx+1,row.desc,row.hsn,row.unit,row.qty];
-    [0,1,2].forEach(i=>{ if(i===2&&!hasB3) return; rowData.push(row.mrp[i]||"",row.disc[i]||"",row.rate[i]||"",row.rate[i]>0?(row.rate[i]*row.qty).toFixed(2):""); });
+    [0,1,2].forEach(i=>{ if(i===2&&!hasB3) return; rowData.push(row.mrp[i]||"",row.disc[i]||"",row.rate[i]||"",(row.perMtr&&row.perMtr[i])||"",row.rate[i]>0?(row.rate[i]*row.qty).toFixed(2):""); });
     data.push(rowData);
   });
 
   data.push([]);
-  data.push(["TOTALS",""," "," "," ",...brands.flatMap(b=>["","","",""])]);
+  data.push(["TOTALS",""," "," "," ",...brands.flatMap(b=>["","","","",""])]);
   const subTotals=[0,0,0]; cmpRows.forEach(row=>{ [0,1,2].forEach(i=>{ if(row.rate[i]>0) subTotals[i]+=row.rate[i]*row.qty; }); });
-  const subRow=["Sub Total",""," "," "," "]; brands.forEach((_,i)=>subRow.push("","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
+  const subRow=["Sub Total",""," "," "," "]; brands.forEach((_,i)=>subRow.push("","","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
   data.push(subRow);
-  if(gstOn){ const gstRow=["GST 18%",""," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
-  const gtRow=["Net Payable",""," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
+  if(gstOn){ const gstRow=["GST 18%",""," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
+  const gtRow=["Net Payable",""," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
 
   let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Price Comparison"); XLSX.writeFile(wb,"SSE_PriceComparison.xlsx");
 }
