@@ -156,7 +156,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
       <div id="partySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
     </div>
     <div><label>Customer GSTIN</label><input type="text" id="custGST"></div>
-    <div style="grid-column:span 2"><label>Customer Address</label><textarea id="custAddr"></textarea></div>
+    <div><label>Customer Address</label><textarea id="custAddr"></textarea></div>
+    <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person"></div>
   </div>
 </div>
 
@@ -429,6 +430,8 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   <div class="customer-grid" style="margin-top:8px">
     <div><label>Customer Name</label><input type="text" id="cmpCust"></div>
     <div><label>Customer GSTIN</label><input type="text" id="cmpGST"></div>
+    <div><label>Customer Address</label><textarea id="cmpAddr"></textarea></div>
+    <div><label>Kind Attn</label><input type="text" id="cmpAttn" placeholder="Contact Person"></div>
   </div>
 </div>
 
@@ -479,6 +482,77 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     </div>
     <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
   </div>
+
+  <!-- Common Items — EXACT same flow as Regular Quotation: Brand > Item dropdowns, plus manual Custom Item -->
+  <div style="margin-top:10px;background:#eef7f0;border:1px solid #9cc9a8;border-radius:6px;padding:10px">
+    <div class="section-title" style="margin-bottom:8px">🔧 Common Items (shown same across every brand — normal quotation style)</div>
+    <label>Brand</label>
+    <select id="cmpNBrand" onchange="cmpNBrandChanged()"></select>
+    <label>Item</label>
+    <select id="cmpNItem" onchange="cmpNItemChanged()"><option value="">Select Item</option></select>
+    <div class="entry-grid-mobile">
+      <div>
+        <label>Unit</label>
+        <select id="cmpNUnit">
+          <option>NOS</option><option>MTRS</option><option>COIL</option>
+          <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+        </select>
+      </div>
+      <div><label>Qty</label><input type="number" id="cmpNQty" value="1"></div>
+      <div><label>MRP</label><input type="number" id="cmpNMRP" readonly></div>
+      <div><label>Discount %</label><input type="number" id="cmpNDisc"></div>
+      <div><label>Net Rate</label><input type="number" id="cmpNRate"></div>
+      <div class="btn-add-wrap"><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addCmpNormalItem()">➕ ADD</button></div>
+    </div>
+
+    <label style="margin-top:8px"><input type="checkbox" id="cmpCustomToggle" onchange="toggleCmpCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
+    <div id="cmpCustomItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+        <div><label>Brand</label><input type="text" id="cmpC_brand" placeholder="Local / NA"></div>
+        <div><label>Description</label><input type="text" id="cmpC_item" placeholder="Nut Bolt / Spring Wire"></div>
+        <div><label>Unit</label><input type="text" id="cmpC_unit" placeholder="KG / NOS / MTR"></div>
+        <div><label>Qty</label><input type="number" id="cmpC_qty" value="1"></div>
+        <div><label>Rate</label><input type="number" id="cmpC_rate"></div>
+        <div><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addCmpCustomItem()">➕ ADD</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Wire colour / FR type (shared across brands for this row) -->
+  <div id="cmpWireInfoBox" style="margin-top:10px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
+    <span style="font-weight:bold;font-size:12px;color:#e65100">📦 WIRE / CABLE INFO (applies to this row across all brands)</span>
+    <div class="cable-info-grid" style="grid-template-columns:1fr 1fr">
+      <div>
+        <label>Wire Type</label>
+        <select id="cmpFrType" style="font-weight:bold;background:#fce4ec">
+          <option value="">— None —</option>
+          <option value="FR">FR</option>
+          <option value="FR-LSH">FR-LSH</option>
+          <option value="FRLS">FRLS</option>
+          <option value="ZHFR">ZHFR</option>
+        </select>
+      </div>
+      <div></div>
+    </div>
+    <div style="margin-top:8px">
+      <label style="font-size:11px;font-weight:700;color:#6a1b9a;display:block;margin-bottom:5px">🎨 Wire / Cable Colour</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button type="button" onclick="cmpSelectColour('RED')"    id="cmpClr-RED"    class="clr-btn" style="background:#e53935;color:#fff">● RED</button>
+        <button type="button" onclick="cmpSelectColour('YELLOW')" id="cmpClr-YELLOW" class="clr-btn" style="background:#f9a825;color:#000">● YELLOW</button>
+        <button type="button" onclick="cmpSelectColour('BLUE')"   id="cmpClr-BLUE"   class="clr-btn" style="background:#1565c0;color:#fff">● BLUE</button>
+        <button type="button" onclick="cmpSelectColour('BLACK')"  id="cmpClr-BLACK"  class="clr-btn" style="background:#212121;color:#fff">● BLACK</button>
+        <button type="button" onclick="cmpSelectColour('GREEN')"  id="cmpClr-GREEN"  class="clr-btn" style="background:#2e7d32;color:#fff">● GREEN</button>
+        <button type="button" onclick="cmpSelectColour('CUSTOM')" id="cmpClr-CUSTOM" class="clr-btn" style="background:#6a1b9a;color:#fff">✏️ CUSTOM</button>
+        <input type="text" id="cmpCustomColourInput" placeholder="Enter colour…"
+          style="display:none;width:120px;padding:4px 6px;font-size:12px;border:1px solid #9c27b0;border-radius:4px;font-weight:bold;color:#6a1b9a"
+          oninput="document.getElementById('cmpSelectedColourDisplay').innerText=this.value.toUpperCase()||'—'">
+        <span style="font-size:11px;color:#555;margin-left:4px">Selected: <b id="cmpSelectedColourDisplay" style="color:#6a1b9a">—</b></span>
+        <button type="button" onclick="cmpClearColour()" style="font-size:10px;padding:3px 8px;background:#eee;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:#555">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Brand pricing row -->
   <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
     <!-- Brand 1 -->
@@ -492,7 +566,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
         <div><label>Net Rate</label><input type="number" id="cmpRate1" min="0" placeholder="0" oninput="cmpRateManualEdit(1)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
         <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen1" min="0" oninput="cmpRecalcRate(1)" placeholder="—" style="font-size:11px"></div>
       </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #1a3c6e;border-radius:4px;padding:4px 6px;font-size:11px;color:#1a3c6e">Per Mtr Rate: <b id="cmpPerMtr1">—</b></div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1a3c6e;border-radius:4px;padding:4px 6px;font-size:11px;color:#1a3c6e">
+        <div>MRP/Mtr: <b id="cmpMrpPerMtr1">—</b></div>
+        <div>Net Rate/Mtr: <b id="cmpPerMtr1">—</b></div>
+      </div>
     </div>
     <!-- Brand 2 -->
     <div style="background:#e8f5ee;border:1px solid #1b7a4a;border-radius:6px;padding:8px">
@@ -505,7 +582,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
         <div><label>Net Rate</label><input type="number" id="cmpRate2" min="0" placeholder="0" oninput="cmpRateManualEdit(2)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
         <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen2" min="0" oninput="cmpRecalcRate(2)" placeholder="—" style="font-size:11px"></div>
       </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #1b7a4a;border-radius:4px;padding:4px 6px;font-size:11px;color:#1b7a4a">Per Mtr Rate: <b id="cmpPerMtr2">—</b></div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #1b7a4a;border-radius:4px;padding:4px 6px;font-size:11px;color:#1b7a4a">
+        <div>MRP/Mtr: <b id="cmpMrpPerMtr2">—</b></div>
+        <div>Net Rate/Mtr: <b id="cmpPerMtr2">—</b></div>
+      </div>
     </div>
     <!-- Brand 3 -->
     <div style="background:#f3e5f5;border:1px solid #6a1b9a;border-radius:6px;padding:8px">
@@ -518,7 +598,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
         <div><label>Net Rate</label><input type="number" id="cmpRate3" min="0" placeholder="0" oninput="cmpRateManualEdit(3)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
         <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen3" min="0" oninput="cmpRecalcRate(3)" placeholder="—" style="font-size:11px"></div>
       </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #6a1b9a;border-radius:4px;padding:4px 6px;font-size:11px;color:#6a1b9a">Per Mtr Rate: <b id="cmpPerMtr3">—</b></div>
+      <div style="margin-top:6px;background:#fff;border:1px dashed #6a1b9a;border-radius:4px;padding:4px 6px;font-size:11px;color:#6a1b9a">
+        <div>MRP/Mtr: <b id="cmpMrpPerMtr3">—</b></div>
+        <div>Net Rate/Mtr: <b id="cmpPerMtr3">—</b></div>
+      </div>
     </div>
   </div>
   <div style="margin-top:10px;display:flex;gap:8px">
@@ -645,8 +728,7 @@ async function saveQuotation(){
     let docNo, lastErr;
     for(let attempt=0; attempt<5; attempt++){
       const serial = await getNextSerialForParty(partyId, currentDocType, year);
-      const code = attempt===0 ? partyCode : `${partyCode}${partyId.toString().slice(-3)}`;
-      docNo = `${code} ${String(serial).padStart(3,"0")}`;
+      docNo = `${partyCode}${serial}`;
       const payload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -789,6 +871,12 @@ const FALLBACK_ITEMS={
   "LEGRAND LYNCUS":[
     {"name":"6A 1W SWITCH","mrp":98.0},{"name":"6A 2W SWITCH","mrp":204.0},{"name":"16A 1W SWITCH","mrp":236.0},
     {"name":"16A SOCKET (2M)","mrp":410.0},{"name":"1M STEP REGULATOR","mrp":680.0}
+  ],
+  "COMMON ITEMS":[
+    {"name":"BLANK PLATE","mrp":35.0},{"name":"MODULAR BOX (2M)","mrp":45.0},{"name":"MODULAR BOX (4M)","mrp":60.0},
+    {"name":"MODULAR BOX (8M)","mrp":85.0},{"name":"CABLE TIE 6 INCH (PKT)","mrp":50.0},{"name":"GI CLIP","mrp":2.0},
+    {"name":"PVC PIPE 20MM (MTR)","mrp":18.0},{"name":"PVC PIPE 25MM (MTR)","mrp":24.0},{"name":"JUNCTION BOX","mrp":30.0},
+    {"name":"INSULATION TAPE","mrp":20.0},{"name":"CONDUIT BEND (20MM)","mrp":12.0},{"name":"SADDLE CLIP","mrp":3.0}
   ]
 };
 
@@ -1146,7 +1234,8 @@ function exportFileName(){
 
 function exportExcel(){
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
-  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
+  const custAttnVal=document.getElementById("custAttn")?.value.trim()||"";
+  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,12).map(c=>c.innerText)));
   data.push([]);
   data.push(["","","","","","","","","","","Sub Total",sub.innerText]);
@@ -1171,7 +1260,7 @@ function exportPDF(){
    ==================================================================== */
 
 /* cmpRows stores each added comparison row:
-   { desc, hsn, unit, qty, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3], perMtr:[p1,p2,p3] }
+   { desc, hsn, unit, qty, colour, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3], perMtr:[p1,p2,p3] }
 */
 let cmpRows = [];
 
@@ -1182,6 +1271,90 @@ function populateCmpBrandLists(){
     if(dl) dl.innerHTML = brands.map(b=>`<option value="${b}">`).join("");
   });
   populateCmpItemDropdowns();
+  populateCmpNormalBrandDropdown();
+}
+
+/* ===== Common Items: EXACT same Brand>Item cascading picker as Regular Quotation ===== */
+function populateCmpNormalBrandDropdown(){
+  const sel=document.getElementById("cmpNBrand");
+  if(!sel) return;
+  const prev=sel.value;
+  sel.innerHTML="<option value=''>Select Brand</option>";
+  Object.keys(items).forEach(b=>{const o=document.createElement("option");o.textContent=b;sel.appendChild(o);});
+  if(prev&&items[prev]){ sel.value=prev; cmpNBrandChanged(); }
+}
+function cmpNBrandChanged(){
+  const brand=document.getElementById("cmpNBrand").value;
+  const itemSel=document.getElementById("cmpNItem");
+  itemSel.innerHTML="<option value=''>Select Item</option>";
+  document.getElementById("cmpNMRP").value="";
+  document.getElementById("cmpNDisc").value="";
+  document.getElementById("cmpNRate").value="";
+  if(!brand||!items[brand]) return;
+  items[brand].forEach(i=>{
+    const o=document.createElement("option");
+    o.textContent=i.name; o.value=i.mrp; o.dataset.hsn=i.hsn||"";
+    itemSel.appendChild(o);
+  });
+}
+function cmpNItemChanged(){
+  const sel=document.getElementById("cmpNItem");
+  const opt=sel.options[sel.selectedIndex];
+  document.getElementById("cmpNMRP").value=(opt&&opt.value)?opt.value:"";
+}
+
+/* Adds ONE row to the comparison table using the picked Brand+Item —
+   exactly like Regular Quotation's Add Item flow (MRP, Disc%, Net Rate).
+   The same item and rate are shown under every brand column automatically. */
+function addCmpNormalItem(){
+  const brand=document.getElementById("cmpNBrand").value;
+  const itemSel=document.getElementById("cmpNItem");
+  const opt=itemSel.options[itemSel.selectedIndex];
+  if(!brand||!opt||!opt.value){ alert("Please select Brand and Item."); return; }
+  const mrpVal=parseFloat(document.getElementById("cmpNMRP").value)||0;
+  const discVal=parseFloat(document.getElementById("cmpNDisc").value)||0;
+  let rateVal=parseFloat(document.getElementById("cmpNRate").value);
+  if(isNaN(rateVal)||!rateVal){ rateVal=discVal?mrpVal-(mrpVal*discVal/100):mrpVal; }
+  const qty=parseFloat(document.getElementById("cmpNQty").value)||1;
+  const unit=document.getElementById("cmpNUnit").value;
+  const itemName=opt.text;
+  const hsn=opt.dataset.hsn||getHSN(brand,itemName);
+
+  cmpRows.push({
+    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"",
+    mrp:[mrpVal,mrpVal,mrpVal], disc:[discVal,discVal,discVal], rate:[rateVal,rateVal,rateVal],
+    coil:[0,0,0], perMtr:[0,0,0]
+  });
+
+  itemSel.value=""; document.getElementById("cmpNMRP").value=""; document.getElementById("cmpNDisc").value="";
+  document.getElementById("cmpNRate").value=""; document.getElementById("cmpNQty").value="1";
+  renderCmpTable();
+  calcCmpTotals();
+}
+
+/* ===== Common Items: manual/custom entry — EXACT same idea as Regular Quotation's Custom Item ===== */
+function toggleCmpCustomItem(){
+  document.getElementById("cmpCustomItemBox").style.display=document.getElementById("cmpCustomToggle").checked?"block":"none";
+}
+function addCmpCustomItem(){
+  const brand=document.getElementById("cmpC_brand").value.trim()||"NA";
+  const desc=document.getElementById("cmpC_item").value.trim();
+  const unit=document.getElementById("cmpC_unit").value.trim()||"NOS";
+  const qty=parseFloat(document.getElementById("cmpC_qty").value)||1;
+  const rate=parseFloat(document.getElementById("cmpC_rate").value)||0;
+  if(!desc||!rate){ alert("Please enter Description and Rate."); return; }
+
+  cmpRows.push({
+    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"",
+    mrp:[0,0,0], disc:[0,0,0], rate:[rate,rate,rate],
+    coil:[0,0,0], perMtr:[0,0,0]
+  });
+
+  document.getElementById("cmpC_item").value="";
+  document.getElementById("cmpC_rate").value="";
+  document.getElementById("cmpC_qty").value="1";
+  renderCmpTable();
+  calcCmpTotals();
 }
 
 /* Populate each brand's Item <select> from the master inventory list,
@@ -1220,21 +1393,25 @@ function cmpItemPicked(n){
   if(!opt||!opt.value) return;
   const mrpVal=parseFloat(opt.dataset.mrp)||0;
   const brandKey=opt.dataset.brandKey||"";
+  cmpRateManuallyEdited[n-1]=false;
   document.getElementById("cmpMRP"+n).value=mrpVal||"";
+  document.getElementById("cmpDisc"+n).value="";
 
   const coilLen=getCoilLength(opt.value); // reuse existing helper (90/180/200/300mtr detection)
   const coilLenInput=document.getElementById("cmpCoilLen"+n);
-  if(coilLen && isWireCoilBrand(brandKey)){
+  const isWire=isWireCoilBrand(brandKey);
+  if(coilLen && isWire){
     coilLenInput.value=coilLen;
+    document.getElementById("cmpWireInfoBox").style.display="";
   }else{
     coilLenInput.value="";
   }
 
-  // auto-fill shared Description if still blank, so brands with different
-  // coil lengths (90/180/200/300mtr) still line up under one row
+  // auto-fill shared Description if still blank — keep the FULL item name,
+  // coil length (90/180/200/300MTR) is important and must not be stripped
   const descEl=document.getElementById("cmpItemDesc");
   if(!descEl.value.trim()){
-    descEl.value=opt.value.replace(/\b(90|180|200|300)MTR\b\s*/i,"").trim();
+    descEl.value=opt.value;
   }
 
   cmpRecalcRate(n);
@@ -1266,16 +1443,45 @@ function cmpRecalcRate(n){
 
 function cmpUpdatePerMtrDisplay(n){
   const rate=parseFloat(document.getElementById("cmpRate"+n).value)||0;
+  const mrpV=parseFloat(document.getElementById("cmpMRP"+n).value)||0;
   const len=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
-  const disp=document.getElementById("cmpPerMtr"+n);
-  if(rate>0 && len>0) disp.innerText="₹ "+(rate/len).toFixed(2)+" /mtr";
-  else disp.innerText="—";
+  const dispRate=document.getElementById("cmpPerMtr"+n);
+  const dispMrp=document.getElementById("cmpMrpPerMtr"+n);
+  if(rate>0 && len>0) dispRate.innerText="₹ "+(rate/len).toFixed(2)+" /mtr";
+  else dispRate.innerText="—";
+  if(mrpV>0 && len>0) dispMrp.innerText="₹ "+(mrpV/len).toFixed(2)+" /mtr";
+  else dispMrp.innerText="—";
+}
+
+/* ===== Comparison wire colour / FR type (shared across the 3 brands for a row) ===== */
+let cmpSelectedColour="";
+function cmpSelectColour(colour){
+  if(cmpSelectedColour===colour&&colour!=='CUSTOM'){cmpClearColour();return;}
+  cmpSelectedColour=colour;
+  document.querySelectorAll("#cmpWireInfoBox .clr-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("cmpClr-"+colour).classList.add("active");
+  const ci=document.getElementById("cmpCustomColourInput");
+  if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();cmpSelectedColour=ci.value.toUpperCase()||"";}
+  else{ci.style.display="none";document.getElementById("cmpSelectedColourDisplay").innerText=colour;}
+}
+function cmpClearColour(){
+  cmpSelectedColour="";
+  document.querySelectorAll("#cmpWireInfoBox .clr-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("cmpCustomColourInput").style.display="none";
+  document.getElementById("cmpCustomColourInput").value="";
+  document.getElementById("cmpSelectedColourDisplay").innerText="—";
+}
+function cmpGetSelectedColour(){
+  if(document.getElementById("cmpClr-CUSTOM").classList.contains("active")) return document.getElementById("cmpCustomColourInput").value.trim().toUpperCase()||"";
+  return cmpSelectedColour;
 }
 
 function clearCmpEntry(){
   document.getElementById("cmpItemDesc").value="";
   document.getElementById("cmpItemHSN").value="";
   document.getElementById("cmpItemQty").value="1";
+  document.getElementById("cmpFrType").value="";
+  cmpClearColour();
   cmpRateManuallyEdited=[false,false,false];
   [1,2,3].forEach(n=>{
     document.getElementById("cmpItemSel"+n).value="";
@@ -1284,16 +1490,20 @@ function clearCmpEntry(){
     document.getElementById("cmpRate"+n).value="";
     document.getElementById("cmpCoilLen"+n).value="";
     document.getElementById("cmpPerMtr"+n).innerText="—";
+    document.getElementById("cmpMrpPerMtr"+n).innerText="—";
   });
 }
 
 function addCmpRow(){
-  const desc=(document.getElementById("cmpItemDesc").value||"").trim();
+  let desc=(document.getElementById("cmpItemDesc").value||"").trim();
   const hsn=(document.getElementById("cmpItemHSN").value||"").trim();
   const unit=document.getElementById("cmpItemUnit").value;
   const qty=parseFloat(document.getElementById("cmpItemQty").value)||1;
+  const frType=document.getElementById("cmpFrType").value||"";
+  const colourVal=cmpGetSelectedColour();
 
   if(!desc){ alert("Please enter a Description."); return; }
+  if(frType) desc=`${desc} ${frType}`;
 
   const mrpArr=[],discArr=[],rateArr=[],coilArr=[],perMtrArr=[];
   [1,2,3].forEach(n=>{
@@ -1309,7 +1519,7 @@ function addCmpRow(){
     perMtrArr.push((rate>0&&coilLen>0) ? +(rate/coilLen).toFixed(2) : 0);
   });
 
-  cmpRows.push({ desc, hsn, unit, qty, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
+  cmpRows.push({ desc, hsn, unit, qty, colour:colourVal, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
   clearCmpEntry();
   renderCmpTable();
   calcCmpTotals();
@@ -1331,6 +1541,7 @@ function renderCmpTable(){
   const hasB3=brand3Name.length>0;
   const anyCoilData=cmpRows.some(r=>r.coil&&r.coil.some(c=>c>0));
   const showPerMtr=showPerMtrCols&&anyCoilData;
+  const anyColour=cmpRows.some(r=>r.colour);
 
   /* ---- build header ---- */
   const colColors=["brand-header-1","brand-header-2","brand-header-3"];
@@ -1339,6 +1550,7 @@ function renderCmpTable(){
   let headerHTML=`<tr>
     <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:140px">S.No</th>
     <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:160px">Description</th>
+    ${anyColour?`<th rowspan="2" style="background:#1a3c6e;color:#fff">Colour</th>`:``}
     <th rowspan="2" style="background:#1a3c6e;color:#fff">HSN</th>
     <th rowspan="2" style="background:#1a3c6e;color:#fff">Unit</th>
     <th rowspan="2" style="background:#1a3c6e;color:#fff">Qty</th>`;
@@ -1367,9 +1579,11 @@ function renderCmpTable(){
   /* ---- build body ---- */
   let bodyHTML="";
   cmpRows.forEach((row,idx)=>{
+    const colourStyle=row.colour?getColourStyle(row.colour):"";
     bodyHTML+=`<tr>
       <td>${idx+1}</td>
       <td style="text-align:left">${row.desc}</td>
+      ${anyColour?`<td style="${colourStyle}">${row.colour||"-"}</td>`:``}
       <td>${row.hsn||"-"}</td>
       <td>${row.unit}</td>
       <td>${row.qty}</td>`;
@@ -1394,7 +1608,7 @@ function renderCmpTable(){
 
   if(!cmpRows.length){
     const perBrandCols=2+(showMRPCols?2:0)+(showPerMtr?1:0);
-    const totalCols=5+((hasB3?3:2)*perBrandCols)+1;
+    const totalCols=5+(anyColour?1:0)+((hasB3?3:2)*perBrandCols)+1;
     bodyHTML=`<tr><td colspan="${totalCols}" style="text-align:center;color:#999;padding:20px;font-style:italic">No items added yet. Use the form above to add items.</td></tr>`;
   }
 
@@ -1484,24 +1698,25 @@ function exportCmpExcel(){
   let data=[
     ["SAI GANESH ELECTRICALS – SSE — PRICE COMPARISON"],
     ["Quotation No",document.getElementById("cmpQno").value,"Date",document.getElementById("cmpDate").value],
-    ["Customer",document.getElementById("cmpCust").value],
+    ["Customer",document.getElementById("cmpCust").value,"GSTIN",document.getElementById("cmpGST").value],
+    ["Address",document.getElementById("cmpAddr")?.value||"","Kind Attn",document.getElementById("cmpAttn")?.value||""],
     [],
-    ["S.No","Description","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Rate/Mtr",b+" Amt"])]
+    ["S.No","Description","Colour","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Rate/Mtr",b+" Amt"])]
   ];
 
   cmpRows.forEach((row,idx)=>{
-    const rowData=[idx+1,row.desc,row.hsn,row.unit,row.qty];
+    const rowData=[idx+1,row.desc,row.colour||"",row.hsn,row.unit,row.qty];
     [0,1,2].forEach(i=>{ if(i===2&&!hasB3) return; rowData.push(row.mrp[i]||"",row.disc[i]||"",row.rate[i]||"",(row.perMtr&&row.perMtr[i])||"",row.rate[i]>0?(row.rate[i]*row.qty).toFixed(2):""); });
     data.push(rowData);
   });
 
   data.push([]);
-  data.push(["TOTALS",""," "," "," ",...brands.flatMap(b=>["","","","",""])]);
+  data.push(["TOTALS",""," "," "," "," ",...brands.flatMap(b=>["","","","",""])]);
   const subTotals=[0,0,0]; cmpRows.forEach(row=>{ [0,1,2].forEach(i=>{ if(row.rate[i]>0) subTotals[i]+=row.rate[i]*row.qty; }); });
-  const subRow=["Sub Total",""," "," "," "]; brands.forEach((_,i)=>subRow.push("","","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
+  const subRow=["Sub Total",""," "," "," "," "]; brands.forEach((_,i)=>subRow.push("","","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
   data.push(subRow);
-  if(gstOn){ const gstRow=["GST 18%",""," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
-  const gtRow=["Net Payable",""," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
+  if(gstOn){ const gstRow=["GST 18%",""," "," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
+  const gtRow=["Net Payable",""," "," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
 
   let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Price Comparison"); XLSX.writeFile(wb,"SSE_PriceComparison.xlsx");
 }
