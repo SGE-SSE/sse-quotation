@@ -692,10 +692,27 @@ async function findOrCreateParty(name, gstin, addr){
   return created.id;
 }
 
-async function getNextSerialForParty(partyId, docType, year){
-  const { data, error } = await sb.rpc("next_party_serial", { p_party_id: partyId, p_doc_type: docType, p_year: year });
+/* Financial year label like "26-27" (Apr–Mar), plus the date range used to
+   count how many quotations of this doc_type already exist in that FY. */
+function getFinancialYear(dateObj){
+  const y = dateObj.getFullYear(), m = dateObj.getMonth()+1; // 1-12
+  const startYear = (m>=4) ? y : y-1;
+  const endYear = startYear+1;
+  const pad2 = n=>String(n).slice(-2);
+  return {
+    label: `${pad2(startYear)}-${pad2(endYear)}`,
+    startStr: `${startYear}-04-01`,
+    endExclusiveStr: `${endYear}-04-01`
+  };
+}
+
+/* Counts existing quotations for THIS customer + doc_type within the financial
+   year, so each customer's numbering starts fresh at 001 and increments on its own. */
+async function getNextDocSerial(partyId, docType, fy){
+  const { count, error } = await sb.from("quotations").select("id", { count:"exact", head:true })
+    .eq("party_id", partyId).eq("doc_type", docType).gte("doc_date", fy.startStr).lt("doc_date", fy.endExclusiveStr);
   if(error) throw error;
-  return data;
+  return (count||0)+1;
 }
 
 function collectItemsFromTable(){
@@ -721,14 +738,16 @@ async function saveQuotation(){
     btn.disabled = true; status.textContent = "Saving…";
     const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
     currentPartyId = partyId;
-    const year = new Date(qdate.value || new Date()).getFullYear();
-    const partyCode = partyCodeFromName(custName.value);
+    const dateObj = new Date(qdate.value || new Date());
+    const fy = getFinancialYear(dateObj);
+    const custFullName = custName.value.trim().toUpperCase();
     const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
+    const baseSerial = await getNextDocSerial(partyId, currentDocType, fy);
     let docNo, lastErr;
     for(let attempt=0; attempt<5; attempt++){
-      const serial = await getNextSerialForParty(partyId, currentDocType, year);
-      docNo = `${partyCode}${serial}`;
+      const serial = baseSerial + attempt;
+      docNo = `SGE-SSE-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
       const payload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -1227,7 +1246,14 @@ function printQuotation(){
 
 function exportFileName(){
   const docNoVal = (qno.value||"").trim();
-  if(docNoVal) return docNoVal;
+  // Doc number format: SGE-SSE-{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
+  const m = docNoVal.match(/^SGE-SSE-0*(\d+)\/[^/]+\/(.+)$/i);
+  if(m){
+    const serial = m[1];
+    const custPart = m[2].trim();
+    return `${custPart} ${serial}`;
+  }
+  if(docNoVal) return docNoVal.replace(/\//g,"-");
   const code = partyCodeFromName(custName.value);
   return code || DOC_TYPES[currentDocType].file;
 }
