@@ -457,7 +457,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
   <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% columns
+      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Comparison Items)
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="cmpShowCommonMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Common Items)
     </label>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
       <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
@@ -1347,7 +1350,7 @@ function addCmpNormalItem(){
   const hsn=opt.dataset.hsn||getHSN(brand,itemName);
 
   cmpRows.push({
-    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"",
+    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"", isCommon:true,
     mrp:[mrpVal,mrpVal,mrpVal], disc:[discVal,discVal,discVal], rate:[rateVal,rateVal,rateVal],
     coil:[0,0,0], perMtr:[0,0,0]
   });
@@ -1371,7 +1374,7 @@ function addCmpCustomItem(){
   if(!desc||!rate){ alert("Please enter Description and Rate."); return; }
 
   cmpRows.push({
-    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"",
+    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"", isCommon:true,
     mrp:[0,0,0], disc:[0,0,0], rate:[rate,rate,rate],
     coil:[0,0,0], perMtr:[0,0,0]
   });
@@ -1545,7 +1548,7 @@ function addCmpRow(){
     perMtrArr.push((rate>0&&coilLen>0) ? +(rate/coilLen).toFixed(2) : 0);
   });
 
-  cmpRows.push({ desc, hsn, unit, qty, colour:colourVal, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
+  cmpRows.push({ desc, hsn, unit, qty, colour:colourVal, isCommon:false, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
   clearCmpEntry();
   renderCmpTable();
   calcCmpTotals();
@@ -1561,7 +1564,9 @@ function renderCmpTable(){
   const thead=document.getElementById("cmpThead");
   const tbody=document.getElementById("cmpTbody");
   const brandNames=getCmpBrandNames();
-  const showMRPCols=document.getElementById("cmpShowMRP").checked;
+  const showMRPCols=document.getElementById("cmpShowMRP").checked;              // Comparison items
+  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;  // Common items
+  const anyMRPCols=showMRPCols||showCommonMRPCols; // whether the MRP/Disc columns exist at all
   const showPerMtrCols=document.getElementById("cmpShowPerMtr")?document.getElementById("cmpShowPerMtr").checked:true;
   const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
   const hasB3=brand3Name.length>0;
@@ -1584,7 +1589,7 @@ function renderCmpTable(){
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
     let colCount = 2; // Rate + Amount
-    if(showMRPCols) colCount += 2; // + MRP + Disc%
+    if(anyMRPCols) colCount += 2; // + MRP + Disc%
     if(showPerMtr) colCount += 1; // + Per-Mtr Rate
     headerHTML += `<th colspan="${colCount}" class="${colColors[i]}">${brandNames[i]}</th>`;
   });
@@ -1592,7 +1597,7 @@ function renderCmpTable(){
 
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
-    if(showMRPCols){
+    if(anyMRPCols){
       headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">MRP</th><th class="${colColors[i]}" style="font-size:10px">Disc%</th>`;
     }
     headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Net Rate</th>`;
@@ -1606,9 +1611,11 @@ function renderCmpTable(){
   let bodyHTML="";
   cmpRows.forEach((row,idx)=>{
     const colourStyle=row.colour?getColourStyle(row.colour):"";
+    // each row's own MRP/Disc visibility depends on whether it's a Common Item or a Comparison item
+    const rowShowMRP = row.isCommon ? showCommonMRPCols : showMRPCols;
     bodyHTML+=`<tr>
       <td>${idx+1}</td>
-      <td style="text-align:left">${row.desc}</td>
+      <td style="text-align:left">${row.desc}${row.isCommon?` <span style="font-size:9.5px;color:#156038;font-weight:700">[COMMON]</span>`:``}</td>
       ${anyColour?`<td style="${colourStyle}">${row.colour||"-"}</td>`:``}
       <td>${row.hsn||"-"}</td>
       <td>${row.unit}</td>
@@ -1618,8 +1625,8 @@ function renderCmpTable(){
       if(i===2&&!hasB3) return;
       const rate=row.rate[i]||0;
       const amt=rate>0?rate*row.qty:0;
-      if(showMRPCols){
-        bodyHTML+=`<td class="${colBg[i]}">${row.mrp[i]||"-"}</td><td class="${colBg[i]}">${row.disc[i]||"-"}</td>`;
+      if(anyMRPCols){
+        bodyHTML+=`<td class="${colBg[i]}">${rowShowMRP?(row.mrp[i]||"-"):"-"}</td><td class="${colBg[i]}">${rowShowMRP?(row.disc[i]||"-"):"-"}</td>`;
       }
       bodyHTML+=`<td class="${colBg[i]}">${rate>0?rate.toFixed(2):"-"}</td>`;
       if(showPerMtr){
@@ -1633,7 +1640,7 @@ function renderCmpTable(){
   });
 
   if(!cmpRows.length){
-    const perBrandCols=2+(showMRPCols?2:0)+(showPerMtr?1:0);
+    const perBrandCols=2+(anyMRPCols?2:0)+(showPerMtr?1:0);
     const totalCols=5+(anyColour?1:0)+((hasB3?3:2)*perBrandCols)+1;
     bodyHTML=`<tr><td colspan="${totalCols}" style="text-align:center;color:#999;padding:20px;font-style:italic">No items added yet. Use the form above to add items.</td></tr>`;
   }
