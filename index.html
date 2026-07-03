@@ -980,9 +980,12 @@ brandSel.onchange=()=>{
   document.getElementById("indCopperBox").style.display="none";
   if(!brandSel.value) return;
   items[brandSel.value].forEach(i=>{let o=document.createElement("option");o.textContent=i.name;o.value=i.mrp;itemSel.appendChild(o);});
-  const b=brandSel.value.toUpperCase();
-  if(b.includes("IND COPPER")||b.includes("GREEN PLUS")) unit.value="COIL";
-  else if(b.includes("ARMOURED")||b.includes("FLEXIBLE")) unit.value="MTRS";
+  // Brand-agnostic default unit hint, based on how this brand's items are actually named
+  const brandItems=items[brandSel.value]||[];
+  const hasCoilItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&getCoilLength(i.name));
+  const hasPerMtrItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&!getCoilLength(i.name));
+  if(hasCoilItem) unit.value="COIL";
+  else if(hasPerMtrItem) unit.value="MTRS";
   updateQtyLabel();
 };
 
@@ -1090,35 +1093,59 @@ async function savePriceEditorChanges(){
 }
 
 /* ===== WIRE / CABLE HELPERS ===== */
-function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes("90MTR")) return 90; if(n.includes("180MTR")) return 180; if(n.includes("200MTR")) return 200; if(n.includes("300MTR")) return 300; return null; }
-function isWireCoilBrand(b){ const u=(b||"").toUpperCase().trim(); return u.includes("IND COPPER")||u.includes("GREEN PLUS"); }
-function isPolycabCable(b){ const u=(b||"").toUpperCase(); return u.includes("POLYCAB - IND COPPER")||u.includes("POLYCAB - COPPER ARMOURED")||u.includes("POLYCAB - ALU ARMOURED")||u.includes("POLYCAB - COPPER FLEXIBLE"); }
-function isKEICable(b){ const u=(b||"").toUpperCase(); return u.includes("KEI - COPPER ARMOURED")||u.includes("KEI - ALU ARMOURED"); }
+function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes("90MTR")) return 90; if(n.includes("180MTR")) return 180; if(n.includes("200MTR")) return 200; if(n.includes("300MTR")) return 300; const m=n.match(/(\d{2,4})\s*MTR\b/); return m?parseInt(m[1],10):null; }
+
+/* PERMANENT, BRAND-AGNOSTIC wire/cable detection — driven entirely by the ITEM NAME,
+   not the brand name. Any brand you add in future (GREATWHITE, HAVELLS, whatever) will
+   automatically get the coil/colour/FR wire treatment as long as its item names follow
+   the normal convention: contain "SQMM" / "WIRE" / "CABLE", optionally with a coil
+   length like "90MTR"/"180MTR" or the word ARMOURED/FLEXIBLE. No brand list to maintain. */
+function isWireOrCableItemName(name){
+  const n=(name||"").toUpperCase();
+  return /SQMM/.test(n) || /\bWIRE\b/.test(n) || /\bCABLE\b/.test(n);
+}
+function isArmouredOrFlexibleItemName(name){
+  const n=(name||"").toUpperCase();
+  return /ARMOURED|FLEXIBLE/.test(n);
+}
 function getDisplayBrand(b){ if(b.startsWith("POLYCAB")) return "POLYCAB"; if(b.startsWith("KEI")) return "KEI"; return b.split(" - ")[0].trim(); }
 
 function updateIndCopperBox(){
-  const brand=brandSel.value; const indBox=document.getElementById("indCopperBox"); const b=brand.toUpperCase();
-  const isWire=isWireCoilBrand(brand),isPolycab=isPolycabCable(brand),isKEICab=isKEICable(brand);
-  if(!isWire&&!isPolycab&&!isKEICab){indBox.style.display="none";return;}
-  const coilMRP=+mrp.value, itemName=itemSel.options[itemSel.selectedIndex]?.text||"", len=getCoilLength(itemName), shortBrand=getDisplayBrand(brand);
-  document.getElementById("cableBoxTitle").innerText=isWire?`📦 ${shortBrand} — COIL INFO`:b.includes("COPPER ARMOURED")?`📦 ${shortBrand} COPPER ARMOURED`:b.includes("ALU ARMOURED")?`📦 ${shortBrand} ALU ARMOURED`:`📦 ${shortBrand} COPPER FLEXIBLE`;
+  const brand=brandSel.value; const indBox=document.getElementById("indCopperBox");
+  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
+  const isWireItem=isWireOrCableItemName(itemName);
+  if(!isWireItem){ indBox.style.display="none"; return; }
+  const coilMRP=+mrp.value, len=getCoilLength(itemName), shortBrand=getDisplayBrand(brand);
+  const isArmFlxItem=isArmouredOrFlexibleItemName(itemName);
+  const nUpper=itemName.toUpperCase();
+  document.getElementById("cableBoxTitle").innerText = len
+    ? `📦 ${shortBrand} — COIL INFO`
+    : isArmFlxItem
+      ? (nUpper.includes("ALU ARMOURED") ? `📦 ${shortBrand} ALU ARMOURED` : nUpper.includes("ARMOURED") ? `📦 ${shortBrand} COPPER ARMOURED` : `📦 ${shortBrand} FLEXIBLE`)
+      : `📦 ${shortBrand} — WIRE INFO`;
   document.getElementById("frToggleBox").style.display="block";
   const coilInfoRow=document.getElementById("coilInfoRow");
-  if(isWire&&len&&coilMRP){ document.getElementById("coilLen").value=len; document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2); updateNetPerMtr(); if(coilInfoRow) coilInfoRow.style.display=""; }
+  if(len&&coilMRP){ document.getElementById("coilLen").value=len; document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2); updateNetPerMtr(); if(coilInfoRow) coilInfoRow.style.display=""; }
   else{ if(coilInfoRow) coilInfoRow.style.display="none"; }
   indBox.style.display="block";
 }
 function updateNetPerMtr(){ const coilMRP=+mrp.value,len=+document.getElementById("coilLen").value; if(!len||!coilMRP) return; let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP); document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2); }
-function updateQtyLabel(){ const qtyLabel=document.getElementById("qtyLabel"),b=(brandSel.value||"").toUpperCase(),isWire=b.includes("IND COPPER")||b.includes("GREEN PLUS"); if(isWire&&unit.value==="MTRS") qtyLabel.innerText="Qty (Metres)"; else if(isWire&&unit.value==="COIL") qtyLabel.innerText="Qty (No. of Coils)"; else qtyLabel.innerText="Qty"; }
+function updateQtyLabel(){
+  const qtyLabel=document.getElementById("qtyLabel");
+  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
+  const isWire=isWireOrCableItemName(itemName)&&!!getCoilLength(itemName);
+  if(isWire&&unit.value==="MTRS") qtyLabel.innerText="Qty (Metres)";
+  else if(isWire&&unit.value==="COIL") qtyLabel.innerText="Qty (No. of Coils)";
+  else qtyLabel.innerText="Qty";
+}
 
 itemSel.onchange=()=>{ mrp.value=itemSel.value; updateIndCopperBox(); updateQtyLabel(); };
 document.getElementById("disc").addEventListener("input",()=>{ updateNetPerMtr(); });
 document.getElementById("net").addEventListener("input",()=>{ updateNetPerMtr(); });
 
 function getHSN(brand,itemName){
-  const b=brand.toUpperCase(),n=itemName.toUpperCase();
-  if(b.includes("IND COPPER")||b.includes("GREEN PLUS")||b.includes("POLYCAB COPPER")||b.includes("KEI")) return "85446090";
-  if(n.includes("COPPER ARMOURED")||n.includes("ALU ARMOURED")||n.includes("COPPER FLEXIBLE")) return "85446090";
+  const n=itemName.toUpperCase();
+  if(isWireOrCableItemName(itemName)) return "85446090";
   if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||n.includes("BELL PUSH")||n.includes("INDICATOR")) return "85365020";
   if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT")) return "85362000";
   if(n.includes(" DB ")||n.endsWith("DB")||n.includes("PANEL")||n.includes("ENCLOSER")) return "85371000";
@@ -1137,12 +1164,16 @@ function getColourStyle(colour){ const map={'RED':'background:#fff0f0;color:#c62
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
   const coilMRP=+mrp.value; let perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false,finalRate,finalQty=+qty.value;
-  const itemName=itemSel.options[itemSel.selectedIndex].text.trim(), brand=brandSel.value, b=brand.toUpperCase();
+  const itemName=itemSel.options[itemSel.selectedIndex].text.trim(), brand=brandSel.value;
   const frType=document.getElementById("frType")?.value||"", colourVal=getSelectedColour(), displayBrand=getDisplayBrand(brand);
-  const isIndCopper=b.includes("IND COPPER")||b.includes("GREEN PLUS"), isArmFlx=b.includes("ARMOURED")||b.includes("FLEXIBLE");
+  // Brand-agnostic: detected purely from the ITEM NAME, so any future brand works automatically
+  const coilLenDetected=getCoilLength(itemName);
+  const isWireItem=isWireOrCableItemName(itemName);
+  const isIndCopper=isWireItem&&!!coilLenDetected;   // has an explicit coil length -> coil-priced (MRP ÷ length)
+  const isArmFlx=isWireItem&&!coilLenDetected;        // wire/cable item without a coil length -> priced per metre already
   const buildSuffix=base=>frType?`${base} ${frType}`:base;
   if(isIndCopper){
-    const len=+document.getElementById("coilLen").value||1;
+    const len=+document.getElementById("coilLen").value||coilLenDetected||1;
     let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate=(coilRate/len).toFixed(2);
     description=buildSuffix(itemName);
@@ -1161,7 +1192,7 @@ function addItem(){
   const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
-  r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||1):'';
+  r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||coilLenDetected||1):'';
   r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
@@ -1428,7 +1459,7 @@ function cmpItemPicked(n){
 
   const coilLen=getCoilLength(opt.value); // reuse existing helper (90/180/200/300mtr detection)
   const coilLenInput=document.getElementById("cmpCoilLen"+n);
-  const isWire=isWireCoilBrand(brandKey);
+  const isWire=isWireOrCableItemName(opt.value); // brand-agnostic — works for any future brand
   if(coilLen && isWire){
     coilLenInput.value=coilLen;
     document.getElementById("cmpWireInfoBox").style.display="";
