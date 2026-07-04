@@ -957,7 +957,7 @@ async function savePricesToCloud(){
 function refreshBrandDropdown(){
   const prev=brandSel.value;
   brandSel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;brandSel.appendChild(o);});
+  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;o.value=b;brandSel.appendChild(o);});
   if(prev&&items[prev]){ brandSel.value=prev; brandSel.onchange(); }
 }
 
