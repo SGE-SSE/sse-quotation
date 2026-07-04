@@ -1014,36 +1014,89 @@ window.onload=()=>{
 let peWorkingCopy=null, peDirty=false;
 function openPriceEditor(){ peWorkingCopy=JSON.parse(JSON.stringify(items)); peDirty=false; document.getElementById("peSearch").value=""; document.getElementById("peStatus").textContent=""; document.getElementById("priceEditorOverlay").style.display="flex"; renderPriceEditorRows(); }
 function closePriceEditor(){ if(peDirty&&!confirm("Discard unsaved changes?")) return; document.getElementById("priceEditorOverlay").style.display="none"; peWorkingCopy=null; }
+function peBuildItemRow(brand, idx){
+  const it=peWorkingCopy[brand][idx];
+  const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
+  const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:42%"; tdName.textContent=it.name;
+  const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:20%";
+  const priceInput=document.createElement("input"); priceInput.type="number"; priceInput.step="0.01"; priceInput.value=it.mrp; priceInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px"; priceInput.oninput=()=>{ peWorkingCopy[brand][idx].mrp=parseFloat(priceInput.value)||0; peDirty=true; };
+  const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:18%";
+  const hsnInput=document.createElement("input"); hsnInput.type="text"; hsnInput.placeholder="HSN"; hsnInput.value=it.hsn||""; hsnInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; hsnInput.oninput=()=>{ peWorkingCopy[brand][idx].hsn=hsnInput.value.trim(); peDirty=true; };
+  const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:12%;text-align:right";
+  const delBtn=document.createElement("button"); delBtn.textContent="Remove"; delBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBtn.onclick=()=>{ peWorkingCopy[brand].splice(idx,1); peDirty=true; renderPriceEditorRows(); };
+  tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdDel.appendChild(delBtn);
+  tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
+  return tr;
+}
+
 function renderPriceEditorRows(){
   const q=document.getElementById("peSearch").value.trim().toLowerCase();
   const list=document.getElementById("peList"); list.innerHTML="";
   const brands=Object.keys(peWorkingCopy).sort();
+  let anyRendered=false;
   brands.forEach(brand=>{
     const brandMatches=brand.toLowerCase().includes(q);
     const rows=peWorkingCopy[brand].filter(it=>!q||brandMatches||it.name.toLowerCase().includes(q));
-    if(!rows.length) return;
-    const section=document.createElement("div"); section.style.marginBottom="14px";
+    // Only hide a brand section while actively searching AND nothing about it matches.
+    // A freshly-created brand with 0 items must still show up so items can be added to it.
+    if(q && !brandMatches && !rows.length) return;
+    anyRendered=true;
+
+    const section=document.createElement("div"); section.style.marginBottom="14px"; section.dataset.pebrand=brand;
     const header=document.createElement("div"); header.style.cssText="display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
-    header.innerHTML=`<strong style="color:#1a3c6e;font-size:13px">${brand}</strong>`;
-    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); header.appendChild(delBrandBtn); section.appendChild(header);
-    const table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
-    peWorkingCopy[brand].forEach((it,idx)=>{
-      if(q&&!brandMatches&&!it.name.toLowerCase().includes(q)) return;
-      const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
-      const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:42%"; tdName.textContent=it.name;
-      const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:20%";
-      const priceInput=document.createElement("input"); priceInput.type="number"; priceInput.step="0.01"; priceInput.value=it.mrp; priceInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px"; priceInput.oninput=()=>{ peWorkingCopy[brand][idx].mrp=parseFloat(priceInput.value)||0; peDirty=true; };
-      const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:18%";
-      const hsnInput=document.createElement("input"); hsnInput.type="text"; hsnInput.placeholder="HSN"; hsnInput.value=it.hsn||""; hsnInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; hsnInput.oninput=()=>{ peWorkingCopy[brand][idx].hsn=hsnInput.value.trim(); peDirty=true; };
-      const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:12%;text-align:right";
-      const delBtn=document.createElement("button"); delBtn.textContent="Remove"; delBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBtn.onclick=()=>{ peWorkingCopy[brand].splice(idx,1); peDirty=true; renderPriceEditorRows(); };
-      tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdDel.appendChild(delBtn);
-      tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
-      table.appendChild(tr);
-    });
-    section.appendChild(table); list.appendChild(section);
+    const titleSpan=document.createElement("strong"); titleSpan.style.cssText="color:#1a3c6e;font-size:13px";
+    titleSpan.innerHTML=`${brand} <span class="pe-item-count" style="color:#888;font-weight:400;font-size:11px">(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})</span>`;
+    header.appendChild(titleSpan);
+    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); header.appendChild(delBrandBtn);
+    section.appendChild(header);
+
+    const rowsToShow = q ? rows : peWorkingCopy[brand];
+    let table=null;
+    if(rowsToShow.length){
+      table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
+      rowsToShow.forEach(it=>{
+        const idx=peWorkingCopy[brand].indexOf(it);
+        table.appendChild(peBuildItemRow(brand, idx));
+      });
+      section.appendChild(table);
+    }
+
+    // Inline "Add Item" row — scoped to THIS brand, stays open for rapid successive entry.
+    // This is the fix for having to re-select the brand every time you add one more item.
+    const addRow=document.createElement("div");
+    addRow.style.cssText="display:flex;gap:6px;padding:8px;background:#f1f8e9;border:1px dashed #9ccc65;border-radius:0 0 6px 6px;align-items:center;flex-wrap:wrap";
+    const nameIn=document.createElement("input"); nameIn.type="text"; nameIn.placeholder="New item name…"; nameIn.className="pe-add-name"; nameIn.style.cssText="flex:2;min-width:160px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
+    const priceIn=document.createElement("input"); priceIn.type="number"; priceIn.step="0.01"; priceIn.placeholder="Price"; priceIn.style.cssText="flex:1;min-width:80px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
+    const hsnIn=document.createElement("input"); hsnIn.type="text"; hsnIn.placeholder="HSN (auto)"; hsnIn.style.cssText="flex:1;min-width:90px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
+    const addBtn=document.createElement("button"); addBtn.textContent="➕ Add & Next"; addBtn.style.cssText="background:#1b7a4a;color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap";
+
+    const doAdd=()=>{
+      const name=nameIn.value.trim();
+      if(!name){ nameIn.focus(); return; }
+      const mrpVal=parseFloat(priceIn.value)||0;
+      const hsn=hsnIn.value.trim()||getHSN(brand,name);
+      peWorkingCopy[brand].push({name,mrp:mrpVal,hsn});
+      peDirty=true;
+      if(!table){
+        table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
+        section.insertBefore(table, addRow);
+      }
+      table.appendChild(peBuildItemRow(brand, peWorkingCopy[brand].length-1));
+      const countSpan=titleSpan.querySelector(".pe-item-count");
+      if(countSpan) countSpan.textContent=`(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})`;
+      // Clear and keep focus in Name field so the next item can be typed immediately — no re-selecting the brand.
+      nameIn.value=""; priceIn.value=""; hsnIn.value="";
+      nameIn.focus();
+    };
+    addBtn.onclick=doAdd;
+    [nameIn,priceIn,hsnIn].forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doAdd(); } }));
+
+    addRow.appendChild(nameIn); addRow.appendChild(priceIn); addRow.appendChild(hsnIn); addRow.appendChild(addBtn);
+    section.appendChild(addRow);
+
+    list.appendChild(section);
   });
-  if(!list.children.length) list.innerHTML="<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
+  if(!anyRendered) list.innerHTML="<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
 }
 function peAddItemPrompt(){
   const brands=Object.keys(peWorkingCopy).sort();
@@ -1056,7 +1109,18 @@ function peAddItemPrompt(){
   peWorkingCopy[brand].push({name:name.trim(),mrp:mrpVal,hsn}); peDirty=true;
   document.getElementById("peSearch").value=""; renderPriceEditorRows();
 }
-function peAddBrandPrompt(){ const brand=prompt("New brand name:"); if(!brand) return; if(peWorkingCopy[brand]){ alert("Brand already exists."); return; } peWorkingCopy[brand]=[]; peDirty=true; renderPriceEditorRows(); }
+function peAddBrandPrompt(){
+  const brand=prompt("New brand name:"); if(!brand) return;
+  if(peWorkingCopy[brand]){ alert("Brand already exists."); return; }
+  peWorkingCopy[brand]=[]; peDirty=true;
+  document.getElementById("peSearch").value=""; // make sure the new (empty) brand is visible
+  renderPriceEditorRows();
+  // Jump straight into that brand's inline Add Item box so items can be typed one after another immediately
+  setTimeout(()=>{
+    const section=document.querySelector(`[data-pebrand="${CSS.escape(brand)}"] .pe-add-name`);
+    if(section){ section.scrollIntoView({behavior:"smooth",block:"center"}); section.focus(); }
+  }, 50);
+}
 function peDeleteBrand(brand){ if(!confirm(`Delete "${brand}" and all its items?`)) return; delete peWorkingCopy[brand]; peDirty=true; renderPriceEditorRows(); }
 function peImportCSV(event){
   const file=event.target.files[0]; if(!file) return;
