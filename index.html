@@ -807,13 +807,25 @@ async function loadPartyQuotations(partyId, partyName){
   if(!data.length){ list.innerHTML = `No saved quotations yet for <b>${partyName}</b>.`; return; }
   list.innerHTML = `<div style="margin-bottom:8px;font-weight:700;color:#1a3c6e">${partyName} — ${data.length} record(s)</div>
     <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px">Doc No</th><th style="padding:6px">Type</th><th style="padding:6px">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px"></th></tr>` +
-    data.map(q=>`<tr style="border-bottom:1px solid #eee">
+      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px">Doc No</th><th style="padding:6px">Type</th><th style="padding:6px">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px" colspan="2"></th></tr>` +
+    data.map(q=>`<tr style="border-bottom:1px solid #eee" id="hist-row-${q.id}">
       <td style="padding:6px">${q.doc_no}</td><td style="padding:6px">${q.doc_type}</td>
       <td style="padding:6px">${q.doc_date}</td><td style="padding:6px;text-align:right">₹ ${(+q.net_payable).toLocaleString("en-IN")}</td>
       <td style="padding:6px"><button onclick="reopenQuotation(${q.id})" style="background:#1b7a4a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">Open</button></td>
+      <td style="padding:6px"><button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">🗑️ Delete</button></td>
       </tr>`).join("") + `</table>`;
 }
+
+/* Deletes a wrongly saved quotation permanently from Supabase, with a confirmation prompt. */
+async function deleteQuotation(id, docNo, partyId, partyName){
+  if(!confirm(`Delete quotation "${docNo}"?\n\nThis cannot be undone.`)) return;
+  const row=document.getElementById(`hist-row-${id}`);
+  if(row) row.style.opacity="0.5";
+  const { error } = await sb.from("quotations").delete().eq("id", id);
+  if(error){ alert("Could not delete: " + (error.message||error)); if(row) row.style.opacity="1"; return; }
+  loadPartyQuotations(partyId, partyName);
+}
+
 async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
   if(error){ alert("Could not load that quotation."); return; }
