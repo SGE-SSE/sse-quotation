@@ -1416,7 +1416,7 @@ function populateCmpNormalBrandDropdown(){
   if(!sel) return;
   const prev=sel.value;
   sel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{const o=document.createElement("option");o.textContent=b;sel.appendChild(o);});
+  Object.keys(items).forEach(b=>{const o=document.createElement("option");o.textContent=b;o.value=b;sel.appendChild(o);});
   if(prev&&items[prev]){ sel.value=prev; cmpNBrandChanged(); }
 }
 function cmpNBrandChanged(){
