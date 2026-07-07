@@ -1,4 +1,4 @@
-<!DOCTYPE  html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -223,9 +223,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
-<div style="margin-top:8px">
-  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount</label>
+<div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
   <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
+  <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP Settings</button>
 </div>
 </div>
 
@@ -416,6 +417,22 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
+<!-- PER-BRAND MRP SETTINGS MODAL -->
+<div id="mrpSettingsModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1150;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:420px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
+    <div style="background:linear-gradient(135deg,#6a1b9a,#8338c4);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">🏷️ Per-Brand MRP Visibility</strong>
+      <button onclick="closeMrpSettings()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:14px 18px 4px;font-size:11.5px;color:#666">Tick a brand to show its MRP &amp; Discount in the quotation table. Untick to hide it (shows "-") for that brand only — other brands are not affected.</div>
+    <div style="padding:10px 18px;max-height:48vh;overflow-y:auto" id="mrpSettingsList"></div>
+    <div style="padding:10px 18px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #eee;margin-top:4px">
+      <button onclick="closeMrpSettings()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">✕ Cancel</button>
+      <button onclick="saveMrpSettings()" style="background:#6a1b9a;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800">💾 Save</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end #regularSection -->
 
 <!-- ===================== PRICE COMPARISON SECTION ===================== -->
@@ -457,10 +474,10 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
   <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Comparison Items)
+      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Comparison Items, default)
     </label>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowCommonMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Common Items)
+      <input type="checkbox" id="cmpShowCommonMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Common Items, default)
     </label>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
       <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
@@ -468,6 +485,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
       <input type="checkbox" id="cmpShowPerMtr" checked onchange="renderCmpTable()"> Show Per-Mtr Rate columns
     </label>
+    <button type="button" class="no-print" onclick="openMrpSettings()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP Settings</button>
   </div>
 </div>
 
@@ -493,6 +511,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
     <select id="cmpNBrand" onchange="cmpNBrandChanged()"></select>
     <label>Item</label>
     <select id="cmpNItem" onchange="cmpNItemChanged()"><option value="">Select Item</option></select>
+    <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;color:#156038">
+      <input type="checkbox" id="cmpNShowMRP" checked> Show MRP &amp; Disc% for this brand
+    </label>
     <div class="entry-grid-mobile">
       <div>
         <label>Unit</label>
@@ -518,6 +539,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
         <div><label>Rate</label><input type="number" id="cmpC_rate"></div>
         <div><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addCmpCustomItem()">➕ ADD</button></div>
       </div>
+      <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;color:#156038">
+        <input type="checkbox" id="cmpCShowMRP" checked> Show MRP &amp; Disc% for this brand
+      </label>
     </div>
 
   </div>
@@ -842,6 +866,7 @@ async function reopenQuotation(id){
     const r=tbody.insertRow();
     const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
     if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
+    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount;
     r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
@@ -1269,7 +1294,9 @@ function addItem(){
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
   r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||coilLenDetected||1):'';
-  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${displayMRP}</td><td class="mrpCol">${disc.value||0}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+  r.dataset.brand=displayBrand; r.dataset.mrpRaw=displayMRP; r.dataset.discRaw=disc.value||0;
+  const mrpCellTxt=isBrandMrpVisible(displayBrand)?displayMRP:'-', discCellTxt=isBrandMrpVisible(displayBrand)?(disc.value||0):'-';
+  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${mrpCellTxt}</td><td class="mrpCol">${discCellTxt}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
 
@@ -1278,6 +1305,7 @@ function addCustomItem(){
   const brand=c_brand.value||"NA",item=c_item.value,unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
   if(!item||!unit||!qty||!rate) return;
   const r=tbody.insertRow();
+  r.dataset.brand=brand; r.dataset.mrpRaw='-'; r.dataset.discRaw='-';
   r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();c_item.value=c_rate.value="";
 }
@@ -1292,8 +1320,10 @@ function editRow(btn){
   document.getElementById("editHSN").value=(cells[4].innerText==='-')?'':cells[4].innerText;
   document.getElementById("editUnit").value=cells[5].innerText;
   document.getElementById("editQty").value=cells[6].innerText;
-  document.getElementById("editMRP").value=(cells[7].innerText==='-')?'':cells[7].innerText;
-  document.getElementById("editDisc").value=(cells[8].innerText==='-')?'':cells[8].innerText;
+  const mrpRawVal=(r.dataset.mrpRaw!==undefined)?r.dataset.mrpRaw:cells[7].innerText;
+  const discRawVal=(r.dataset.discRaw!==undefined)?r.dataset.discRaw:cells[8].innerText;
+  document.getElementById("editMRP").value=(mrpRawVal==='-'||mrpRawVal===''||mrpRawVal===undefined)?'':mrpRawVal;
+  document.getElementById("editDisc").value=(discRawVal==='-'||discRawVal===''||discRawVal===undefined)?'':discRawVal;
   document.getElementById("editRate").value=cells[9].innerText;
   document.getElementById("editPerMtr").value=(cells[10].innerText==='-'||cells[10].innerText==='')?'':cells[10].innerText;
   document.getElementById("editBrandList").innerHTML=Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
@@ -1319,13 +1349,70 @@ function saveEditRow(){
   cells[3].innerText=colourVal||'-'; cells[3].style.cssText=colourStyle;
   cells[4].innerText=document.getElementById("editHSN").value.trim()||'-';
   cells[5].innerText=document.getElementById("editUnit").value;
-  cells[6].innerText=qty; cells[7].innerText=isNaN(mrpV)?'-':mrpV; cells[8].innerText=isNaN(discV)?'-':discV; cells[9].innerText=rate.toFixed(2);
+  cells[6].innerText=qty;
+  r.dataset.brand=cells[1].innerText;
+  r.dataset.mrpRaw=isNaN(mrpV)?'-':mrpV;
+  r.dataset.discRaw=isNaN(discV)?'-':discV;
+  cells[7].innerText=(isNaN(mrpV)||!isBrandMrpVisible(r.dataset.brand))?'-':mrpV;
+  cells[8].innerText=(isNaN(discV)||!isBrandMrpVisible(r.dataset.brand))?'-':discV;
+  cells[9].innerText=rate.toFixed(2);
   const coilLen=parseFloat(r.dataset.coilLen); cells[10].innerText=(!isNaN(coilLen)&&coilLen>0)?(rate/coilLen).toFixed(2):'-';
   cells[11].innerText=(qty*rate).toFixed(2);
   closeEditRow(); calc();
 }
 function closeEditRow(){ document.getElementById("editRowModal").style.display="none"; }
 function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
+
+/* ===== PER-BRAND MRP VISIBILITY ===== */
+let brandMrpVisibility={};
+try{ brandMrpVisibility=JSON.parse(localStorage.getItem("SSE_BRAND_MRP_VIS")||"{}"); }catch(e){ brandMrpVisibility={}; }
+function saveBrandMrpVisibility(){ try{ localStorage.setItem("SSE_BRAND_MRP_VIS",JSON.stringify(brandMrpVisibility)); }catch(e){} }
+function isBrandMrpVisible(brand,fallbackDefault){
+  brand=(brand||"").trim();
+  if(Object.prototype.hasOwnProperty.call(brandMrpVisibility,brand)) return !!brandMrpVisibility[brand];
+  if(fallbackDefault!==undefined) return fallbackDefault;
+  return document.getElementById("showMRP").checked; // unlisted brands follow the global default
+}
+function applyMrpVisibility(){
+  [...tbody.rows].forEach(r=>{
+    const brand=r.dataset.brand||r.cells[1].innerText;
+    const visible=isBrandMrpVisible(brand);
+    const mrpRaw=r.dataset.mrpRaw, discRaw=r.dataset.discRaw;
+    if(mrpRaw!==undefined) r.cells[7].innerText=(mrpRaw==='-'||mrpRaw==='')?'-':(visible?mrpRaw:'-');
+    if(discRaw!==undefined) r.cells[8].innerText=(discRaw==='-'||discRaw==='')?'-':(visible?discRaw:'-');
+  });
+}
+function collectKnownBrands(){
+  const set=new Set();
+  Object.keys(items||{}).forEach(b=>set.add(getDisplayBrand(b)));
+  [...tbody.rows].forEach(r=>{ const b=(r.dataset.brand||r.cells[1].innerText||"").trim(); if(b&&b!=='-') set.add(b); });
+  ["cmpBrand1","cmpBrand2","cmpBrand3"].forEach(id=>{ const el=document.getElementById(id); if(el&&el.value.trim()) set.add(el.value.trim().toUpperCase()); });
+  if(typeof cmpRows!=="undefined"){ cmpRows.forEach(row=>{ if(row.commonBrand) set.add(row.commonBrand); }); }
+  Object.keys(brandMrpVisibility).forEach(b=>{ if(b) set.add(b); });
+  return [...set].sort();
+}
+function openMrpSettings(){
+  const brands=collectKnownBrands();
+  const list=document.getElementById("mrpSettingsList");
+  if(!brands.length){
+    list.innerHTML='<div style="color:#999;font-size:12px;font-style:italic">No brands yet. Add an item (or load prices) and brands will appear here automatically.</div>';
+  }else{
+    list.innerHTML=brands.map(b=>{
+      const val=isBrandMrpVisible(b);
+      const safe=b.replace(/"/g,"&quot;");
+      return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;font-weight:600;color:#1a3c6e;border-bottom:1px solid #f0f0f0"><input type="checkbox" class="mrpBrandChk" data-brand="${safe}" ${val?"checked":""}> ${b}</label>`;
+    }).join("");
+  }
+  document.getElementById("mrpSettingsModal").style.display="flex";
+}
+function closeMrpSettings(){ document.getElementById("mrpSettingsModal").style.display="none"; }
+function saveMrpSettings(){
+  document.querySelectorAll(".mrpBrandChk").forEach(chk=>{ brandMrpVisibility[chk.dataset.brand]=chk.checked; });
+  saveBrandMrpVisibility();
+  applyMrpVisibility();
+  if(typeof renderCmpTable==="function") renderCmpTable();
+  closeMrpSettings();
+}
 
 function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[11].innerText);
@@ -1341,7 +1428,7 @@ function calc(){
   const rounded=Math.round(grandTotal),roundOff=rounded-grandTotal;
   document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
   document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
-  document.querySelectorAll(".mrpCol").forEach(c=>c.style.display=showMRP.checked?"":"none");
+  applyMrpVisibility();
   const hasIndCopper=[...tbody.rows].some(r=>r.cells[5].innerText==="COIL"&&r.cells[10].innerText!=="-");
   document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
@@ -1426,6 +1513,8 @@ function cmpNBrandChanged(){
   document.getElementById("cmpNMRP").value="";
   document.getElementById("cmpNDisc").value="";
   document.getElementById("cmpNRate").value="";
+  const showChk=document.getElementById("cmpNShowMRP");
+  if(showChk&&brand) showChk.checked=isBrandMrpVisible(getDisplayBrand(brand), document.getElementById("cmpShowCommonMRP").checked);
   if(!brand||!items[brand]) return;
   items[brand].forEach(i=>{
     const o=document.createElement("option");
@@ -1457,10 +1546,12 @@ function addCmpNormalItem(){
   const hsn=opt.dataset.hsn||getHSN(brand,itemName);
 
   cmpRows.push({
-    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"", isCommon:true,
+    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"", isCommon:true, commonBrand:getDisplayBrand(brand),
     mrp:[mrpVal,mrpVal,mrpVal], disc:[discVal,discVal,discVal], rate:[rateVal,rateVal,rateVal],
     coil:[0,0,0], perMtr:[0,0,0]
   });
+  brandMrpVisibility[getDisplayBrand(brand)]=document.getElementById("cmpNShowMRP").checked;
+  saveBrandMrpVisibility();
 
   itemSel.value=""; document.getElementById("cmpNMRP").value=""; document.getElementById("cmpNDisc").value="";
   document.getElementById("cmpNRate").value=""; document.getElementById("cmpNQty").value="1";
@@ -1481,10 +1572,12 @@ function addCmpCustomItem(){
   if(!desc||!rate){ alert("Please enter Description and Rate."); return; }
 
   cmpRows.push({
-    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"", isCommon:true,
+    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"", isCommon:true, commonBrand:brand,
     mrp:[0,0,0], disc:[0,0,0], rate:[rate,rate,rate],
     coil:[0,0,0], perMtr:[0,0,0]
   });
+  brandMrpVisibility[brand]=document.getElementById("cmpCShowMRP").checked;
+  saveBrandMrpVisibility();
 
   document.getElementById("cmpC_item").value="";
   document.getElementById("cmpC_rate").value="";
@@ -1661,6 +1754,16 @@ function addCmpRow(){
   calcCmpTotals();
 }
 
+function toggleCommonRowMrp(idx){
+  const row=cmpRows[idx];
+  if(!row||!row.isCommon||!row.commonBrand) return;
+  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;
+  const current=isBrandMrpVisible(row.commonBrand, showCommonMRPCols);
+  brandMrpVisibility[row.commonBrand]=!current;
+  saveBrandMrpVisibility();
+  renderCmpTable();
+}
+
 function deleteCmpRow(idx){
   cmpRows.splice(idx,1);
   renderCmpTable();
@@ -1718,11 +1821,16 @@ function renderCmpTable(){
   let bodyHTML="";
   cmpRows.forEach((row,idx)=>{
     const colourStyle=row.colour?getColourStyle(row.colour):"";
-    // each row's own MRP/Disc visibility depends on whether it's a Common Item or a Comparison item
-    const rowShowMRP = row.isCommon ? showCommonMRPCols : showMRPCols;
+    // Each brand COLUMN's MRP/Disc visibility follows that specific brand's per-brand setting
+    // (falling back to the Comparison/Common default checkbox if the brand has no override saved).
+    // Common items use the row's actual product brand for all columns; comparison rows use each column's brand.
+    const colShowMRP=[0,1,2].map(i=>{
+      if(row.isCommon) return isBrandMrpVisible(row.commonBrand, showCommonMRPCols);
+      return isBrandMrpVisible(brandNames[i], showMRPCols);
+    });
     bodyHTML+=`<tr>
       <td>${idx+1}</td>
-      <td style="text-align:left">${row.desc}${row.isCommon?` <span style="font-size:9.5px;color:#156038;font-weight:700">[COMMON]</span>`:``}</td>
+      <td style="text-align:left">${row.desc}${row.isCommon?` <span style="font-size:9.5px;color:#156038;font-weight:700">[COMMON]</span> <button type="button" class="no-print" onclick="toggleCommonRowMrp(${idx})" title="Toggle MRP &amp; Disc% visibility for ${(row.commonBrand||'').replace(/"/g,'&quot;')}" style="font-size:9.5px;padding:1px 6px;background:${colShowMRP[0]?'#6a1b9a':'#999'};color:#fff;border:none;border-radius:10px;cursor:pointer">${colShowMRP[0]?'👁 MRP ON':'🚫 MRP OFF'}</button>`:``}</td>
       ${anyColour?`<td style="${colourStyle}">${row.colour||"-"}</td>`:``}
       <td>${row.hsn||"-"}</td>
       <td>${row.unit}</td>
@@ -1733,7 +1841,7 @@ function renderCmpTable(){
       const rate=row.rate[i]||0;
       const amt=rate>0?rate*row.qty:0;
       if(anyMRPCols){
-        bodyHTML+=`<td class="${colBg[i]}">${rowShowMRP?(row.mrp[i]||"-"):"-"}</td><td class="${colBg[i]}">${rowShowMRP?(row.disc[i]||"-"):"-"}</td>`;
+        bodyHTML+=`<td class="${colBg[i]}">${colShowMRP[i]?(row.mrp[i]||"-"):"-"}</td><td class="${colBg[i]}">${colShowMRP[i]?(row.disc[i]||"-"):"-"}</td>`;
       }
       bodyHTML+=`<td class="${colBg[i]}">${rate>0?rate.toFixed(2):"-"}</td>`;
       if(showPerMtr){
