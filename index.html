@@ -226,7 +226,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
   <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
   <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
-  <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP Settings</button>
+  <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP &amp; Discount Settings</button>
 </div>
 </div>
 
@@ -421,7 +421,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 <div id="mrpSettingsModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1150;align-items:center;justify-content:center;padding:12px">
   <div style="background:#fff;width:100%;max-width:420px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
     <div style="background:linear-gradient(135deg,#6a1b9a,#8338c4);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:15px">🏷️ Per-Brand MRP Visibility</strong>
+      <strong style="font-size:15px">🏷️ Per-Brand MRP &amp; Discount Visibility</strong>
       <button onclick="closeMrpSettings()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
     </div>
     <div style="padding:14px 18px 4px;font-size:11.5px;color:#666">Tick a brand to show its MRP &amp; Discount in the quotation table. Untick to hide it (shows "-") for that brand only — other brands are not affected.</div>
@@ -460,16 +460,25 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
       <label>Brand 1</label>
       <input type="text" id="cmpBrand1" list="cmpBrandList1" placeholder="e.g. POLYCAB" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1a3c6e;border-color:#1a3c6e">
       <datalist id="cmpBrandList1"></datalist>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1a3c6e;margin-top:4px;font-weight:600">
+        <input type="checkbox" id="cmpBrand1ShowMRP" checked onchange="toggleCmpBrandColMrp(1)"> Show MRP &amp; Disc% for this brand
+      </label>
     </div>
     <div>
       <label>Brand 2</label>
       <input type="text" id="cmpBrand2" list="cmpBrandList2" placeholder="e.g. HAVELLS" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1b7a4a;border-color:#1b7a4a">
       <datalist id="cmpBrandList2"></datalist>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1b7a4a;margin-top:4px;font-weight:600">
+        <input type="checkbox" id="cmpBrand2ShowMRP" checked onchange="toggleCmpBrandColMrp(2)"> Show MRP &amp; Disc% for this brand
+      </label>
     </div>
     <div>
       <label>Brand 3 (Optional)</label>
       <input type="text" id="cmpBrand3" list="cmpBrandList3" placeholder="e.g. FINOLEX" oninput="refreshCmpHeaders()" style="font-weight:700;color:#6a1b9a;border-color:#6a1b9a">
       <datalist id="cmpBrandList3"></datalist>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#6a1b9a;margin-top:4px;font-weight:600">
+        <input type="checkbox" id="cmpBrand3ShowMRP" checked onchange="toggleCmpBrandColMrp(3)"> Show MRP &amp; Disc% for this brand
+      </label>
     </div>
   </div>
   <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1363,15 +1372,16 @@ function saveEditRow(){
 function closeEditRow(){ document.getElementById("editRowModal").style.display="none"; }
 function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
 
-/* ===== PER-BRAND MRP VISIBILITY ===== */
+/* ===== PER-BRAND MRP & DISCOUNT VISIBILITY (Regular Quotation + Comparison) ===== */
 let brandMrpVisibility={};
 try{ brandMrpVisibility=JSON.parse(localStorage.getItem("SSE_BRAND_MRP_VIS")||"{}"); }catch(e){ brandMrpVisibility={}; }
 function saveBrandMrpVisibility(){ try{ localStorage.setItem("SSE_BRAND_MRP_VIS",JSON.stringify(brandMrpVisibility)); }catch(e){} }
 function isBrandMrpVisible(brand,fallbackDefault){
+  const masterOn = fallbackDefault!==undefined ? fallbackDefault : document.getElementById("showMRP").checked;
+  if(!masterOn) return false; // master switch OFF always wins — hides everything, no exceptions
   brand=(brand||"").trim();
   if(Object.prototype.hasOwnProperty.call(brandMrpVisibility,brand)) return !!brandMrpVisibility[brand];
-  if(fallbackDefault!==undefined) return fallbackDefault;
-  return document.getElementById("showMRP").checked; // unlisted brands follow the global default
+  return true; // master is ON and this brand has no saved exception => show by default
 }
 function applyMrpVisibility(){
   [...tbody.rows].forEach(r=>{
@@ -1398,7 +1408,7 @@ function openMrpSettings(){
     list.innerHTML='<div style="color:#999;font-size:12px;font-style:italic">No brands yet. Add an item (or load prices) and brands will appear here automatically.</div>';
   }else{
     list.innerHTML=brands.map(b=>{
-      const val=isBrandMrpVisible(b);
+      const val=Object.prototype.hasOwnProperty.call(brandMrpVisibility,b)?!!brandMrpVisibility[b]:true;
       const safe=b.replace(/"/g,"&quot;");
       return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;font-weight:600;color:#1a3c6e;border-bottom:1px solid #f0f0f0"><input type="checkbox" class="mrpBrandChk" data-brand="${safe}" ${val?"checked":""}> ${b}</label>`;
     }).join("");
@@ -1429,6 +1439,12 @@ function calc(){
   document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
   document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
   applyMrpVisibility();
+  const anyMrpVisibleReg=[...tbody.rows].some(r=>{
+    if(r.dataset.mrpRaw===undefined||r.dataset.mrpRaw==='-'||r.dataset.mrpRaw==='') return false;
+    const brand=r.dataset.brand||r.cells[1].innerText;
+    return isBrandMrpVisible(brand);
+  });
+  document.querySelectorAll(".mrpCol").forEach(c=>c.style.display=anyMrpVisibleReg?"":"none");
   const hasIndCopper=[...tbody.rows].some(r=>r.cells[5].innerText==="COIL"&&r.cells[10].innerText!=="-");
   document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
@@ -1514,7 +1530,7 @@ function cmpNBrandChanged(){
   document.getElementById("cmpNDisc").value="";
   document.getElementById("cmpNRate").value="";
   const showChk=document.getElementById("cmpNShowMRP");
-  if(showChk&&brand) showChk.checked=isBrandMrpVisible(getDisplayBrand(brand), document.getElementById("cmpShowCommonMRP").checked);
+  if(showChk&&brand){ const db=getDisplayBrand(brand); showChk.checked=Object.prototype.hasOwnProperty.call(brandMrpVisibility,db)?!!brandMrpVisibility[db]:true; }
   if(!brand||!items[brand]) return;
   items[brand].forEach(i=>{
     const o=document.createElement("option");
@@ -1650,12 +1666,28 @@ function getCmpBrandNames(){
   return [1,2,3].map(n=>(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase()||("BRAND "+n));
 }
 
+function toggleCmpBrandColMrp(n){
+  const brand=(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase();
+  if(!brand) return;
+  brandMrpVisibility[brand]=document.getElementById("cmpBrand"+n+"ShowMRP").checked;
+  saveBrandMrpVisibility();
+  renderCmpTable();
+}
+function syncCmpBrandColCheckboxes(){
+  [1,2,3].forEach(n=>{
+    const brand=(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase();
+    const chk=document.getElementById("cmpBrand"+n+"ShowMRP");
+    if(!chk) return;
+    chk.checked=brand&&Object.prototype.hasOwnProperty.call(brandMrpVisibility,brand)?!!brandMrpVisibility[brand]:true;
+  });
+}
 function refreshCmpHeaders(){
   const names = getCmpBrandNames();
   [1,2,3].forEach((n,i)=>{
     document.getElementById("cmpPriceLabel"+n).innerText = names[i];
     document.getElementById("cmpPriceLabel"+n).style.color = ["#1a3c6e","#1b7a4a","#6a1b9a"][i];
   });
+  syncCmpBrandColCheckboxes();
   populateCmpItemDropdowns();
   renderCmpTable();
 }
@@ -1774,9 +1806,16 @@ function renderCmpTable(){
   const thead=document.getElementById("cmpThead");
   const tbody=document.getElementById("cmpTbody");
   const brandNames=getCmpBrandNames();
-  const showMRPCols=document.getElementById("cmpShowMRP").checked;              // Comparison items
-  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;  // Common items
-  const anyMRPCols=showMRPCols||showCommonMRPCols; // whether the MRP/Disc columns exist at all
+  const showMRPCols=document.getElementById("cmpShowMRP").checked;              // Comparison items (fallback default)
+  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;  // Common items (fallback default)
+  const brand3NameEarly=(document.getElementById("cmpBrand3").value||"").trim();
+  const hasB3Early=brand3NameEarly.length>0;
+  const anyMRPCols=cmpRows.some(row=>[0,1,2].some(i=>{
+    if(i===2&&!hasB3Early) return false;
+    if(!row.mrp[i]) return false; // nothing to show for this column anyway
+    const visible=row.isCommon?isBrandMrpVisible(row.commonBrand,showCommonMRPCols):isBrandMrpVisible(brandNames[i],showMRPCols);
+    return visible;
+  })); // whether the MRP/Disc columns exist at all — collapses fully when nothing would actually show
   const showPerMtrCols=document.getElementById("cmpShowPerMtr")?document.getElementById("cmpShowPerMtr").checked:true;
   const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
   const hasB3=brand3Name.length>0;
