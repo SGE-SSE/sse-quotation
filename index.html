@@ -368,19 +368,19 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   </div>
 </div>
 
-<!-- PARTY HISTORY MODAL -->
-<div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:10px;width:min(700px,92vw);max-height:85vh;overflow-y:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h3 style="margin:0;color:#1a3c6e">📜 Party History</h3>
-      <button onclick="closePartyHistory()" style="background:#eee;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕ Close</button>
+<!-- PARTY HISTORY DRAWER -->
+<div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,0);z-index:1000;transition:background .25s ease" onclick="if(event.target===this)closePartyHistory()">
+  <div id="partyHistoryDrawer" style="position:absolute;top:0;right:0;bottom:0;width:min(420px,92vw);background:#fff;box-shadow:-8px 0 28px rgba(0,0,0,.18);overflow-y:auto;padding:18px 20px;transform:translateX(100%);transition:transform .28s ease;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;color:#1a3c6e;font-size:16px">📜 Party History</h3>
+      <button onclick="closePartyHistory()" style="background:#eee;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
     </div>
-    <div style="margin-bottom:12px;position:relative">
+    <div style="margin-bottom:14px;position:relative">
       <input type="text" id="historyPartySearch" placeholder="Type party name…" autocomplete="off"
-        oninput="onHistoryPartySearch()" style="width:100%;padding:8px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
+        oninput="onHistoryPartySearch()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
       <div id="historyPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
     </div>
-    <div id="historyList" style="font-size:13px;color:#555">Select a party to see their past quotations.</div>
+    <div id="historyList" style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>
   </div>
 </div>
 
@@ -814,8 +814,19 @@ async function saveQuotation(){
   }finally{ btn.disabled = false; }
 }
 
-function openPartyHistory(){ document.getElementById("partyHistoryModal").style.display="flex"; document.getElementById("historyPartySearch").value=""; document.getElementById("historyList").innerHTML="Select a party to see their past quotations."; document.getElementById("historyPartySearch").focus(); }
-function closePartyHistory(){ document.getElementById("partyHistoryModal").style.display="none"; }
+function openPartyHistory(){
+  const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
+  overlay.style.display="block";
+  document.getElementById("historyPartySearch").value="";
+  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>`;
+  requestAnimationFrame(()=>{ overlay.style.background="rgba(20,20,30,.45)"; drawer.style.transform="translateX(0)"; });
+  setTimeout(()=>document.getElementById("historyPartySearch").focus(),280);
+}
+function closePartyHistory(){
+  const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
+  overlay.style.background="rgba(20,20,30,0)"; drawer.style.transform="translateX(100%)";
+  setTimeout(()=>{ overlay.style.display="none"; },280);
+}
 let historySearchTimer = null;
 function onHistoryPartySearch(){
   clearTimeout(historySearchTimer);
@@ -834,19 +845,24 @@ function onHistoryPartySearch(){
 }
 async function loadPartyQuotations(partyId, partyName){
   const list = document.getElementById("historyList");
-  list.innerHTML = "Loading…";
+  list.style.textAlign="left"; list.style.padding="0";
+  list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
   const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).order("created_at", { ascending:false });
-  if(error){ list.innerHTML = "Error loading history."; return; }
-  if(!data.length){ list.innerHTML = `No saved quotations yet for <b>${partyName}</b>.`; return; }
-  list.innerHTML = `<div style="margin-bottom:8px;font-weight:700;color:#1a3c6e">${partyName} — ${data.length} record(s)</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-      <tr style="background:#1a3c6e;color:#fff"><th style="padding:6px">Doc No</th><th style="padding:6px">Type</th><th style="padding:6px">Date</th><th style="padding:6px;text-align:right">Net Payable</th><th style="padding:6px" colspan="2"></th></tr>` +
-    data.map(q=>`<tr style="border-bottom:1px solid #eee" id="hist-row-${q.id}">
-      <td style="padding:6px">${q.doc_no}</td><td style="padding:6px">${q.doc_type}</td>
-      <td style="padding:6px">${q.doc_date}</td><td style="padding:6px;text-align:right">₹ ${(+q.net_payable).toLocaleString("en-IN")}</td>
-      <td style="padding:6px"><button onclick="reopenQuotation(${q.id})" style="background:#1b7a4a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">Open</button></td>
-      <td style="padding:6px"><button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11.5px">🗑️ Delete</button></td>
-      </tr>`).join("") + `</table>`;
+  if(error){ list.innerHTML = `<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading history.</div>`; return; }
+  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved quotations yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
+  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} record(s)</div>
+    <div style="display:flex;flex-direction:column;gap:10px">` +
+    data.map(q=>`<div id="hist-row-${q.id}" style="border:1px solid #c5d3e8;border-radius:10px;padding:11px 13px;background:#f8fafd">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:13.5px;font-weight:800;color:#1a3c6e">${q.doc_no}</span>
+        <span style="font-size:13.5px;font-weight:800;color:#1a1a2e">₹ ${(+q.net_payable).toLocaleString("en-IN")}</span>
+      </div>
+      <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 10px">${q.doc_type} &bull; ${q.doc_date}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="reopenQuotation(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open</button>
+        <button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="flex:1;background:#c0392b;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">🗑️ Delete</button>
+      </div>
+    </div>`).join("") + `</div>`;
 }
 
 /* Deletes a wrongly saved quotation permanently from Supabase, with a confirmation prompt. */
