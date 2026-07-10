@@ -96,6 +96,27 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .table-wrapper{margin:0 14px!important;overflow:visible!important}
 }
+/* Mirrors @media print above, toggled via JS on body before html2canvas capture
+   so the direct-download PDF renders identically to the browser print output. */
+body.pdf-export-mode .no-print,body.pdf-export-mode .entry-only{display:none!important}
+body.pdf-export-mode #docTypeBanner{display:block!important}
+body.pdf-export-mode{background:#fff!important;padding:0;margin:0}
+body.pdf-export-mode .card{box-shadow:none!important;border-radius:0!important;max-width:100%!important;overflow:visible!important}
+body.pdf-export-mode *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+body.pdf-export-mode .company-header{background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;color:#fff!important;border-bottom:4px solid #f0a500!important}
+body.pdf-export-mode .company-header h2{color:#fff!important}
+body.pdf-export-mode th{background:#1a3c6e!important;color:#fff!important}
+body.pdf-export-mode tbody tr:nth-child(even){background:#f0f4fb!important}
+body.pdf-export-mode td{border:1px solid #c5d3e8!important;color:#1a1a2e!important}
+body.pdf-export-mode #cmpTable th.brand-header-1{background:#1a3c6e!important;color:#fff!important}
+body.pdf-export-mode #cmpTable th.brand-header-2{background:#1b7a4a!important;color:#fff!important}
+body.pdf-export-mode #cmpTable th.brand-header-3{background:#6a1b9a!important;color:#fff!important}
+body.pdf-export-mode #cmpTable td.brand-col-1{background:#f0f4fb!important}
+body.pdf-export-mode #cmpTable td.brand-col-2{background:#e8f5ee!important}
+body.pdf-export-mode #cmpTable td.brand-col-3{background:#f3e5f5!important}
+body.pdf-export-mode .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+body.pdf-export-mode .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!important}
 @media (max-width:768px){
   body{padding:6px}
   .header-grid,.customer-grid{grid-template-columns:1fr}
@@ -1504,8 +1525,20 @@ function exportExcel(){
 }
 
 function exportPDF(){
+  document.body.classList.add("pdf-export-mode");
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:exportFileName()+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
+  const el = document.getElementById("printArea");
+  const opt = {
+    margin: 8,
+    filename: exportFileName()+".pdf",
+    html2canvas: { scale: 2, useCORS: true, windowWidth: el.scrollWidth, scrollX: 0, scrollY: 0 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css","legacy"], avoid: ["tr", ".section-panel", ".totals-table", "thead"] }
+  };
+  html2pdf().set(opt).from(el).save().then(()=>{
+    document.body.classList.remove("pdf-export-mode");
+    document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide"));
+  });
 }
 </script>
 
@@ -2025,8 +2058,20 @@ function exportCmpExcel(){
 }
 
 function exportCmpPDF(){
+  document.body.classList.add("pdf-export-mode");
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:"SSE_PriceComparison.pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
+  const el = document.getElementById("printArea");
+  const opt = {
+    margin: 8,
+    filename: "SSE_PriceComparison.pdf",
+    html2canvas: { scale: 2, useCORS: true, windowWidth: el.scrollWidth, scrollX: 0, scrollY: 0 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css","legacy"], avoid: ["tr", ".section-panel", ".totals-table", "thead"] }
+  };
+  html2pdf().set(opt).from(el).save().then(()=>{
+    document.body.classList.remove("pdf-export-mode");
+    document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide"));
+  });
 }
 </script>
 </body>
