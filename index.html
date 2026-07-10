@@ -2,2032 +2,1279 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SSE – Quotation Builder</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSE — Unified System</title>
 <style>
-:root{
-  --primary:#1a3c6e;--primary-light:#2a5298;--accent:#f0a500;--bg:#eef2f7;
-  --card:#ffffff;--section-bg:#f5f8fd;--border:#c5d3e8;--text:#1a1a2e;
-  --muted:#5a6a85;--green:#1b7a4a;--green-light:#e8f5ee;
-  --table-head:#1a3c6e;--table-alt:#f0f4fb;
+:root {
+  --navy-950: #0d1b2e;
+  --navy-800: #16304f;
+  --navy-700: #1e3f66;
+  --amber: #e8a53d;
+  --amber-dark: #c98a26;
+  --paper: #f6f4ef;
+  --paper-dim: #eae7de;
+  --ink: #1b2430;
+  --ink-dim: #5c6672;
+  --line: #dcd8cd;
+  --green: #3f7d5c;
+  --red: #b0463c;
+  --radius: 6px;
+  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-*{box-sizing:border-box}
-body{font-family:'Arial',sans-serif;background:var(--bg);padding:14px;color:var(--text)}
-.card{max-width:1200px;margin:auto;background:var(--card);border-radius:10px;box-shadow:0 4px 18px rgba(26,60,110,0.13);overflow:hidden}
-.company-header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;text-align:center;padding:18px 20px 14px;border-bottom:4px solid var(--accent)}
-.company-header h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff}
-.company-header .tagline{font-size:11.5px;color:#c8d8f5;margin:2px 0}
-.company-header .contact{font-size:12px;color:#e0ecff;margin-top:6px}
-.company-header .contact a{color:var(--accent);text-decoration:none;font-weight:bold}
-.company-header .deal-line{margin-top:8px;font-size:11px;font-weight:600;letter-spacing:.8px;background:rgba(255,255,255,0.12);display:inline-block;padding:4px 18px;border-radius:20px;color:#d4e8ff}
-.section-panel{background:var(--section-bg);border:1px solid var(--border);border-radius:7px;padding:12px 14px;margin:12px 14px}
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--primary);margin-bottom:8px;border-left:3px solid var(--accent);padding-left:8px}
-label{font-size:11.5px;font-weight:700;color:var(--primary);display:block;margin-bottom:2px}
-input,select,textarea{width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text);transition:border-color .2s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 2px rgba(42,82,152,.12)}
-textarea{resize:vertical;min-height:44px}
-.header-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.entry-panel{background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:12px 14px;margin:0 14px 12px}
-table{width:100%;border-collapse:collapse;margin-top:0;font-size:12px}
-th{background:var(--table-head);color:#fff;padding:7px 5px;text-align:center;font-size:11.5px;letter-spacing:.3px;border:1px solid #2a5298}
-td{border:1px solid #c5d3e8;padding:5px;text-align:center;color:var(--text)}
-tbody tr:nth-child(even){background:var(--table-alt)}
-tbody tr:hover{background:#dce8fb}
-.right{text-align:right}
-button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;cursor:pointer;transition:all .15s}
-.btn-add{background:var(--primary);color:#fff}
-.btn-add:hover{background:var(--primary-light)}
-.btn-print{background:#1a3c6e;color:#fff}
-.btn-excel{background:#1b7a4a;color:#fff}
-.btn-pdf{background:#c0392b;color:#fff}
-.btn-prices{background:#6a1b9a;color:#fff}
-.btn-edit-prices{background:#b8860b;color:#fff}
-.btn-edit-row{background:#e67e22;color:#fff;margin-right:3px}
-.btn-print:hover{background:#2a5298}
-.btn-excel:hover{background:#156038}
-.btn-pdf:hover{background:#a93226}
-.btn-prices:hover{background:#8338c4}
-.btn-edit-prices:hover{background:#9a7209}
-.btn-edit-row:hover{background:#ca6f1e}
-.table-wrapper{margin:0 14px 0}
-.entry-grid-mobile{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px}
-.entry-grid-mobile .btn-add-wrap{grid-column:span 1}
-.cable-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
-.clr-btn{padding:4px 10px;font-size:11.5px;font-weight:700;border:2px solid transparent;border-radius:20px;cursor:pointer;transition:all .15s;opacity:0.85}
-.clr-btn:hover{opacity:1;transform:scale(1.06)}
-.clr-btn.active{border-color:#fff;box-shadow:0 0 0 3px #6a1b9a;opacity:1;transform:scale(1.08)}
 
-/* ===== COMPARE TABLE STYLES ===== */
-#cmpTable th.brand-header-1{background:#1a3c6e;color:#fff}
-#cmpTable th.brand-header-2{background:#1b7a4a;color:#fff}
-#cmpTable th.brand-header-3{background:#6a1b9a;color:#fff}
-#cmpTable td.brand-col-1{background:#f0f4fb}
-#cmpTable td.brand-col-2{background:#e8f5ee}
-#cmpTable td.brand-col-3{background:#f3e5f5}
-.cmp-totals-box{border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-top:10px}
-.cmp-totals-box table{font-size:12px}
-.cmp-totals-box th{padding:6px 8px;font-size:11px}
-.cmp-totals-box td{padding:6px 8px}
-
-.no-print{}.entry-only{}.pdf-hide{display:none!important}
-@media print{
-  @page{size:A4 portrait;margin:8mm}
-  .no-print,.entry-only{display:none!important}
-  #docTypeBanner{display:block!important}
-  body{background:#fff!important;padding:0;margin:0}
-  .card{box-shadow:none!important;border-radius:0!important;max-width:100%!important;overflow:visible!important}
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-  .company-header{background:linear-gradient(135deg,#1a3c6e 0%,#2a5298 100%)!important;color:#fff!important;border-bottom:4px solid #f0a500!important}
-  .company-header h2{color:#fff!important}
-  th{background:#1a3c6e!important;color:#fff!important}
-  tbody tr:nth-child(even){background:#f0f4fb!important}
-  td{border:1px solid #c5d3e8!important;color:#1a1a2e!important}
-  #cmpTable th.brand-header-1{background:#1a3c6e!important;color:#fff!important}
-  #cmpTable th.brand-header-2{background:#1b7a4a!important;color:#fff!important}
-  #cmpTable th.brand-header-3{background:#6a1b9a!important;color:#fff!important}
-  #cmpTable td.brand-col-1{background:#f0f4fb!important}
-  #cmpTable td.brand-col-2{background:#e8f5ee!important}
-  #cmpTable td.brand-col-3{background:#f3e5f5!important}
-  .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
-  .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
-  .table-wrapper{margin:0 14px!important;overflow:visible!important}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
 }
-@media (max-width:768px){
-  body{padding:6px}
-  .header-grid,.customer-grid{grid-template-columns:1fr}
-  .entry-grid-mobile{grid-template-columns:1fr 1fr}
-  .entry-grid-mobile .btn-add-wrap{grid-column:span 2}
-  .cable-info-grid{grid-template-columns:1fr 1fr}
-  .table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{font-size:11px;min-width:560px}
-  .action-btns{flex-wrap:wrap}
-  .action-btns button{flex:1;min-width:80px}
-  .cmp-brand-grid{grid-template-columns:1fr!important}
+
+/* ---------- shell ---------- */
+.shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--navy-950);
+  color: #cfd8e3;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  min-height: 100vh;
+}
+.brand {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 12px;
+}
+.brand-mark {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+.brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 4px;
+}
+.brand-sub {
+  font-size: 11px;
+  color: #7f8ea3;
+  margin-top: 2px;
+}
+
+.nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  color: #b7c2d1;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-item.active { background: var(--navy-700); color: #fff; }
+.nav-item .n-icon { width: 16px; text-align: center; font-family: var(--mono); color: var(--amber); }
+
+.nav-step {
+  padding: 14px 20px 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #5f6f85;
+  text-transform: uppercase;
+}
+
+.main { flex: 1; padding: 28px 36px; max-width: 1180px; }
+
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--navy-950); }
+.page-desc { font-size: 13px; color: var(--ink-dim); margin-top: 2px; }
+
+/* ---------- pipeline strip ---------- */
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.pipe-step {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-dim);
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  white-space: nowrap;
+  border-radius: 3px;
+}
+.pipe-step.current { border-color: var(--amber); color: var(--navy-950); background: #fff8ec; font-weight: 600; }
+.pipe-arrow { color: var(--ink-dim); padding: 0 6px; font-size: 12px; }
+
+/* ---------- cards / tables ---------- */
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.card-title { font-size: 13px; font-weight: 700; color: var(--navy-950); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-dim); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--paper-dim); vertical-align: middle; }
+tr:hover td { background: #fbfaf7; }
+
+.empty { padding: 30px 10px; text-align: center; color: var(--ink-dim); font-size: 13px; }
+.empty b { color: var(--ink); }
+
+/* ---------- form controls ---------- */
+label { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+input, select, textarea {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--amber); outline-offset: 0; border-color: var(--amber); }
+.field { margin-bottom: 12px; }
+.field-row { display: flex; gap: 12px; }
+.field-row > .field { flex: 1; }
+
+button { font-family: var(--sans); cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 4px; border: none;
+  font-size: 13px; font-weight: 600;
+  background: var(--navy-700); color: #fff;
+}
+.btn:hover { background: var(--navy-800); }
+.btn.amber { background: var(--amber); color: var(--navy-950); }
+.btn.amber:hover { background: var(--amber-dark); }
+.btn.ghost { background: transparent; color: var(--navy-700); border: 1px solid var(--line); }
+.btn.ghost:hover { background: var(--paper-dim); }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.danger { background: transparent; color: var(--red); border: 1px solid #e6c9c5; }
+
+/* ---------- badges ---------- */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.badge.new { background: #e6edf7; color: var(--navy-700); }
+.badge.contacted { background: #fdf1de; color: var(--amber-dark); }
+.badge.won { background: #e2f0e8; color: var(--green); }
+.badge.lost { background: #f6e4e2; color: var(--red); }
+.badge.active { background: #e2f0e8; color: var(--green); }
+.badge.requested { background: #eee; color: var(--ink-dim); }
+.badge.priced { background: #fdf1de; color: var(--amber-dark); }
+.badge.quoted { background: #e6edf7; color: var(--navy-700); }
+.badge.confirmed { background: #e2f0e8; color: var(--green); }
+.badge.draft { background: #eee; color: var(--ink-dim); }
+.badge.rejected { background: #f6e4e2; color: var(--red); }
+.badge.low { background: #f6e4e2; color: var(--red); }
+
+/* ---------- modal ---------- */
+.modal-bg { position: fixed; inset: 0; background: rgba(13,27,46,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal { background: #fff; border-radius: 8px; padding: 24px; width: 460px; max-width: 92vw; max-height: 86vh; overflow-y: auto; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-head h3 { margin: 0; font-size: 16px; color: var(--navy-950); }
+.modal-close { background: none; border: none; font-size: 18px; color: var(--ink-dim); }
+
+.hint { font-size: 12px; color: var(--ink-dim); margin-top: 10px; }
+.stat-row { display: flex; gap: 14px; margin-bottom: 18px; }
+.stat { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.stat-num { font-size: 22px; font-weight: 700; color: var(--navy-950); font-family: var(--mono); }
+.stat-label { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--navy-950); color: #fff; padding: 12px 18px; border-radius: 6px; font-size: 13px; z-index: 100; box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+@media (max-width: 780px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; }
+  .brand { display: none; }
+  .nav { flex-direction: row; }
+  .nav-step { display: none; }
+  .main { padding: 16px; }
+  .field-row { flex-direction: column; gap: 0; }
 }
 </style>
 </head>
 <body>
-<div class="card" id="printArea">
-
-<div class="company-header">
-  <h2>⚡ SAI GANESH ELECTRICALS – SSE</h2>
-  <div class="tagline">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-  <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
-  <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
-</div>
-<div id="docTypeBanner" style="display:none;text-align:center;padding:6px;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #1a3c6e;color:#1a3c6e;background:#f0f4fb"></div>
-
-<!-- ===== MODE TABS ===== -->
-<div class="no-print" id="modeTabs" style="display:flex;border-bottom:3px solid #1a3c6e;background:#f0f4fb">
-  <button id="tabRegular" onclick="switchMode('regular')" style="flex:1;padding:11px 0;font-size:13px;font-weight:800;border:none;border-radius:0;background:#1a3c6e;color:#fff;cursor:pointer;letter-spacing:.5px">📄 REGULAR QUOTATION</button>
-  <button id="tabCompare" onclick="switchMode('compare')" style="flex:1;padding:11px 0;font-size:13px;font-weight:800;border:none;border-radius:0;background:#f0f4fb;color:#1a3c6e;cursor:pointer;letter-spacing:.5px">⚖️ PRICE COMPARISON</button>
-</div>
-
-<!-- ===================== REGULAR SECTION ===================== -->
-<div id="regularSection">
-
-<div class="section-panel">
-  <div class="section-title" id="docSectionTitle">Quotation Details</div>
-  <div class="no-print" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#1a3c6e">📄 Document Type:</span>
-    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="QTN" checked onchange="switchDocType(this.value)"> Quotation</label>
-    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="CB" onchange="switchDocType(this.value)"> Cash Bill</label>
-    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
-  </div>
-  <div class="header-grid">
-    <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
-    <div><label id="docDateLabel">Quotation Date</label><input type="date" id="qdate"></div>
-  </div>
-</div>
-
-<div class="section-panel" style="margin-top:0">
-  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
-    <span>Customer Details</span>
-    <button type="button" class="no-print" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
-  </div>
-  <div class="customer-grid">
-    <div style="position:relative">
-      <label>Customer Name</label>
-      <input type="text" id="custName" autocomplete="off" oninput="onPartyNameInput()" onfocus="onPartyNameInput()" onblur="setTimeout(hidePartySuggestions,150)">
-      <div id="partySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
-    </div>
-    <div><label>Customer GSTIN</label><input type="text" id="custGST"></div>
-    <div><label>Customer Address</label><textarea id="custAddr"></textarea></div>
-    <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person"></div>
-  </div>
-</div>
-
-<span id="tcPaymentVal" style="display:none">AGAINST DELIVERY</span>
-
-<!-- ENTRY AREA -->
-<div class="entry-only no-print">
-<div class="entry-panel">
-<div class="section-title" id="addItemTitle">Add Item to Quotation</div>
-<label>Brand</label>
-<select id="brand"></select>
-<label>Item</label>
-<select id="item"></select>
-<div class="entry-grid-mobile">
-  <div>
-    <label>Unit</label>
-    <select id="unit" onchange="updateQtyLabel()">
-      <option>NOS</option><option>MTRS</option><option>COIL</option>
-      <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
-    </select>
-  </div>
-  <div><label id="qtyLabel">Qty</label><input type="number" id="qty" value="1"></div>
-  <div><label>MRP</label><input type="number" id="mrp" readonly></div>
-  <div><label>Discount %</label><input type="number" id="disc"></div>
-  <div><label>Net Rate</label><input type="number" id="net"></div>
-  <div class="btn-add-wrap"><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addItem()">➕ ADD</button></div>
-</div>
-
-<div id="indCopperBox" style="display:none;margin-top:6px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
-  <span id="cableBoxTitle" style="font-weight:bold;font-size:12px;color:#e65100">📦 POLYCAB CABLE INFO</span>
-  <div class="cable-info-grid">
-    <div id="coilInfoRow" style="display:contents">
-      <div><label>Coil Length (Mtr)</label><input type="number" id="coilLen" readonly style="background:#fff9c4;font-weight:bold"></div>
-      <div><label>MRP per Mtr</label><input type="number" id="mrpPerMtr" readonly style="background:#e8f5e9;font-weight:bold"></div>
-      <div><label>Net Rate/Mtr</label><input type="number" id="netPerMtr" readonly style="background:#e3f2fd;font-weight:bold"></div>
-    </div>
-    <div id="frToggleBox">
-      <label>Wire Type</label>
-      <select id="frType" style="font-weight:bold;background:#fce4ec">
-        <option value="">— None —</option>
-        <option value="FR">FR</option>
-        <option value="FR-LSH">FR-LSH</option>
-        <option value="FRLS">FRLS</option>
-        <option value="ZHFR">ZHFR</option>
-      </select>
-    </div>
-  </div>
-  <div style="margin-top:8px">
-    <label style="font-size:11px;font-weight:700;color:#6a1b9a;display:block;margin-bottom:5px">🎨 Wire / Cable Colour</label>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <button type="button" onclick="selectColour('RED')"    id="clr-RED"    class="clr-btn" style="background:#e53935;color:#fff">● RED</button>
-      <button type="button" onclick="selectColour('YELLOW')" id="clr-YELLOW" class="clr-btn" style="background:#f9a825;color:#000">● YELLOW</button>
-      <button type="button" onclick="selectColour('BLUE')"   id="clr-BLUE"   class="clr-btn" style="background:#1565c0;color:#fff">● BLUE</button>
-      <button type="button" onclick="selectColour('BLACK')"  id="clr-BLACK"  class="clr-btn" style="background:#212121;color:#fff">● BLACK</button>
-      <button type="button" onclick="selectColour('GREEN')"  id="clr-GREEN"  class="clr-btn" style="background:#2e7d32;color:#fff">● GREEN</button>
-      <button type="button" onclick="selectColour('CUSTOM')" id="clr-CUSTOM" class="clr-btn" style="background:#6a1b9a;color:#fff">✏️ CUSTOM</button>
-      <input type="text" id="customColourInput" placeholder="Enter colour…"
-        style="display:none;width:120px;padding:4px 6px;font-size:12px;border:1px solid #9c27b0;border-radius:4px;font-weight:bold;color:#6a1b9a"
-        oninput="document.getElementById('selectedColourDisplay').innerText=this.value.toUpperCase()||'—'">
-      <span style="font-size:11px;color:#555;margin-left:4px">Selected: <b id="selectedColourDisplay" style="color:#6a1b9a">—</b></span>
-      <button type="button" onclick="clearColour()" style="font-size:10px;padding:3px 8px;background:#eee;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:#555">✕ Clear</button>
-    </div>
-  </div>
-</div>
-
-<div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
-  <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
-  <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP &amp; Discount Settings</button>
-</div>
-</div>
-
-<label><input type="checkbox" id="customToggle" onchange="toggleCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
-<div id="customItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
-    <div><label>Brand</label><input type="text" id="c_brand" placeholder="Local / NA"></div>
-    <div><label>Description</label><input type="text" id="c_item" placeholder="Nut Bolt / Spring Wire"></div>
-    <div><label>Unit</label><input type="text" id="c_unit" placeholder="KG / NOS / MTR"></div>
-    <div><label>Qty</label><input type="number" id="c_qty" value="1"></div>
-    <div><label>Rate</label><input type="number" id="c_rate"></div>
-    <div><label>&nbsp;</label><button class="btn-add" onclick="addCustomItem()">➕ ADD</button></div>
-  </div>
-</div>
-</div>
-
-<!-- REGULAR TABLE -->
-<div class="table-wrapper">
-<div class="section-title" id="itemsTitle" style="margin-bottom:6px">Quotation Items</div>
-<table id="qt">
-<thead>
-<tr>
-  <th>S.No</th><th>Brand</th><th>Description</th><th>Colour</th><th>HSN Code</th>
-  <th>Unit</th><th>Qty</th><th class="mrpCol">MRP</th><th class="mrpCol">Disc%</th>
-  <th>Net Rate</th><th id="perMtrHeader" style="display:none">Per Mtr Rate</th>
-  <th>Amount</th><th class="no-print">Action</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
-
-<!-- T&C + TOTALS -->
-<div style="margin:12px 14px 14px">
-<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;border-radius:6px;table-layout:fixed">
-  <colgroup><col style="width:110px"><col style="width:12px"><col></colgroup>
-  <tr style="background:#f5f8fd">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">PAYMENTS</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomPayment">AGAINST DELIVERY</td>
-  </tr>
-  <tr>
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">STOCK</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">EX STOCK</td>
-  </tr>
-  <tr style="background:#f5f8fd">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">VALIDITY</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0" id="tcBottomValidity">7 DAYS</td>
-  </tr>
-  <tr>
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">TOLERANCE</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">+/- 5%</td>
-  </tr>
-  <tr style="background:#f5f8fd">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">DELIVERY</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word">WITHIN 7 DAYS OF ORDER CONFIRMATION</td>
-  </tr>
-  <tr style="background:#fff8e1">
-    <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0" colspan="3">TRANSPORTATION EXTRA</td>
-  </tr>
-  <tr id="remarksRow" style="display:none">
-    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap;vertical-align:top">REMARKS</td>
-    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;vertical-align:top">:</td>
-    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomRemarks"></td>
-  </tr>
-  <tr style="background:#f9f9f9">
-    <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
-  </tr>
-</table>
-
-<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;margin-top:8px">
-  <tr><td style="padding:5px 10px;text-align:left;color:#1a1a2e;border:1px solid #c5d3e8">Sub Total</td><td style="padding:5px 10px;text-align:right;font-weight:600;border:1px solid #c5d3e8" id="sub">0.00</td></tr>
-  <tr id="cashDiscRow" style="display:none"><td style="padding:5px 10px;text-align:left;color:#c0392b;border:1px solid #c5d3e8">Cash Discount</td><td style="padding:5px 10px;text-align:right;color:#c0392b;font-weight:600;border:1px solid #c5d3e8" id="cashDiscAmt">0.00</td></tr>
-  <tr id="taxableRow" style="display:none"><td style="padding:5px 10px;text-align:left;border:1px solid #c5d3e8">Taxable Amount</td><td style="padding:5px 10px;text-align:right;font-weight:600;border:1px solid #c5d3e8" id="taxableAmt">0.00</td></tr>
-  <tr style="background:#fff8e1"><td style="padding:5px 10px;text-align:left;color:#7a5000;border:1px solid #c5d3e8">GST 18%</td><td style="padding:5px 10px;text-align:right;color:#7a5000;font-weight:600;border:1px solid #c5d3e8" id="gst">0.00</td></tr>
-  <tr style="background:#1a3c6e"><td style="padding:6px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298"><b>Grand Total</b></td><td style="padding:6px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298" id="gt">0.00</td></tr>
-  <tr style="background:#fff3e0"><td style="padding:5px 10px;text-align:left;color:#7a4000;font-style:italic;border:1px solid #c5d3e8">Round Off</td><td style="padding:5px 10px;text-align:right;color:#7a4000;font-style:italic;border:1px solid #c5d3e8" id="roundOff">0.00</td></tr>
-  <tr style="background:#1b7a4a"><td style="padding:7px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038"><b>Net Payable</b></td><td style="padding:7px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038" id="netPayable"><b>0</b></td></tr>
-  <tr style="background:#f5f8fd"><td style="padding:4px 10px;text-align:left;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Freight</td><td style="padding:4px 10px;text-align:right;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Extra — As Actuals</td></tr>
-</table>
-</div>
-
-<div class="no-print" style="margin:12px 14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
-  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💳 Payment:</span>
-  <select id="payTermSelect" onchange="handlePayTermChange()" style="width:auto;min-width:160px;font-size:11.5px">
-    <option value="AGAINST DELIVERY">Against Delivery</option>
-    <option value="100% ADVANCE">100% Advance</option>
-    <option value="PDC">PDC (Post Dated Cheque)</option>
-  </select>
-  <div id="pdcDaysWrap" style="display:none;align-items:center;gap:6px">
-    <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">PDC Days:</span>
-    <input type="number" id="pdcDays" min="1" max="365" placeholder="e.g. 30" oninput="updateTCDisplay()" style="width:70px;font-size:11.5px">
-  </div>
-  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💰 Cash Disc %:</span>
-  <input type="number" id="cashDiscPct" min="0" max="100" step="0.01" placeholder="0" oninput="calc()" style="width:60px;font-size:11.5px">
-  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
-  <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px">
-  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
-  <input type="text" id="remarksInput" oninput="updateTCDisplay()" style="width:220px;font-size:11.5px" placeholder="Optional note for this quotation">
-</div>
-
-<div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
-  <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE QUOTATION</button>
-  <button class="btn-print" onclick="printQuotation()">🖨️ PRINT</button>
-  <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
-  <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
-  <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
-  <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
-  <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
-  <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
-</div>
-
-<!-- EDIT PRICES MODAL -->
-<div id="priceEditorOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:#fff;width:100%;max-width:900px;max-height:90vh;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)">
-    <div style="background:#1a3c6e;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:16px">✏️ Edit Prices</strong>
-      <button onclick="closePriceEditor()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">×</button>
-    </div>
-    <div style="padding:12px 18px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <input id="peSearch" type="text" placeholder="🔍 Search brand or item..." oninput="renderPriceEditorRows()" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px">
-      <button onclick="peAddItemPrompt()" style="background:#1b7a4a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Item</button>
-      <button onclick="peAddBrandPrompt()" style="background:#1a3c6e;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Brand</button>
-      <button onclick="document.getElementById('peCsvInput').click()" style="background:#6a1b9a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">📥 Import CSV</button>
-      <input type="file" id="peCsvInput" accept=".csv" style="display:none" onchange="peImportCSV(event)">
-    </div>
-    <div id="peList" style="overflow-y:auto;flex:1;padding:0 18px"></div>
-    <div style="padding:12px 18px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <span id="peStatus" style="font-size:12px;color:#666"></span>
-      <div style="display:flex;gap:8px">
-        <button onclick="closePriceEditor()" style="background:#eee;color:#333;border:none;padding:10px 18px;border-radius:6px;cursor:pointer">Cancel</button>
-        <button id="peSaveBtn" onclick="savePriceEditorChanges()" style="background:#1b7a4a;color:#fff;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;font-weight:bold">💾 Save & Sync</button>
+  <div class="shell">
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SGE · SSE</div>
+        <div class="brand-name">Unified System</div>
+        <div class="brand-sub">Lead → Client → Stock → Quotation</div>
+      </div>
+      <div id="nav" class="nav"></div>
+      <div style="margin-top:auto; padding:14px 20px; border-top:1px solid rgba(255,255,255,0.08);">
+        <div id="sync-status" style="font-size:11.5px; color:#b7c2d1;"></div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- PARTY HISTORY DRAWER -->
-<div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,0);z-index:1000;transition:background .25s ease" onclick="if(event.target===this)closePartyHistory()">
-  <div id="partyHistoryDrawer" style="position:absolute;top:0;right:0;bottom:0;width:min(420px,92vw);background:#fff;box-shadow:-8px 0 28px rgba(0,0,0,.18);overflow-y:auto;padding:18px 20px;transform:translateX(100%);transition:transform .28s ease;display:flex;flex-direction:column">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="margin:0;color:#1a3c6e;font-size:16px">📜 Party History</h3>
-      <button onclick="closePartyHistory()" style="background:#eee;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
-    </div>
-    <div style="margin-bottom:14px;position:relative">
-      <input type="text" id="historyPartySearch" placeholder="Type party name…" autocomplete="off"
-        oninput="onHistoryPartySearch()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
-      <div id="historyPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
-    </div>
-    <div id="historyList" style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>
-  </div>
-</div>
-
-<!-- EDIT ROW MODAL -->
-<div id="editRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px">
-  <div style="background:#fff;width:100%;max-width:580px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
-    <div style="background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:15px">✏️ Edit Row</strong>
-      <button onclick="closeEditRow()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
-    </div>
-    <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Brand</label><input type="text" id="editBrand" list="editBrandList" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px;font-weight:700;color:#1a3c6e"><datalist id="editBrandList"></datalist></div>
-      <div><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Description</label><input type="text" id="editDescription" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase">Colour</label><input type="text" id="editColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">HSN Code</label><input type="text" id="editHSN" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label><select id="editUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"><option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option></select></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase">🏷️ Discount %</label><input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate</label><input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">Per Mtr Rate</label><input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed"></div>
-      <div style="grid-column:span 2;background:linear-gradient(135deg,#1a3c6e,#2a5298);border-radius:7px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-        <span style="color:#c8d8f5;font-size:12px;font-weight:700">AMOUNT (Qty × Net Rate)</span>
-        <span id="editAmt" style="color:#fff;font-size:18px;font-weight:800">₹ 0.00</span>
-      </div>
-    </div>
-    <div style="padding:10px 18px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eee">
-      <span style="font-size:11px;color:#aaa">Changes only affect this row</span>
-      <div style="display:flex;gap:8px">
-        <button onclick="closeEditRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">✕ Cancel</button>
-        <button onclick="saveEditRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800">💾 Save Changes</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- PER-BRAND MRP SETTINGS MODAL -->
-<div id="mrpSettingsModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1150;align-items:center;justify-content:center;padding:12px">
-  <div style="background:#fff;width:100%;max-width:420px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
-    <div style="background:linear-gradient(135deg,#6a1b9a,#8338c4);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:15px">🏷️ Per-Brand MRP &amp; Discount Visibility</strong>
-      <button onclick="closeMrpSettings()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
-    </div>
-    <div style="padding:14px 18px 4px;font-size:11.5px;color:#666">Tick a brand to show its MRP &amp; Discount in the quotation table. Untick to hide it (shows "-") for that brand only — other brands are not affected.</div>
-    <div style="padding:10px 18px;max-height:48vh;overflow-y:auto" id="mrpSettingsList"></div>
-    <div style="padding:10px 18px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #eee;margin-top:4px">
-      <button onclick="closeMrpSettings()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">✕ Cancel</button>
-      <button onclick="saveMrpSettings()" style="background:#6a1b9a;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800">💾 Save</button>
-    </div>
-  </div>
-</div>
-
-</div><!-- end #regularSection -->
-
-<!-- ===================== PRICE COMPARISON SECTION ===================== -->
-<div id="compareSection" style="display:none">
-
-<div class="section-panel">
-  <div class="section-title">⚖️ Price Comparison Quotation</div>
-  <div class="header-grid">
-    <div><label>Quotation No</label><input type="text" id="cmpQno"></div>
-    <div><label>Date</label><input type="date" id="cmpDate"></div>
-  </div>
-  <div class="customer-grid" style="margin-top:8px">
-    <div><label>Customer Name</label><input type="text" id="cmpCust"></div>
-    <div><label>Customer GSTIN</label><input type="text" id="cmpGST"></div>
-    <div><label>Customer Address</label><textarea id="cmpAddr"></textarea></div>
-    <div><label>Kind Attn</label><input type="text" id="cmpAttn" placeholder="Contact Person"></div>
-  </div>
-</div>
-
-<!-- Brand Setup -->
-<div class="section-panel no-print" style="background:#fff7e6;border-color:#f0c060">
-  <div class="section-title">🏷️ Select Brands to Compare (Max 3)</div>
-  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-    <div>
-      <label>Brand 1</label>
-      <input type="text" id="cmpBrand1" list="cmpBrandList1" placeholder="e.g. POLYCAB" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1a3c6e;border-color:#1a3c6e">
-      <datalist id="cmpBrandList1"></datalist>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1a3c6e;margin-top:4px;font-weight:600">
-        <input type="checkbox" id="cmpBrand1ShowMRP" checked onchange="toggleCmpBrandColMrp(1)"> Show MRP &amp; Disc% for this brand
-      </label>
-    </div>
-    <div>
-      <label>Brand 2</label>
-      <input type="text" id="cmpBrand2" list="cmpBrandList2" placeholder="e.g. HAVELLS" oninput="refreshCmpHeaders()" style="font-weight:700;color:#1b7a4a;border-color:#1b7a4a">
-      <datalist id="cmpBrandList2"></datalist>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1b7a4a;margin-top:4px;font-weight:600">
-        <input type="checkbox" id="cmpBrand2ShowMRP" checked onchange="toggleCmpBrandColMrp(2)"> Show MRP &amp; Disc% for this brand
-      </label>
-    </div>
-    <div>
-      <label>Brand 3 (Optional)</label>
-      <input type="text" id="cmpBrand3" list="cmpBrandList3" placeholder="e.g. FINOLEX" oninput="refreshCmpHeaders()" style="font-weight:700;color:#6a1b9a;border-color:#6a1b9a">
-      <datalist id="cmpBrandList3"></datalist>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#6a1b9a;margin-top:4px;font-weight:600">
-        <input type="checkbox" id="cmpBrand3ShowMRP" checked onchange="toggleCmpBrandColMrp(3)"> Show MRP &amp; Disc% for this brand
-      </label>
-    </div>
-  </div>
-  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Comparison Items, default)
-    </label>
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowCommonMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Common Items, default)
-    </label>
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
-    </label>
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowPerMtr" checked onchange="renderCmpTable()"> Show Per-Mtr Rate columns
-    </label>
-    <button type="button" class="no-print" onclick="openMrpSettings()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP Settings</button>
-  </div>
-</div>
-
-<!-- Add Item Row -->
-<div class="entry-panel no-print">
-  <div class="section-title">➕ Add Item to Compare</div>
-  <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end">
-    <div><label>Description / Item Name</label><input type="text" id="cmpItemDesc" placeholder="e.g. 1.5 Sq.mm FR Wire"></div>
-    <div><label>HSN Code</label><input type="text" id="cmpItemHSN" placeholder="8544"></div>
-    <div><label>Unit</label>
-      <select id="cmpItemUnit">
-        <option>NOS</option><option>MTRS</option><option>COIL</option>
-        <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
-      </select>
-    </div>
-    <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
+    <div class="main" id="main"></div>
   </div>
 
-  <!-- Common Items — EXACT same flow as Regular Quotation: Brand > Item dropdowns, plus manual Custom Item -->
-  <div style="margin-top:10px;background:#eef7f0;border:1px solid #9cc9a8;border-radius:6px;padding:10px">
-    <div class="section-title" style="margin-bottom:8px">🔧 Common Items (shown same across every brand — normal quotation style)</div>
-    <label>Brand</label>
-    <select id="cmpNBrand" onchange="cmpNBrandChanged()"></select>
-    <label>Item</label>
-    <select id="cmpNItem" onchange="cmpNItemChanged()"><option value="">Select Item</option></select>
-    <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;color:#156038">
-      <input type="checkbox" id="cmpNShowMRP" checked> Show MRP &amp; Disc% for this brand
-    </label>
-    <div class="entry-grid-mobile">
-      <div>
-        <label>Unit</label>
-        <select id="cmpNUnit">
-          <option>NOS</option><option>MTRS</option><option>COIL</option>
-          <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
-        </select>
-      </div>
-      <div><label>Qty</label><input type="number" id="cmpNQty" value="1"></div>
-      <div><label>MRP</label><input type="number" id="cmpNMRP" readonly></div>
-      <div><label>Discount %</label><input type="number" id="cmpNDisc"></div>
-      <div><label>Net Rate</label><input type="number" id="cmpNRate"></div>
-      <div class="btn-add-wrap"><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addCmpNormalItem()">➕ ADD</button></div>
-    </div>
+  <script>
+/* ===== core.js ===== */
+/* =========================================================================
+   SSE CORE — shared data model + pipeline logic
+   Lead -> Client -> Indent -> Pricing (Inventory) -> Quotation -> Confirm
+                                                          |
+                                                          +--> Stock-out (Inventory)
+                                                          +--> Lead Won   (Leads)
 
-    <label style="margin-top:8px"><input type="checkbox" id="cmpCustomToggle" onchange="toggleCmpCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
-    <div id="cmpCustomItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
-        <div><label>Brand</label><input type="text" id="cmpC_brand" placeholder="Local / NA"></div>
-        <div><label>Description</label><input type="text" id="cmpC_item" placeholder="Nut Bolt / Spring Wire"></div>
-        <div><label>Unit</label><input type="text" id="cmpC_unit" placeholder="KG / NOS / MTR"></div>
-        <div><label>Qty</label><input type="number" id="cmpC_qty" value="1"></div>
-        <div><label>Rate</label><input type="number" id="cmpC_rate"></div>
-        <div><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addCmpCustomItem()">➕ ADD</button></div>
-      </div>
-      <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;color:#156038">
-        <input type="checkbox" id="cmpCShowMRP" checked> Show MRP &amp; Disc% for this brand
-      </label>
-    </div>
+   Storage: localStorage now (offline-first, same pattern as the original
+   three apps). Supabase sync hooks are stubbed at the bottom — fill in a
+   project URL + key later and call Core.enableCloudSync() to turn it on.
+   Every module (leads.js, inventory.js, quotation.js) reads/writes ONLY
+   through this file. No module should touch localStorage directly.
+   ========================================================================= */
 
-  </div>
+const Core = (() => {
 
-  <!-- Wire colour / FR type (shared across brands for this row) -->
-  <div id="cmpWireInfoBox" style="margin-top:10px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
-    <span style="font-weight:bold;font-size:12px;color:#e65100">📦 WIRE / CABLE INFO (applies to this row across all brands)</span>
-    <div class="cable-info-grid" style="grid-template-columns:1fr 1fr">
-      <div>
-        <label>Wire Type</label>
-        <select id="cmpFrType" style="font-weight:bold;background:#fce4ec">
-          <option value="">— None —</option>
-          <option value="FR">FR</option>
-          <option value="FR-LSH">FR-LSH</option>
-          <option value="FRLS">FRLS</option>
-          <option value="ZHFR">ZHFR</option>
-        </select>
-      </div>
-      <div></div>
-    </div>
-    <div style="margin-top:8px">
-      <label style="font-size:11px;font-weight:700;color:#6a1b9a;display:block;margin-bottom:5px">🎨 Wire / Cable Colour</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <button type="button" onclick="cmpSelectColour('RED')"    id="cmpClr-RED"    class="clr-btn" style="background:#e53935;color:#fff">● RED</button>
-        <button type="button" onclick="cmpSelectColour('YELLOW')" id="cmpClr-YELLOW" class="clr-btn" style="background:#f9a825;color:#000">● YELLOW</button>
-        <button type="button" onclick="cmpSelectColour('BLUE')"   id="cmpClr-BLUE"   class="clr-btn" style="background:#1565c0;color:#fff">● BLUE</button>
-        <button type="button" onclick="cmpSelectColour('BLACK')"  id="cmpClr-BLACK"  class="clr-btn" style="background:#212121;color:#fff">● BLACK</button>
-        <button type="button" onclick="cmpSelectColour('GREEN')"  id="cmpClr-GREEN"  class="clr-btn" style="background:#2e7d32;color:#fff">● GREEN</button>
-        <button type="button" onclick="cmpSelectColour('CUSTOM')" id="cmpClr-CUSTOM" class="clr-btn" style="background:#6a1b9a;color:#fff">✏️ CUSTOM</button>
-        <input type="text" id="cmpCustomColourInput" placeholder="Enter colour…"
-          style="display:none;width:120px;padding:4px 6px;font-size:12px;border:1px solid #9c27b0;border-radius:4px;font-weight:bold;color:#6a1b9a"
-          oninput="document.getElementById('cmpSelectedColourDisplay').innerText=this.value.toUpperCase()||'—'">
-        <span style="font-size:11px;color:#555;margin-left:4px">Selected: <b id="cmpSelectedColourDisplay" style="color:#6a1b9a">—</b></span>
-        <button type="button" onclick="cmpClearColour()" style="font-size:10px;padding:3px 8px;background:#eee;border:1px solid #ccc;border-radius:4px;cursor:pointer;color:#555">✕ Clear</button>
-      </div>
-    </div>
-  </div>
+  const DB_KEY = 'sse_unified_v1';
 
-  <!-- Brand pricing row -->
-  <div class="cmp-brand-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-    <!-- Brand 1 -->
-    <div style="background:#e8f0fb;border:1px solid #1a3c6e;border-radius:6px;padding:8px">
-      <div style="font-size:11px;font-weight:800;color:#1a3c6e;margin-bottom:6px" id="cmpPriceLabel1">BRAND 1</div>
-      <label>Item</label>
-      <select id="cmpItemSel1" onchange="cmpItemPicked(1)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div><label>MRP</label><input type="number" id="cmpMRP1" min="0" oninput="cmpRecalcRate(1)" placeholder="0"></div>
-        <div><label>Disc %</label><input type="number" id="cmpDisc1" min="0" max="100" step="0.01" oninput="cmpRecalcRate(1)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div><label>Net Rate</label><input type="number" id="cmpRate1" min="0" placeholder="0" oninput="cmpRateManualEdit(1)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
-        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen1" min="0" oninput="cmpRecalcRate(1)" placeholder="—" style="font-size:11px"></div>
-      </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #1a3c6e;border-radius:4px;padding:4px 6px;font-size:11px;color:#1a3c6e">
-        <div>MRP/Mtr: <b id="cmpMrpPerMtr1">—</b></div>
-        <div>Net Rate/Mtr: <b id="cmpPerMtr1">—</b></div>
-      </div>
-    </div>
-    <!-- Brand 2 -->
-    <div style="background:#e8f5ee;border:1px solid #1b7a4a;border-radius:6px;padding:8px">
-      <div style="font-size:11px;font-weight:800;color:#1b7a4a;margin-bottom:6px" id="cmpPriceLabel2">BRAND 2</div>
-      <label>Item</label>
-      <select id="cmpItemSel2" onchange="cmpItemPicked(2)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div><label>MRP</label><input type="number" id="cmpMRP2" min="0" oninput="cmpRecalcRate(2)" placeholder="0"></div>
-        <div><label>Disc %</label><input type="number" id="cmpDisc2" min="0" max="100" step="0.01" oninput="cmpRecalcRate(2)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div><label>Net Rate</label><input type="number" id="cmpRate2" min="0" placeholder="0" oninput="cmpRateManualEdit(2)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
-        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen2" min="0" oninput="cmpRecalcRate(2)" placeholder="—" style="font-size:11px"></div>
-      </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #1b7a4a;border-radius:4px;padding:4px 6px;font-size:11px;color:#1b7a4a">
-        <div>MRP/Mtr: <b id="cmpMrpPerMtr2">—</b></div>
-        <div>Net Rate/Mtr: <b id="cmpPerMtr2">—</b></div>
-      </div>
-    </div>
-    <!-- Brand 3 -->
-    <div style="background:#f3e5f5;border:1px solid #6a1b9a;border-radius:6px;padding:8px">
-      <div style="font-size:11px;font-weight:800;color:#6a1b9a;margin-bottom:6px" id="cmpPriceLabel3">BRAND 3</div>
-      <label>Item</label>
-      <select id="cmpItemSel3" onchange="cmpItemPicked(3)" style="font-size:11.5px;margin-bottom:6px"><option value="">— Select Item —</option></select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div><label>MRP</label><input type="number" id="cmpMRP3" min="0" oninput="cmpRecalcRate(3)" placeholder="0"></div>
-        <div><label>Disc %</label><input type="number" id="cmpDisc3" min="0" max="100" step="0.01" oninput="cmpRecalcRate(3)" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
-        <div><label>Net Rate</label><input type="number" id="cmpRate3" min="0" placeholder="0" oninput="cmpRateManualEdit(3)" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
-        <div><label>Coil Len (Mtr)</label><input type="number" id="cmpCoilLen3" min="0" oninput="cmpRecalcRate(3)" placeholder="—" style="font-size:11px"></div>
-      </div>
-      <div style="margin-top:6px;background:#fff;border:1px dashed #6a1b9a;border-radius:4px;padding:4px 6px;font-size:11px;color:#6a1b9a">
-        <div>MRP/Mtr: <b id="cmpMrpPerMtr3">—</b></div>
-        <div>Net Rate/Mtr: <b id="cmpPerMtr3">—</b></div>
-      </div>
-    </div>
-  </div>
-  <div style="margin-top:10px;display:flex;gap:8px">
-    <button class="btn-add" onclick="addCmpRow()" style="padding:8px 22px;font-size:13px">➕ ADD ITEM</button>
-    <button onclick="clearCmpEntry()" style="background:#eee;color:#333;padding:8px 14px;font-size:12px;font-weight:700;border:none;border-radius:4px;cursor:pointer">✕ Clear</button>
-  </div>
-</div>
+  const uid = (p) => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const now = () => new Date().toISOString();
 
-<!-- Comparison Table -->
-<div class="table-wrapper" style="overflow-x:auto;margin:0 14px">
-  <table id="cmpTable" style="width:100%;border-collapse:collapse;font-size:11.5px">
-    <thead id="cmpThead"></thead>
-    <tbody id="cmpTbody"></tbody>
-  </table>
-</div>
-
-<!-- Comparison Totals -->
-<div id="cmpTotalsWrap" style="margin:10px 14px"></div>
-
-<!-- Action Buttons -->
-<div class="no-print action-btns" style="margin:10px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
-  <button class="btn-print" onclick="printCmp()">🖨️ PRINT</button>
-  <button class="btn-excel" onclick="exportCmpExcel()">📊 EXCEL</button>
-  <button class="btn-pdf" onclick="exportCmpPDF()">📄 PDF</button>
-</div>
-
-</div><!-- end #compareSection -->
-
-</div><!-- end .card -->
-
-<script>
-/* ===== SUPABASE ===== */
-const SUPABASE_URL = "https://psfqruuzjwpvllahlkla.supabase.co";
-const SUPABASE_KEY = "sb_publishable_9jcUcWEowbzGG3QgEA943g_VS0BJQWl";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentPartyId = null;
-
-/* ===== MODE SWITCHING ===== */
-function switchMode(mode){
-  const isRegular = mode === 'regular';
-  document.getElementById('regularSection').style.display = isRegular ? '' : 'none';
-  document.getElementById('compareSection').style.display = isRegular ? 'none' : '';
-  document.getElementById('tabRegular').style.background = isRegular ? '#1a3c6e' : '#f0f4fb';
-  document.getElementById('tabRegular').style.color = isRegular ? '#fff' : '#1a3c6e';
-  document.getElementById('tabCompare').style.background = isRegular ? '#f0f4fb' : '#1a3c6e';
-  document.getElementById('tabCompare').style.color = isRegular ? '#1a3c6e' : '#fff';
-  if(!isRegular){ populateCmpBrandLists(); }
-}
-
-/* ===== PARTY AUTOCOMPLETE ===== */
-let partySearchTimer = null;
-function onPartyNameInput(){
-  currentPartyId = null;
-  clearTimeout(partySearchTimer);
-  const q = custName.value.trim();
-  if(!q){ hidePartySuggestions(); return; }
-  partySearchTimer = setTimeout(async ()=>{
-    const { data, error } = await sb.from("parties").select("id,name,gstin,address").ilike("name", `%${q}%`).limit(8);
-    if(error){ console.error(error); return; }
-    renderPartySuggestions(data||[], "partySuggestions", (p)=>{
-      custName.value = p.name;
-      custGST.value = p.gstin || "";
-      custAddr.value = p.address || "";
-      currentPartyId = p.id;
-      hidePartySuggestions();
-    });
-  }, 200);
-}
-function renderPartySuggestions(list, containerId, onPick){
-  const box = document.getElementById(containerId);
-  if(!list.length){ box.style.display="none"; return; }
-  box.innerHTML = list.map((p,i)=>`<div data-i="${i}" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #eee" onmouseover="this.style.background='#f0f4fb'" onmouseout="this.style.background='#fff'">${p.name}</div>`).join("");
-  [...box.children].forEach((el,i)=>el.onclick=()=>onPick(list[i]));
-  box.style.display = "block";
-}
-function hidePartySuggestions(){ document.getElementById("partySuggestions").style.display="none"; }
-
-async function findOrCreateParty(name, gstin, addr){
-  name = name.trim();
-  if(!name) throw new Error("Customer name is required to save.");
-  const { data: existing, error: findErr } = await sb.from("parties").select("id").ilike("name", name).limit(1);
-  if(findErr) throw findErr;
-  if(existing && existing.length){ return existing[0].id; }
-  const { data: created, error: createErr } = await sb.from("parties")
-    .insert({ name, gstin: gstin||null, address: addr||null }).select("id").single();
-  if(createErr) throw createErr;
-  return created.id;
-}
-
-/* Financial year label like "26-27" (Apr–Mar), plus the date range used to
-   count how many quotations of this doc_type already exist in that FY. */
-function getFinancialYear(dateObj){
-  const y = dateObj.getFullYear(), m = dateObj.getMonth()+1; // 1-12
-  const startYear = (m>=4) ? y : y-1;
-  const endYear = startYear+1;
-  const pad2 = n=>String(n).slice(-2);
-  return {
-    label: `${pad2(startYear)}-${pad2(endYear)}`,
-    startStr: `${startYear}-04-01`,
-    endExclusiveStr: `${endYear}-04-01`
-  };
-}
-
-/* Counts existing quotations for THIS customer + doc_type within the financial
-   year, so each customer's numbering starts fresh at 001 and increments on its own. */
-async function getNextDocSerial(partyId, docType, fy){
-  const { count, error } = await sb.from("quotations").select("id", { count:"exact", head:true })
-    .eq("party_id", partyId).eq("doc_type", docType).gte("doc_date", fy.startStr).lt("doc_date", fy.endExclusiveStr);
-  if(error) throw error;
-  return (count||0)+1;
-}
-
-function collectItemsFromTable(){
-  return [...tbody.rows].map(r=>({
-    sno: r.cells[0].innerText, brand: r.cells[1].innerText, description: r.cells[2].innerText,
-    colour: r.cells[3].innerText, hsn: r.cells[4].innerText, unit: r.cells[5].innerText,
-    qty: r.cells[6].innerText, mrp: r.cells[7].innerText, discount: r.cells[8].innerText,
-    rate: r.cells[9].innerText, perMtr: r.cells[10].innerText, amount: r.cells[11].innerText
-  }));
-}
-
-function partyCodeFromName(name){
-  const firstWord = (name||"").trim().split(/\s+/)[0] || "PARTY";
-  return firstWord.toUpperCase().replace(/[^A-Z0-9]/g,"");
-}
-
-async function saveQuotation(){
-  const btn = document.getElementById("saveQuotationBtn");
-  const status = document.getElementById("saveStatus");
-  try{
-    if(!custName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
-    if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
-    btn.disabled = true; status.textContent = "Saving…";
-    const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
-    currentPartyId = partyId;
-    const dateObj = new Date(qdate.value || new Date());
-    const fy = getFinancialYear(dateObj);
-    const custFullName = custName.value.trim().toUpperCase();
-    const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
-    const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
-    const baseSerial = await getNextDocSerial(partyId, currentDocType, fy);
-    let docNo, lastErr;
-    for(let attempt=0; attempt<5; attempt++){
-      const serial = baseSerial + attempt;
-      docNo = `SGE-SSE-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
-      const payload = {
-        party_id: partyId, doc_type: currentDocType, doc_no: docNo,
-        doc_date: qdate.value || new Date().toISOString().slice(0,10),
-        cust_name: custName.value.trim(), cust_gst: custGST.value.trim(), cust_addr: custAddr.value.trim(),
-        gst_applied: !!gstToggle.checked, cash_disc_pct: cashPct,
-        validity: document.getElementById("validityInput")?.value || "",
-        remarks: document.getElementById("remarksInput")?.value || "",
-        items: collectItemsFromTable(),
-        sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
-        taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
-        gst_amt: +(gst.innerText||0), grand_total: +(gt.innerText||0),
-        round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
-        net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
-      };
-      const { error: saveErr } = await sb.from("quotations").insert(payload);
-      if(!saveErr){ lastErr = null; break; }
-      lastErr = saveErr;
-      if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
-    }
-    if(lastErr) throw lastErr;
-    qno.value = docNo;
-    status.textContent = `Saved as ${docNo} ✓`;
-    setTimeout(()=>status.textContent="", 5000);
-  }catch(err){
-    console.error(err);
-    alert("Could not save: " + (err.message||err));
-    status.textContent = "";
-  }finally{ btn.disabled = false; }
-}
-
-function openPartyHistory(){
-  const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
-  overlay.style.display="block";
-  document.getElementById("historyPartySearch").value="";
-  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>`;
-  requestAnimationFrame(()=>{ overlay.style.background="rgba(20,20,30,.45)"; drawer.style.transform="translateX(0)"; });
-  setTimeout(()=>document.getElementById("historyPartySearch").focus(),280);
-}
-function closePartyHistory(){
-  const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
-  overlay.style.background="rgba(20,20,30,0)"; drawer.style.transform="translateX(100%)";
-  setTimeout(()=>{ overlay.style.display="none"; },280);
-}
-let historySearchTimer = null;
-function onHistoryPartySearch(){
-  clearTimeout(historySearchTimer);
-  const q = document.getElementById("historyPartySearch").value.trim();
-  const box = document.getElementById("historyPartySuggestions");
-  if(!q){ box.style.display="none"; return; }
-  historySearchTimer = setTimeout(async ()=>{
-    const { data, error } = await sb.from("parties").select("id,name").ilike("name", `%${q}%`).limit(8);
-    if(error){ console.error(error); return; }
-    renderPartySuggestions(data||[], "historyPartySuggestions", (p)=>{
-      document.getElementById("historyPartySearch").value = p.name;
-      box.style.display = "none";
-      loadPartyQuotations(p.id, p.name);
-    });
-  }, 200);
-}
-async function loadPartyQuotations(partyId, partyName){
-  const list = document.getElementById("historyList");
-  list.style.textAlign="left"; list.style.padding="0";
-  list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
-  const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).order("created_at", { ascending:false });
-  if(error){ list.innerHTML = `<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading history.</div>`; return; }
-  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved quotations yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
-  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} record(s)</div>
-    <div style="display:flex;flex-direction:column;gap:10px">` +
-    data.map(q=>`<div id="hist-row-${q.id}" style="border:1px solid #c5d3e8;border-radius:10px;padding:11px 13px;background:#f8fafd">
-      <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <span style="font-size:13.5px;font-weight:800;color:#1a3c6e">${q.doc_no}</span>
-        <span style="font-size:13.5px;font-weight:800;color:#1a1a2e">₹ ${(+q.net_payable).toLocaleString("en-IN")}</span>
-      </div>
-      <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 10px">${q.doc_type} &bull; ${q.doc_date}</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="reopenQuotation(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open</button>
-        <button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="flex:1;background:#c0392b;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">🗑️ Delete</button>
-      </div>
-    </div>`).join("") + `</div>`;
-}
-
-/* Deletes a wrongly saved quotation permanently from Supabase, with a confirmation prompt. */
-async function deleteQuotation(id, docNo, partyId, partyName){
-  if(!confirm(`Delete quotation "${docNo}"?\n\nThis cannot be undone.`)) return;
-  const row=document.getElementById(`hist-row-${id}`);
-  if(row) row.style.opacity="0.5";
-  const { error } = await sb.from("quotations").delete().eq("id", id);
-  if(error){ alert("Could not delete: " + (error.message||error)); if(row) row.style.opacity="1"; return; }
-  loadPartyQuotations(partyId, partyName);
-}
-
-async function reopenQuotation(id){
-  const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
-  if(error){ alert("Could not load that quotation."); return; }
-  switchDocType(q.doc_type);
-  qno.value=q.doc_no; qdate.value=q.doc_date; custName.value=q.cust_name||"";
-  custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
-  currentPartyId=q.party_id; gstToggle.checked=q.gst_applied;
-  if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
-  if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=q.remarks||"";
-  if(typeof updateTCDisplay==="function") updateTCDisplay();
-  tbody.innerHTML="";
-  (q.items||[]).forEach(it=>{
-    const r=tbody.insertRow();
-    const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
-    if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
-    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount;
-    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
-  });
-  renumber(); calc();
-  closePartyHistory();
-  document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.`;
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-</script>
-
-<script>
-/* ===== T&C ===== */
-function handlePayTermChange(){
-  const v=document.getElementById("payTermSelect").value;
-  document.getElementById("pdcDaysWrap").style.display=(v==="PDC")?"flex":"none";
-  updateTCDisplay();
-}
-function updateTCDisplay(){
-  const v=document.getElementById("payTermSelect").value;
-  const days=document.getElementById("pdcDays").value;
-  let display=v==="100% ADVANCE"?"100% ADVANCE":v==="PDC"?(days?`PDC — ${days} DAYS`:"PDC (POST DATED CHEQUE)"):"AGAINST DELIVERY";
-  document.getElementById("tcBottomPayment").innerText=display;
-  document.getElementById("tcPaymentVal").innerText=display;
-  const vEl=document.getElementById("validityInput");
-  if(vEl) document.getElementById("tcBottomValidity").innerText=vEl.value.toUpperCase()||"7 DAYS";
-  const rEl=document.getElementById("remarksInput");
-  const remarksRow=document.getElementById("remarksRow");
-  if(rEl&&remarksRow){ const txt=rEl.value.trim(); document.getElementById("tcBottomRemarks").innerText=txt; remarksRow.style.display=txt?"":"none"; }
-}
-
-/* ===== FALLBACK INVENTORY ===== */
-const FALLBACK_ITEMS={
-  "GREATWHITE":[
-    {"name":"BLANK PLATE","mrp":38.0},{"name":"DOWN LIGHT 2M","mrp":511.0},{"name":"DOWN LIGHT 4M","mrp":644.0},
-    {"name":"6AMS 1WAY SWITCH","mrp":137.0},{"name":"6AMS 2WAY SWITCH","mrp":195.0},{"name":"16AMS 1WAY SWITCH WITH IND","mrp":266.0},
-    {"name":"6AMS SOCKET","mrp":198.0},{"name":"16AMS SOCKET","mrp":380.0}
-  ],
-  "ANCHOR PENTA":[
-    {"name":"6AMS 1WAY SWITCH","mrp":46.0},{"name":"6AMS 2WAY SWITCH","mrp":106.0},{"name":"16AMS 1WAY SWITCH","mrp":131.0},
-    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":144.0},{"name":"3PIN SOCKET","mrp":143.0},{"name":"16A SOCKET","mrp":224.0}
-  ],
-  "ANCHOR ROMA":[
-    {"name":"6AMS 1WAY SWITCH","mrp":77.0},{"name":"6AMS 2WAY SWITCH","mrp":186.0},{"name":"16AMS 1WAY SWITCH","mrp":206.0},
-    {"name":"16AMS 1WAY SWITCH WITH IND","mrp":245.0},{"name":"3PIN SOCKET","mrp":179.0},{"name":"16A SOCKET","mrp":319.0}
-  ],
-  "POLYCAB - IND COPPER WIRE":[
-    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":2980.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4355.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":6880.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10070.0},
-    {"name":"1SQMM 180MTR LF IND COPPER WIRE","mrp":5960.0},{"name":"1.5SQMM 180MTR LF IND COPPER WIRE","mrp":8710.0},
-    {"name":"2.5SQMM 180MTR LF IND COPPER WIRE","mrp":13760.0}
-  ],
-  "KEI - IND COPPER WIRE":[
-    {"name":"1SQMM 90MTR IND COPPER WIRE","mrp":3060.0},{"name":"1.5SQMM 90MTR IND COPPER WIRE","mrp":4570.0},
-    {"name":"2.5SQMM 90MTR IND COPPER WIRE","mrp":7300.0},{"name":"4SQMM 90MTR IND COPPER WIRE","mrp":10840.0},
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":6120.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":9140.0},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":14600.0}
-  ],
-  "FINOLEX - FR-LSH 180MTR - IND COPPER WIRE":[
-    {"name":"1SQMM 180MTR IND COPPER WIRE","mrp":4460.0},{"name":"1.5SQMM 180MTR IND COPPER WIRE","mrp":6515.0},
-    {"name":"2.5SQMM 180MTR IND COPPER WIRE","mrp":10630.0},{"name":"4SQMM 180MTR IND COPPER WIRE","mrp":16475.0}
-  ],
-  "LEGRAND LYNCUS":[
-    {"name":"6A 1W SWITCH","mrp":98.0},{"name":"6A 2W SWITCH","mrp":204.0},{"name":"16A 1W SWITCH","mrp":236.0},
-    {"name":"16A SOCKET (2M)","mrp":410.0},{"name":"1M STEP REGULATOR","mrp":680.0}
-  ],
-  "COMMON ITEMS":[
-    {"name":"BLANK PLATE","mrp":35.0},{"name":"MODULAR BOX (2M)","mrp":45.0},{"name":"MODULAR BOX (4M)","mrp":60.0},
-    {"name":"MODULAR BOX (8M)","mrp":85.0},{"name":"CABLE TIE 6 INCH (PKT)","mrp":50.0},{"name":"GI CLIP","mrp":2.0},
-    {"name":"PVC PIPE 20MM (MTR)","mrp":18.0},{"name":"PVC PIPE 25MM (MTR)","mrp":24.0},{"name":"JUNCTION BOX","mrp":30.0},
-    {"name":"INSULATION TAPE","mrp":20.0},{"name":"CONDUIT BEND (20MM)","mrp":12.0},{"name":"SADDLE CLIP","mrp":3.0}
-  ]
-};
-
-const JSONBIN_ID = "6a3637b1f5f4af5e29132730";
-const JSONBIN_MASTER_KEY = "$2a$10$MpuJTq8HXuguilKQPgM3Tu60666pOEexgLKy0In631iih1mkYOqkW";
-const JSONBIN_URL = "https://api.jsonbin.io/v3/b/" + JSONBIN_ID;
-const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V1";
-
-let items = JSON.parse(JSON.stringify(FALLBACK_ITEMS));
-try{ const cached=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(cached&&cached.items) items=cached.items; }catch(e){}
-
-function setPriceStatus(msg,isError){ const el=document.getElementById("priceStatus"); if(el){ el.textContent=msg; el.style.color=isError?"#c0392b":"var(--muted)"; } }
-
-async function refreshPrices(manual){
-  setPriceStatus("Refreshing prices…",false);
-  try{
-    const res=await fetch(JSONBIN_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const data=await res.json();
-    const fetched=data.record;
-    if(!fetched||typeof fetched!=="object"||!Object.keys(fetched).length) throw new Error("No data");
-    items=fetched;
-    const now=new Date();
-    localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
-    refreshBrandDropdown();
-    populateCmpBrandLists();
-    setPriceStatus("✓ Prices updated "+now.toLocaleString(),false);
-  }catch(e){
-    let ca="";
-    try{ const c=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(c&&c.fetchedAt) ca=" (cached "+new Date(c.fetchedAt).toLocaleString()+")"; }catch(e2){}
-    setPriceStatus("⚠ Could not refresh"+ca,true);
-    if(manual) alert("Could not refresh prices.\n\n"+e.message);
-  }
-}
-
-async function savePricesToCloud(){
-  const res=await fetch(JSONBIN_URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(items)});
-  if(!res.ok) throw new Error("HTTP "+res.status);
-  const now=new Date();
-  localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
-  setPriceStatus("✓ Saved & synced "+now.toLocaleString(),false);
-}
-
-function refreshBrandDropdown(){
-  const prev=brandSel.value;
-  brandSel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{let o=document.createElement("option");o.textContent=b;o.value=b;brandSel.appendChild(o);});
-  if(prev&&items[prev]){ brandSel.value=prev; brandSel.onchange(); }
-}
-
-const DOC_TYPES={
-  QTN:{label:"QUOTATION",noLabel:"Quotation No",dateLabel:"Quotation Date",section:"Quotation Details",addTitle:"Add Item to Quotation",itemsTitle:"Quotation Items",prefix:"SSE/QTN",storageKey:"SSE_QTN",file:"SSE_Quotation"},
-  CB:{label:"CASH BILL",noLabel:"Cash Bill No",dateLabel:"Cash Bill Date",section:"Cash Bill Details",addTitle:"Add Item",itemsTitle:"Cash Bill Items",prefix:"SSE/CB",storageKey:"SSE_CB",file:"SSE_CashBill"},
-  PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"}
-};
-let currentDocType="QTN";
-function switchDocType(type){
-  currentDocType=type;
-  const d=DOC_TYPES[type];
-  document.getElementById("docSectionTitle").innerText=d.section;
-  document.getElementById("docNoLabel").innerText=d.noLabel;
-  document.getElementById("docDateLabel").innerText=d.dateLabel;
-  document.getElementById("addItemTitle").innerText=d.addTitle;
-  document.getElementById("itemsTitle").innerText=d.itemsTitle;
-  document.getElementById("docTypeBanner").innerText=d.label;
-  qno.value="(assigned on Save)";
-}
-function generateQuotationNo(){
-  return "(assigned on Save)";
-}
-
-const brandSel=document.getElementById("brand");
-const itemSel=document.getElementById("item");
-const tbody=document.querySelector("#qt tbody");
-
-brandSel.onchange=()=>{
-  itemSel.innerHTML="<option value=''>Select Item</option>";
-  mrp.value=net.value=disc.value="";
-  document.getElementById("indCopperBox").style.display="none";
-  if(!brandSel.value) return;
-  items[brandSel.value].forEach(i=>{let o=document.createElement("option");o.textContent=i.name;o.value=i.mrp;itemSel.appendChild(o);});
-  // Brand-agnostic default unit hint, based on how this brand's items are actually named
-  const brandItems=items[brandSel.value]||[];
-  const hasCoilItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&getCoilLength(i.name));
-  const hasPerMtrItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&!getCoilLength(i.name));
-  if(hasCoilItem) unit.value="COIL";
-  else if(hasPerMtrItem) unit.value="MTRS";
-  updateQtyLabel();
-};
-
-window.onload=()=>{
-  refreshBrandDropdown();
-  qdate.valueAsDate=new Date();
-  qno.value=generateQuotationNo();
-  document.getElementById("cmpDate").valueAsDate=new Date();
-  document.getElementById("cmpQno").value="SSE/CMP/"+new Date().getFullYear()+"/001";
-  refreshPrices(false);
-};
-
-/* ===== PRICE EDITOR ===== */
-let peWorkingCopy=null, peDirty=false;
-function openPriceEditor(){ peWorkingCopy=JSON.parse(JSON.stringify(items)); peDirty=false; document.getElementById("peSearch").value=""; document.getElementById("peStatus").textContent=""; document.getElementById("priceEditorOverlay").style.display="flex"; renderPriceEditorRows(); }
-function closePriceEditor(){ if(peDirty&&!confirm("Discard unsaved changes?")) return; document.getElementById("priceEditorOverlay").style.display="none"; peWorkingCopy=null; }
-function peBuildItemRow(brand, idx){
-  const it=peWorkingCopy[brand][idx];
-  const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
-  const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:42%"; tdName.textContent=it.name;
-  const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:20%";
-  const priceInput=document.createElement("input"); priceInput.type="number"; priceInput.step="0.01"; priceInput.value=it.mrp; priceInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px"; priceInput.oninput=()=>{ peWorkingCopy[brand][idx].mrp=parseFloat(priceInput.value)||0; peDirty=true; };
-  const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:18%";
-  const hsnInput=document.createElement("input"); hsnInput.type="text"; hsnInput.placeholder="HSN"; hsnInput.value=it.hsn||""; hsnInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; hsnInput.oninput=()=>{ peWorkingCopy[brand][idx].hsn=hsnInput.value.trim(); peDirty=true; };
-  const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:12%;text-align:right";
-  const delBtn=document.createElement("button"); delBtn.textContent="Remove"; delBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBtn.onclick=()=>{ peWorkingCopy[brand].splice(idx,1); peDirty=true; renderPriceEditorRows(); };
-  tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdDel.appendChild(delBtn);
-  tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
-  return tr;
-}
-
-function renderPriceEditorRows(){
-  const q=document.getElementById("peSearch").value.trim().toLowerCase();
-  const list=document.getElementById("peList"); list.innerHTML="";
-  const brands=Object.keys(peWorkingCopy).sort();
-  let anyRendered=false;
-  brands.forEach(brand=>{
-    const brandMatches=brand.toLowerCase().includes(q);
-    const rows=peWorkingCopy[brand].filter(it=>!q||brandMatches||it.name.toLowerCase().includes(q));
-    // Only hide a brand section while actively searching AND nothing about it matches.
-    // A freshly-created brand with 0 items must still show up so items can be added to it.
-    if(q && !brandMatches && !rows.length) return;
-    anyRendered=true;
-
-    const section=document.createElement("div"); section.style.marginBottom="14px"; section.dataset.pebrand=brand;
-    const header=document.createElement("div"); header.style.cssText="display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
-    const titleSpan=document.createElement("strong"); titleSpan.style.cssText="color:#1a3c6e;font-size:13px";
-    titleSpan.innerHTML=`${brand} <span class="pe-item-count" style="color:#888;font-weight:400;font-size:11px">(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})</span>`;
-    header.appendChild(titleSpan);
-    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); header.appendChild(delBrandBtn);
-    section.appendChild(header);
-
-    const rowsToShow = q ? rows : peWorkingCopy[brand];
-    let table=null;
-    if(rowsToShow.length){
-      table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
-      rowsToShow.forEach(it=>{
-        const idx=peWorkingCopy[brand].indexOf(it);
-        table.appendChild(peBuildItemRow(brand, idx));
-      });
-      section.appendChild(table);
-    }
-
-    // Inline "Add Item" row — scoped to THIS brand, stays open for rapid successive entry.
-    // This is the fix for having to re-select the brand every time you add one more item.
-    const addRow=document.createElement("div");
-    addRow.style.cssText="display:flex;gap:6px;padding:8px;background:#f1f8e9;border:1px dashed #9ccc65;border-radius:0 0 6px 6px;align-items:center;flex-wrap:wrap";
-    const nameIn=document.createElement("input"); nameIn.type="text"; nameIn.placeholder="New item name…"; nameIn.className="pe-add-name"; nameIn.style.cssText="flex:2;min-width:160px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
-    const priceIn=document.createElement("input"); priceIn.type="number"; priceIn.step="0.01"; priceIn.placeholder="Price"; priceIn.style.cssText="flex:1;min-width:80px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
-    const hsnIn=document.createElement("input"); hsnIn.type="text"; hsnIn.placeholder="HSN (auto)"; hsnIn.style.cssText="flex:1;min-width:90px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
-    const addBtn=document.createElement("button"); addBtn.textContent="➕ Add & Next"; addBtn.style.cssText="background:#1b7a4a;color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap";
-
-    const doAdd=()=>{
-      const name=nameIn.value.trim();
-      if(!name){ nameIn.focus(); return; }
-      const mrpVal=parseFloat(priceIn.value)||0;
-      const hsn=hsnIn.value.trim()||getHSN(brand,name);
-      peWorkingCopy[brand].push({name,mrp:mrpVal,hsn});
-      peDirty=true;
-      if(!table){
-        table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
-        section.insertBefore(table, addRow);
-      }
-      table.appendChild(peBuildItemRow(brand, peWorkingCopy[brand].length-1));
-      const countSpan=titleSpan.querySelector(".pe-item-count");
-      if(countSpan) countSpan.textContent=`(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})`;
-      // Clear and keep focus in Name field so the next item can be typed immediately — no re-selecting the brand.
-      nameIn.value=""; priceIn.value=""; hsnIn.value="";
-      nameIn.focus();
+  /* ---------- schema / default state ---------- */
+  function emptyDB() {
+    return {
+      parties: [],      // {id,name,phone,email,address,gst,type,status,source,notes,created_at,updated_at}
+      items: [],        // {id,name,category,brand,unit,cost_price,sell_price,hsn,stock_qty,low_stock_threshold}
+      indents: [],       // {id,party_id,lines:[{item_id,qty}],status,created_at,notes}
+      quotations: [],    // {id,indent_id,party_id,doc_type,doc_no,date,lines:[{item_id,name,qty,rate,amount}],total,status,created_at,confirmed_at}
+      stock_ledger: [],  // {id,item_id,type,qty,ref_type,ref_id,party_id,date,notes}
+      activity: []       // {id,party_id,type,note,date}  -- lightweight timeline entries
     };
-    addBtn.onclick=doAdd;
-    [nameIn,priceIn,hsnIn].forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doAdd(); } }));
+  }
 
-    addRow.appendChild(nameIn); addRow.appendChild(priceIn); addRow.appendChild(hsnIn); addRow.appendChild(addBtn);
-    section.appendChild(addRow);
+  let db = load();
 
-    list.appendChild(section);
-  });
-  if(!anyRendered) list.innerHTML="<p style='color:#888;padding:20px;text-align:center'>No items match your search.</p>";
-}
-function peAddItemPrompt(){
-  const brands=Object.keys(peWorkingCopy).sort();
-  const brand=prompt("Add item to which brand?\n\nBrands:\n"+brands.join(", ")); if(!brand) return;
-  if(!peWorkingCopy[brand]){ alert("That brand doesn't exist."); return; }
-  const name=prompt("New item name:"); if(!name) return;
-  const mrpStr=prompt("Price (MRP):","0"); const mrpVal=parseFloat(mrpStr)||0;
-  const guessedHSN=getHSN(brand,name.trim());
-  const hsnStr=prompt("HSN Code:",guessedHSN); const hsn=(hsnStr||"").trim()||guessedHSN;
-  peWorkingCopy[brand].push({name:name.trim(),mrp:mrpVal,hsn}); peDirty=true;
-  document.getElementById("peSearch").value=""; renderPriceEditorRows();
-}
-function peAddBrandPrompt(){
-  const brand=prompt("New brand name:"); if(!brand) return;
-  if(peWorkingCopy[brand]){ alert("Brand already exists."); return; }
-  peWorkingCopy[brand]=[]; peDirty=true;
-  document.getElementById("peSearch").value=""; // make sure the new (empty) brand is visible
-  renderPriceEditorRows();
-  // Jump straight into that brand's inline Add Item box so items can be typed one after another immediately
-  setTimeout(()=>{
-    const section=document.querySelector(`[data-pebrand="${CSS.escape(brand)}"] .pe-add-name`);
-    if(section){ section.scrollIntoView({behavior:"smooth",block:"center"}); section.focus(); }
-  }, 50);
-}
-function peDeleteBrand(brand){ if(!confirm(`Delete "${brand}" and all its items?`)) return; delete peWorkingCopy[brand]; peDirty=true; renderPriceEditorRows(); }
-function peImportCSV(event){
-  const file=event.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    try{
-      const rows=parseCSVForImport(e.target.result); if(!rows.length) throw new Error("Empty file");
-      const header=rows[0].map(h=>h.trim().toLowerCase());
-      const bIdx=header.indexOf("brand"),nIdx=header.indexOf("item name"),mIdx=header.indexOf("mrp"),hIdx=header.indexOf("hsn");
-      if(bIdx===-1||nIdx===-1||mIdx===-1) throw new Error("CSV must have Brand, Item Name, MRP columns");
-      let updated=0,added=0;
-      for(let i=1;i<rows.length;i++){
-        const r=rows[i]; const brand=(r[bIdx]||"").trim(),name=(r[nIdx]||"").trim(),mrpVal=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0,hsn=hIdx!==-1?(r[hIdx]||"").trim():"";
-        if(!brand||!name) continue;
-        if(!peWorkingCopy[brand]) peWorkingCopy[brand]=[];
-        const existing=peWorkingCopy[brand].find(it=>it.name===name);
-        if(existing){ existing.mrp=mrpVal; if(hsn) existing.hsn=hsn; updated++; }
-        else{ const newItem={name,mrp:mrpVal}; if(hsn) newItem.hsn=hsn; peWorkingCopy[brand].push(newItem); added++; }
+  function load() {
+    try {
+      const raw = localStorage.getItem(DB_KEY);
+      if (!raw) return emptyDB();
+      const parsed = JSON.parse(raw);
+      // guard against missing keys if schema grows later
+      return Object.assign(emptyDB(), parsed);
+    } catch (e) {
+      console.error('Core: failed to load DB, starting fresh', e);
+      return emptyDB();
+    }
+  }
+
+  function persist() {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    if (cloud.enabled) cloud.pushDirty();
+    document.dispatchEvent(new CustomEvent('core:change'));
+  }
+
+  /* ---------- PARTIES (Leads / Clients / Suppliers) ---------- */
+
+  const PARTY_TYPES = ['lead', 'customer', 'supplier'];
+  const PARTY_STATUS = ['new', 'contacted', 'won', 'lost', 'active'];
+
+  function addParty({ name, phone, email = '', address = '', gst = '', type = 'lead', source = '', notes = '' }) {
+    if (!name || !name.trim()) throw new Error('Party name is required');
+    const existing = findPartyByNameOrPhone(name, phone);
+    if (existing) return existing; // avoid duplicate lead/client records
+    const party = {
+      id: uid('party'), name: name.trim(), phone: phone || '', email, address, gst,
+      type, status: type === 'lead' ? 'new' : 'active', source, notes,
+      created_at: now(), updated_at: now()
+    };
+    db.parties.push(party);
+    logActivity(party.id, 'created', `Added as ${type}`);
+    persist();
+    return party;
+  }
+
+  function findPartyByNameOrPhone(name, phone) {
+    const n = (name || '').trim().toLowerCase();
+    const p = (phone || '').trim();
+    return db.parties.find(x =>
+      (p && x.phone && x.phone.trim() === p) ||
+      (n && x.name.trim().toLowerCase() === n)
+    ) || null;
+  }
+
+  function getParty(id) { return db.parties.find(p => p.id === id) || null; }
+  function listParties(filter = {}) {
+    return db.parties.filter(p =>
+      (!filter.type || p.type === filter.type) &&
+      (!filter.status || p.status === filter.status)
+    ).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  }
+
+  function updatePartyStatus(id, status, note = '') {
+    const party = getParty(id);
+    if (!party) return;
+    party.status = status;
+    party.updated_at = now();
+    logActivity(id, 'status', note || `Status changed to ${status}`);
+    persist();
+  }
+
+  /** Lead -> Client conversion. Keeps same party id, just flips type/status
+   *  so every indent/quotation already linked to this party carries over. */
+  function convertLeadToClient(id) {
+    const party = getParty(id);
+    if (!party) return;
+    party.type = 'customer';
+    party.status = 'active';
+    party.updated_at = now();
+    logActivity(id, 'converted', 'Lead converted to client');
+    persist();
+    return party;
+  }
+
+  function logActivity(party_id, type, note) {
+    db.activity.push({ id: uid('act'), party_id, type, note, date: now() });
+  }
+
+  function getPartyTimeline(party_id) {
+    const acts = db.activity.filter(a => a.party_id === party_id);
+    const inds = db.indents.filter(i => i.party_id === party_id);
+    const quos = db.quotations.filter(q => q.party_id === party_id);
+    return [...acts, ...inds.map(i => ({ id: i.id, type: 'indent', note: `Indent (${i.status})`, date: i.created_at })),
+      ...quos.map(q => ({ id: q.id, type: 'quotation', note: `${q.doc_type} ${q.doc_no} — ${q.status}`, date: q.created_at }))]
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /* ---------- ITEMS (Inventory master + pricing, shared by Quotation) ---------- */
+
+  function addItem({ name, category = '', brand = '', unit = 'Nos', cost_price = 0, sell_price = 0, hsn = '', low_stock_threshold = 0 }) {
+    if (!name || !name.trim()) throw new Error('Item name is required');
+    const item = {
+      id: uid('item'), name: name.trim(), category, brand, unit,
+      cost_price: Number(cost_price) || 0, sell_price: Number(sell_price) || 0,
+      hsn, stock_qty: 0, low_stock_threshold: Number(low_stock_threshold) || 0
+    };
+    db.items.push(item);
+    persist();
+    return item;
+  }
+
+  function getItem(id) { return db.items.find(i => i.id === id) || null; }
+  function listItems() { return db.items.slice().sort((a, b) => a.name.localeCompare(b.name)); }
+
+  function updateItemPrice(id, { cost_price, sell_price }) {
+    const item = getItem(id);
+    if (!item) return;
+    if (cost_price !== undefined) item.cost_price = Number(cost_price) || 0;
+    if (sell_price !== undefined) item.sell_price = Number(sell_price) || 0;
+    persist();
+  }
+
+  /* ---------- STOCK LEDGER (Inventory in/out — single source of truth) ---------- */
+
+  function stockMove(item_id, type, qty, { ref_type = 'manual', ref_id = null, party_id = null, notes = '' } = {}) {
+    const item = getItem(item_id);
+    if (!item) throw new Error('Unknown item for stock move');
+    qty = Number(qty) || 0;
+    if (qty <= 0) return;
+    item.stock_qty += (type === 'in' ? qty : -qty);
+    db.stock_ledger.push({
+      id: uid('stk'), item_id, type, qty, ref_type, ref_id, party_id, date: now(), notes
+    });
+    persist();
+  }
+
+  function lowStockItems() {
+    return db.items.filter(i => i.low_stock_threshold > 0 && i.stock_qty <= i.low_stock_threshold);
+  }
+
+  /* ---------- INDENTS (what a client wants, before pricing) ---------- */
+
+  function createIndent(party_id, lines, notes = '') {
+    if (!getParty(party_id)) throw new Error('Unknown party for indent');
+    const indent = {
+      id: uid('ind'), party_id,
+      lines: lines.map(l => ({ item_id: l.item_id, qty: Number(l.qty) || 0 })),
+      status: 'requested', created_at: now(), notes
+    };
+    db.indents.push(indent);
+    logActivity(party_id, 'indent', 'Indent raised');
+    persist();
+    return indent;
+  }
+
+  function listIndents(filter = {}) {
+    return db.indents.filter(i => !filter.status || i.status === filter.status)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  function getIndent(id) { return db.indents.find(i => i.id === id) || null; }
+
+  /** Pull current sell price from Items for every line — the "Pricing pulls
+   *  Inventory" step. Does not mutate the indent, just returns priced lines
+   *  for the caller (Quotation) to use when building the document. */
+  function priceIndent(indent_id) {
+    const indent = getIndent(indent_id);
+    if (!indent) throw new Error('Unknown indent');
+    const priced = indent.lines.map(l => {
+      const item = getItem(l.item_id);
+      const rate = item ? item.sell_price : 0;
+      return { item_id: l.item_id, name: item ? item.name : '(unknown item)', qty: l.qty, rate, amount: +(rate * l.qty).toFixed(2) };
+    });
+    indent.status = 'priced';
+    persist();
+    return priced;
+  }
+
+  /* ---------- QUOTATIONS ---------- */
+
+  function nextDocNo(doc_type) {
+    const count = db.quotations.filter(q => q.doc_type === doc_type).length + 1;
+    const prefix = { QTN: 'QTN', CB: 'CB', PI: 'PI' }[doc_type] || 'DOC';
+    const yr = new Date().getFullYear();
+    return `${prefix}-${yr}-${String(count).padStart(3, '0')}`;
+  }
+
+  function createQuotation(indent_id, doc_type, pricedLines) {
+    const indent = getIndent(indent_id);
+    if (!indent) throw new Error('Unknown indent');
+    const total = +pricedLines.reduce((s, l) => s + l.amount, 0).toFixed(2);
+    const quotation = {
+      id: uid('quo'), indent_id, party_id: indent.party_id, doc_type,
+      doc_no: nextDocNo(doc_type), date: now(), lines: pricedLines, total,
+      status: 'draft', created_at: now(), confirmed_at: null
+    };
+    db.quotations.push(quotation);
+    indent.status = 'quoted';
+    logActivity(indent.party_id, 'quotation', `${doc_type} ${quotation.doc_no} created — ₹${total}`);
+    persist();
+
+    // Cash Bill = money already changed hands -> confirm immediately.
+    // Quotation / Proforma Invoice = still a proposal -> wait for explicit confirm.
+    if (doc_type === 'CB') confirmQuotation(quotation.id);
+
+    return quotation;
+  }
+
+  function listQuotations(filter = {}) {
+    return db.quotations.filter(q => !filter.status || q.status === filter.status)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  function getQuotation(id) { return db.quotations.find(q => q.id === id) || null; }
+
+  /** The loop-back: confirming a quotation deducts stock (existing Inventory
+   *  stock-out concept) and marks the party Won (existing Lead concept). */
+  function confirmQuotation(id) {
+    const quotation = getQuotation(id);
+    if (!quotation || quotation.status === 'confirmed') return quotation;
+    quotation.lines.forEach(l => {
+      stockMove(l.item_id, 'out', l.qty, { ref_type: 'sale', ref_id: quotation.id, party_id: quotation.party_id, notes: `${quotation.doc_type} ${quotation.doc_no}` });
+    });
+    quotation.status = 'confirmed';
+    quotation.confirmed_at = now();
+    const indent = getIndent(quotation.indent_id);
+    if (indent) indent.status = 'confirmed';
+    const party = getParty(quotation.party_id);
+    if (party && party.type === 'lead') {
+      updatePartyStatus(party.id, 'won', `Won via ${quotation.doc_type} ${quotation.doc_no}`);
+    } else {
+      logActivity(quotation.party_id, 'sale', `${quotation.doc_type} ${quotation.doc_no} confirmed — ₹${quotation.total}`);
+    }
+    persist();
+    return quotation;
+  }
+
+  function rejectQuotation(id, note = '') {
+    const quotation = getQuotation(id);
+    if (!quotation) return;
+    quotation.status = 'rejected';
+    logActivity(quotation.party_id, 'quotation', note || `${quotation.doc_type} ${quotation.doc_no} rejected`);
+    persist();
+  }
+
+  /* ---------- cloud sync ----------
+     Small-team pattern: on every change, push each table's full contents
+     to Supabase (upsert). On load and every 20s, pull all tables down and
+     merge in anything from other devices. Simple, not clever — fine for a
+     handful of users on a small dataset. */
+  const TABLES = ['parties', 'items', 'indents', 'quotations', 'stock_ledger', 'activity'];
+  // Baked-in defaults so every device auto-connects with zero setup.
+  // Safe to have in client-side code — this is a publishable/anon key,
+  // meant to be public; real protection comes from Row Level Security
+  // policies on the Supabase side, not from hiding this value.
+  const DEFAULT_CLOUD_URL = 'https://mfuagpygapzmjwjngjvy.supabase.co';
+  const DEFAULT_CLOUD_KEY = 'sb_publishable_Azv64m9E5HSPWE_oQhC0Rw_xxMvQpE0';
+
+  const cloud = {
+    enabled: false, url: null, key: null, syncing: false, lastError: null,
+
+    async init(url, key) {
+      this.url = url.replace(/\/$/, ''); this.key = key; this.enabled = true;
+      localStorage.setItem('sse_cloud_cfg', JSON.stringify({ url: this.url, key }));
+      await this.pullAll();     // bring down anything already on the server
+      this.pushDirty();         // then push up anything only local (e.g. data added before connecting)
+      setInterval(() => this.pullAll(), 20000);
+    },
+
+    tryAutoConnect() {
+      const raw = localStorage.getItem('sse_cloud_cfg');
+      if (raw) {
+        try { const cfg = JSON.parse(raw); this.init(cfg.url, cfg.key); return; } catch (e) {}
       }
-      peDirty=true; renderPriceEditorRows();
-      document.getElementById("peStatus").textContent=`CSV import: ${updated} updated, ${added} added`;
-    }catch(err){ alert("Could not import CSV: "+err.message); }
-    event.target.value="";
+      // no saved override — fall back to the baked-in project so this
+      // works out of the box on any device, no settings screen needed.
+      if (DEFAULT_CLOUD_URL && DEFAULT_CLOUD_KEY) this.init(DEFAULT_CLOUD_URL, DEFAULT_CLOUD_KEY);
+    },
+
+    headers() {
+      // Supabase's newer sb_publishable_/sb_secret_ keys are not JWTs and
+      // must go on the apikey header only — sending them as
+      // "Authorization: Bearer sb_publishable_..." is rejected. (Legacy
+      // eyJ... anon keys also work fine with just the apikey header, so
+      // this is safe either way.)
+      return { 'apikey': this.key, 'Content-Type': 'application/json' };
+    },
+
+    async pushTable(table) {
+      if (!this.enabled) return;
+      const rows = db[table];
+      if (!rows.length) return;
+      try {
+        this.syncing = true;
+        const res = await fetch(`${this.url}/rest/v1/${table}`, {
+          method: 'POST',
+          headers: Object.assign(this.headers(), { 'Prefer': 'resolution=merge-duplicates' }),
+          body: JSON.stringify(rows)
+        });
+        this.lastError = res.ok ? null : await res.text();
+      } catch (e) { this.lastError = e.message; }
+      this.syncing = false;
+      document.dispatchEvent(new CustomEvent('core:sync'));
+    },
+
+    pushDirty() { TABLES.forEach(t => this.pushTable(t)); },
+
+    async pullAll() {
+      if (!this.enabled) return;
+      try {
+        this.syncing = true;
+        for (const table of TABLES) {
+          const res = await fetch(`${this.url}/rest/v1/${table}?select=*`, { headers: this.headers() });
+          if (!res.ok) { this.lastError = await res.text(); continue; }
+          const remote = await res.json();
+          mergeTable(table, remote);
+        }
+        this.lastError = null;
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        document.dispatchEvent(new CustomEvent('core:change'));
+      } catch (e) { this.lastError = e.message; }
+      this.syncing = false;
+      document.dispatchEvent(new CustomEvent('core:sync'));
+    }
   };
-  reader.readAsText(file);
-}
-function parseCSVForImport(text){
-  const rows=[]; let row=[],field="",inQuotes=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i];
-    if(inQuotes){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;}else inQuotes=false; }else field+=c; }
-    else{ if(c==='"') inQuotes=true; else if(c===','){row.push(field);field="";} else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";} else if(c==='\r'){} else field+=c; }
+
+  /** Merge remote rows into local table — simple last-id-wins union.
+      Good enough for a small team where two people rarely edit the exact
+      same record in the same few seconds. */
+  function mergeTable(table, remoteRows) {
+    const local = db[table];
+    const byId = new Map(local.map(r => [r.id, r]));
+    remoteRows.forEach(r => byId.set(r.id, r));
+    db[table] = Array.from(byId.values());
   }
-  if(field.length||row.length){row.push(field);rows.push(row);}
-  return rows.filter(r=>r.length&&r.some(f=>f.trim()!==""));
-}
-async function savePriceEditorChanges(){
-  const btn=document.getElementById("peSaveBtn"),status=document.getElementById("peStatus");
-  btn.disabled=true; btn.textContent="Saving…";
-  try{
-    items=peWorkingCopy; await savePricesToCloud(); refreshBrandDropdown(); populateCmpBrandLists(); peDirty=false;
-    status.textContent="✓ Saved! Synced to all devices."; status.style.color="#156038";
-    setTimeout(()=>{ document.getElementById("priceEditorOverlay").style.display="none"; },900);
-  }catch(e){ status.textContent="⚠ Could not save: "+e.message; status.style.color="#c0392b"; alert("Could not save.\n\n"+e.message); }
-  finally{ btn.disabled=false; btn.textContent="💾 Save & Sync"; }
-}
 
-/* ===== WIRE / CABLE HELPERS ===== */
-function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes("90MTR")) return 90; if(n.includes("180MTR")) return 180; if(n.includes("200MTR")) return 200; if(n.includes("300MTR")) return 300; const m=n.match(/(\d{2,4})\s*MTR\b/); return m?parseInt(m[1],10):null; }
+  function enableCloudSync(url, key) { cloud.init(url, key); }
+  function cloudStatus() { return { enabled: cloud.enabled, syncing: cloud.syncing, error: cloud.lastError }; }
+  function tryAutoConnectCloud() { cloud.tryAutoConnect(); }
 
-/* PERMANENT, BRAND-AGNOSTIC wire/cable detection — driven entirely by the ITEM NAME,
-   not the brand name. Any brand you add in future (GREATWHITE, HAVELLS, whatever) will
-   automatically get the coil/colour/FR wire treatment as long as its item names follow
-   the normal convention: contain "SQMM" / "WIRE" / "CABLE", optionally with a coil
-   length like "90MTR"/"180MTR" or the word ARMOURED/FLEXIBLE. No brand list to maintain. */
-function isWireOrCableItemName(name){
-  const n=(name||"").toUpperCase();
-  return /SQMM/.test(n) || /\bWIRE\b/.test(n) || /\bCABLE\b/.test(n);
-}
-function isArmouredOrFlexibleItemName(name){
-  const n=(name||"").toUpperCase();
-  return /ARMOURED|FLEXIBLE/.test(n);
-}
-function getDisplayBrand(b){ if(b.startsWith("POLYCAB")) return "POLYCAB"; if(b.startsWith("KEI")) return "KEI"; return b.split(" - ")[0].trim(); }
+  /* ---------- dev helper: reset ---------- */
+  function _resetAll() { db = emptyDB(); persist(); }
 
-function updateIndCopperBox(){
-  const brand=brandSel.value; const indBox=document.getElementById("indCopperBox");
-  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
-  const isWireItem=isWireOrCableItemName(itemName);
-  if(!isWireItem){ indBox.style.display="none"; return; }
-  const coilMRP=+mrp.value, len=getCoilLength(itemName), shortBrand=getDisplayBrand(brand);
-  const isArmFlxItem=isArmouredOrFlexibleItemName(itemName);
-  const nUpper=itemName.toUpperCase();
-  document.getElementById("cableBoxTitle").innerText = len
-    ? `📦 ${shortBrand} — COIL INFO`
-    : isArmFlxItem
-      ? (nUpper.includes("ALU ARMOURED") ? `📦 ${shortBrand} ALU ARMOURED` : nUpper.includes("ARMOURED") ? `📦 ${shortBrand} COPPER ARMOURED` : `📦 ${shortBrand} FLEXIBLE`)
-      : `📦 ${shortBrand} — WIRE INFO`;
-  document.getElementById("frToggleBox").style.display="block";
-  const coilInfoRow=document.getElementById("coilInfoRow");
-  if(len&&coilMRP){ document.getElementById("coilLen").value=len; document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2); updateNetPerMtr(); if(coilInfoRow) coilInfoRow.style.display=""; }
-  else{ if(coilInfoRow) coilInfoRow.style.display="none"; }
-  indBox.style.display="block";
-}
-function updateNetPerMtr(){ const coilMRP=+mrp.value,len=+document.getElementById("coilLen").value; if(!len||!coilMRP) return; let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP); document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2); }
-function updateQtyLabel(){
-  const qtyLabel=document.getElementById("qtyLabel");
-  const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
-  const isWire=isWireOrCableItemName(itemName)&&!!getCoilLength(itemName);
-  if(isWire&&unit.value==="MTRS") qtyLabel.innerText="Qty (Metres)";
-  else if(isWire&&unit.value==="COIL") qtyLabel.innerText="Qty (No. of Coils)";
-  else qtyLabel.innerText="Qty";
-}
+  return {
+    // parties
+    addParty, getParty, listParties, updatePartyStatus, convertLeadToClient, getPartyTimeline,
+    PARTY_TYPES, PARTY_STATUS,
+    // items
+    addItem, getItem, listItems, updateItemPrice,
+    // stock
+    stockMove, lowStockItems,
+    // indents
+    createIndent, listIndents, getIndent, priceIndent,
+    // quotations
+    createQuotation, listQuotations, getQuotation, confirmQuotation, rejectQuotation,
+    // cloud sync
+    enableCloudSync, cloudStatus, tryAutoConnectCloud,
+    // misc
+    _resetAll, _db: () => db
+  };
+})();
 
-itemSel.onchange=()=>{ mrp.value=itemSel.value; updateIndCopperBox(); updateQtyLabel(); };
-document.getElementById("disc").addEventListener("input",()=>{ updateNetPerMtr(); });
-document.getElementById("net").addEventListener("input",()=>{ updateNetPerMtr(); });
+/* ===== leads.js ===== */
+/* =========================================================================
+   LEADS / CLIENTS module
+   Pipeline stage 1: Lead -> Client
+   ========================================================================= */
 
-function getHSN(brand,itemName){
-  const n=itemName.toUpperCase();
-  if(isWireOrCableItemName(itemName)) return "85446090";
-  if(n.includes("SWITCH")||n.includes("SOCKET")||n.includes("REGULATOR")||n.includes("BELL PUSH")||n.includes("INDICATOR")) return "85365020";
-  if(n.includes("MCB")||n.includes("MCCB")||n.includes("ISOLAT")) return "85362000";
-  if(n.includes(" DB ")||n.endsWith("DB")||n.includes("PANEL")||n.includes("ENCLOSER")) return "85371000";
-  if(n.includes("MODULE PLATE")||n.includes("BLANK PLATE")||n.includes(" PLATE")) return "85389000";
-  if(n.includes("DOWN LIGHT")||n.includes("SKIRTING LIGHT")||n.includes("FOOT LAMP")) return "94051090";
-  if(n.includes("RJ")||n.includes("TV SOCKET")||n.includes("TELEPHONE")||n.includes("USB")) return "85363090";
-  return "85369090";
-}
+const Leads = (() => {
 
-let selectedColour="";
-function selectColour(colour){ if(selectedColour===colour&&colour!=='CUSTOM'){clearColour();return;} selectedColour=colour; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("clr-"+colour).classList.add("active"); const ci=document.getElementById("customColourInput"); if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();selectedColour=ci.value.toUpperCase()||"";}else{ci.style.display="none";document.getElementById("selectedColourDisplay").innerText=colour;} }
-function clearColour(){ selectedColour=""; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("customColourInput").style.display="none"; document.getElementById("customColourInput").value=""; document.getElementById("selectedColourDisplay").innerText="—"; }
-function getSelectedColour(){ if(document.getElementById("clr-CUSTOM").classList.contains("active")) return document.getElementById("customColourInput").value.trim().toUpperCase()||""; return selectedColour; }
-function getColourStyle(colour){ const map={'RED':'background:#fff0f0;color:#c62828;font-weight:700','YELLOW':'background:#fffde7;color:#f57f17;font-weight:700','BLUE':'background:#e3f2fd;color:#1565c0;font-weight:700','BLACK':'background:#f5f5f5;color:#212121;font-weight:700','GREEN':'background:#e8f5e9;color:#2e7d32;font-weight:700'}; return map[colour.toUpperCase()]||'background:#f3e5f5;color:#6a1b9a;font-weight:700'; }
+  let activeFilter = 'lead';
 
-function addItem(){
-  if(!itemSel.value||!brandSel.value) return;
-  const coilMRP=+mrp.value; let perMtrRate="-",displayUnit,displayMRP,description,showPerMtr=false,finalRate,finalQty=+qty.value;
-  const itemName=itemSel.options[itemSel.selectedIndex].text.trim(), brand=brandSel.value;
-  const frType=document.getElementById("frType")?.value||"", colourVal=getSelectedColour(), displayBrand=getDisplayBrand(brand);
-  // Brand-agnostic: detected purely from the ITEM NAME, so any future brand works automatically
-  const coilLenDetected=getCoilLength(itemName);
-  const isWireItem=isWireOrCableItemName(itemName);
-  const isIndCopper=isWireItem&&!!coilLenDetected;   // has an explicit coil length -> coil-priced (MRP ÷ length)
-  const isArmFlx=isWireItem&&!coilLenDetected;        // wire/cable item without a coil length -> priced per metre already
-  const buildSuffix=base=>frType?`${base} ${frType}`:base;
-  if(isIndCopper){
-    const len=+document.getElementById("coilLen").value||coilLenDetected||1;
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate=(coilRate/len).toFixed(2);
-    description=buildSuffix(itemName);
-    if(unit.value==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
-    else{ displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;finalRate=coilRate; }
-  }else if(isArmFlx){
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);finalRate=coilRate;
-  }else{
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
+  function render() {
+    const main = document.getElementById('main');
+    const leads = Core.listParties({ type: activeFilter });
+
+    main.innerHTML = `
+      <div class="page-head">
+        <div>
+          <div class="page-title">Leads &amp; Clients</div>
+          <div class="page-desc">Where every relationship starts. Convert a lead to a client once they're ready to buy.</div>
+        </div>
+        <button class="btn amber" id="btn-add-party">+ Add Lead</button>
+      </div>
+
+      ${pipelineStrip('leads')}
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">${Core.listParties({ type: 'lead' }).length}</div><div class="stat-label">Open Leads</div></div>
+        <div class="stat"><div class="stat-num">${Core.listParties({ type: 'customer' }).length}</div><div class="stat-label">Clients</div></div>
+        <div class="stat"><div class="stat-num">${Core.listParties({ type: 'lead', status: 'won' }).length}</div><div class="stat-label">Won</div></div>
+        <div class="stat"><div class="stat-num">${Core.listParties({ type: 'lead', status: 'lost' }).length}</div><div class="stat-label">Lost</div></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div class="card-title" style="margin-bottom:0;">Party List</div>
+          <div style="display:flex; gap:6px;">
+            ${filterBtn('lead', 'Leads')}
+            ${filterBtn('customer', 'Clients')}
+          </div>
+        </div>
+        ${leads.length ? table(leads) : `<div class="empty">No ${activeFilter === 'lead' ? 'leads' : 'clients'} yet. <b>Add one to get started.</b></div>`}
+      </div>
+    `;
+
+    document.getElementById('btn-add-party').onclick = openAddModal;
+    document.querySelectorAll('.filter-btn').forEach(b => b.onclick = () => { activeFilter = b.dataset.f; render(); });
+    document.querySelectorAll('.party-row').forEach(r => r.onclick = () => openPartyDetail(r.dataset.id));
   }
-  const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
-  const colourStyle=colourVal?getColourStyle(colourVal):"";
-  const selectedItemObj=(items[brand]||[]).find(i=>i.name===itemName);
-  const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
-  const amt=finalRate*finalQty;
-  const r=tbody.insertRow();
-  r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||coilLenDetected||1):'';
-  r.dataset.brand=displayBrand; r.dataset.mrpRaw=displayMRP; r.dataset.discRaw=disc.value||0;
-  const mrpCellTxt=isBrandMrpVisible(displayBrand)?displayMRP:'-', discCellTxt=isBrandMrpVisible(displayBrand)?(disc.value||0):'-';
-  r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${mrpCellTxt}</td><td class="mrpCol">${discCellTxt}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
-  renumber();calc();
-}
 
-function toggleCustomItem(){customItemBox.style.display=customToggle.checked?"block":"none";}
-function addCustomItem(){
-  const brand=c_brand.value||"NA",item=c_item.value,unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
-  if(!item||!unit||!qty||!rate) return;
-  const r=tbody.insertRow();
-  r.dataset.brand=brand; r.dataset.mrpRaw='-'; r.dataset.discRaw='-';
-  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
-  renumber();calc();c_item.value=c_rate.value="";
-}
-function delRow(b){b.closest("tr").remove();renumber();calc();}
-
-function editRow(btn){
-  const r=btn.closest("tr"),cells=r.cells;
-  document.getElementById("editBrand").value=cells[1].innerText;
-  document.getElementById("editDescription").value=cells[2].innerText;
-  const colRaw=cells[3].innerText.trim();
-  document.getElementById("editColour").value=(colRaw==='-'||colRaw==='—')?'':colRaw;
-  document.getElementById("editHSN").value=(cells[4].innerText==='-')?'':cells[4].innerText;
-  document.getElementById("editUnit").value=cells[5].innerText;
-  document.getElementById("editQty").value=cells[6].innerText;
-  const mrpRawVal=(r.dataset.mrpRaw!==undefined)?r.dataset.mrpRaw:cells[7].innerText;
-  const discRawVal=(r.dataset.discRaw!==undefined)?r.dataset.discRaw:cells[8].innerText;
-  document.getElementById("editMRP").value=(mrpRawVal==='-'||mrpRawVal===''||mrpRawVal===undefined)?'':mrpRawVal;
-  document.getElementById("editDisc").value=(discRawVal==='-'||discRawVal===''||discRawVal===undefined)?'':discRawVal;
-  document.getElementById("editRate").value=cells[9].innerText;
-  document.getElementById("editPerMtr").value=(cells[10].innerText==='-'||cells[10].innerText==='')?'':cells[10].innerText;
-  document.getElementById("editBrandList").innerHTML=Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
-  document.getElementById("editRowModal")._targetRow=r;
-  document.getElementById("editRowModal").style.display="flex";
-  recalcEditAmt();
-  document.getElementById("editDisc").focus();
-  document.getElementById("editDisc").select();
-}
-function recalcEditRate(){
-  const mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value);
-  if(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV)){ const netRate=mrpV-mrpV*discV/100; document.getElementById("editRate").value=netRate.toFixed(2); const targetRow=document.getElementById("editRowModal")._targetRow; const coilLen=parseFloat(targetRow&&targetRow.dataset.coilLen); if(!isNaN(coilLen)&&coilLen>0) document.getElementById("editPerMtr").value=(netRate/coilLen).toFixed(2); }
-  recalcEditAmt();
-}
-function recalcEditAmt(){ const qty=parseFloat(document.getElementById("editQty").value)||0,rate=parseFloat(document.getElementById("editRate").value)||0; document.getElementById("editAmt").innerText="₹ "+(qty*rate).toFixed(2); }
-function saveEditRow(){
-  const modal=document.getElementById("editRowModal"),r=modal._targetRow; if(!r){closeEditRow();return;}
-  const cells=r.cells,mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value),qty=parseFloat(document.getElementById("editQty").value)||0;
-  let rate=(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV))?mrpV-mrpV*discV/100:(parseFloat(document.getElementById("editRate").value)||0);
-  const colourVal=document.getElementById("editColour").value.trim().toUpperCase(),colourStyle=colourVal?getColourStyle(colourVal):"";
-  cells[1].innerText=document.getElementById("editBrand").value.trim()||cells[1].innerText;
-  cells[2].innerText=document.getElementById("editDescription").value.trim()||cells[2].innerText;
-  cells[3].innerText=colourVal||'-'; cells[3].style.cssText=colourStyle;
-  cells[4].innerText=document.getElementById("editHSN").value.trim()||'-';
-  cells[5].innerText=document.getElementById("editUnit").value;
-  cells[6].innerText=qty;
-  r.dataset.brand=cells[1].innerText;
-  r.dataset.mrpRaw=isNaN(mrpV)?'-':mrpV;
-  r.dataset.discRaw=isNaN(discV)?'-':discV;
-  cells[7].innerText=(isNaN(mrpV)||!isBrandMrpVisible(r.dataset.brand))?'-':mrpV;
-  cells[8].innerText=(isNaN(discV)||!isBrandMrpVisible(r.dataset.brand))?'-':discV;
-  cells[9].innerText=rate.toFixed(2);
-  const coilLen=parseFloat(r.dataset.coilLen); cells[10].innerText=(!isNaN(coilLen)&&coilLen>0)?(rate/coilLen).toFixed(2):'-';
-  cells[11].innerText=(qty*rate).toFixed(2);
-  closeEditRow(); calc();
-}
-function closeEditRow(){ document.getElementById("editRowModal").style.display="none"; }
-function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
-
-/* ===== PER-BRAND MRP & DISCOUNT VISIBILITY (Regular Quotation + Comparison) ===== */
-let brandMrpVisibility={};
-try{ brandMrpVisibility=JSON.parse(localStorage.getItem("SSE_BRAND_MRP_VIS")||"{}"); }catch(e){ brandMrpVisibility={}; }
-function saveBrandMrpVisibility(){ try{ localStorage.setItem("SSE_BRAND_MRP_VIS",JSON.stringify(brandMrpVisibility)); }catch(e){} }
-function isBrandMrpVisible(brand,fallbackDefault){
-  const masterOn = fallbackDefault!==undefined ? fallbackDefault : document.getElementById("showMRP").checked;
-  if(!masterOn) return false; // master switch OFF always wins — hides everything, no exceptions
-  brand=(brand||"").trim();
-  if(Object.prototype.hasOwnProperty.call(brandMrpVisibility,brand)) return !!brandMrpVisibility[brand];
-  return true; // master is ON and this brand has no saved exception => show by default
-}
-function applyMrpVisibility(){
-  [...tbody.rows].forEach(r=>{
-    const brand=r.dataset.brand||r.cells[1].innerText;
-    const visible=isBrandMrpVisible(brand);
-    const mrpRaw=r.dataset.mrpRaw, discRaw=r.dataset.discRaw;
-    if(mrpRaw!==undefined) r.cells[7].innerText=(mrpRaw==='-'||mrpRaw==='')?'-':(visible?mrpRaw:'-');
-    if(discRaw!==undefined) r.cells[8].innerText=(discRaw==='-'||discRaw==='')?'-':(visible?discRaw:'-');
-  });
-}
-function collectKnownBrands(){
-  const set=new Set();
-  Object.keys(items||{}).forEach(b=>set.add(getDisplayBrand(b)));
-  [...tbody.rows].forEach(r=>{ const b=(r.dataset.brand||r.cells[1].innerText||"").trim(); if(b&&b!=='-') set.add(b); });
-  ["cmpBrand1","cmpBrand2","cmpBrand3"].forEach(id=>{ const el=document.getElementById(id); if(el&&el.value.trim()) set.add(el.value.trim().toUpperCase()); });
-  if(typeof cmpRows!=="undefined"){ cmpRows.forEach(row=>{ if(row.commonBrand) set.add(row.commonBrand); }); }
-  Object.keys(brandMrpVisibility).forEach(b=>{ if(b) set.add(b); });
-  return [...set].sort();
-}
-function openMrpSettings(){
-  const brands=collectKnownBrands();
-  const list=document.getElementById("mrpSettingsList");
-  if(!brands.length){
-    list.innerHTML='<div style="color:#999;font-size:12px;font-style:italic">No brands yet. Add an item (or load prices) and brands will appear here automatically.</div>';
-  }else{
-    list.innerHTML=brands.map(b=>{
-      const val=Object.prototype.hasOwnProperty.call(brandMrpVisibility,b)?!!brandMrpVisibility[b]:true;
-      const safe=b.replace(/"/g,"&quot;");
-      return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;font-weight:600;color:#1a3c6e;border-bottom:1px solid #f0f0f0"><input type="checkbox" class="mrpBrandChk" data-brand="${safe}" ${val?"checked":""}> ${b}</label>`;
-    }).join("");
+  function filterBtn(f, label) {
+    return `<button class="btn ${activeFilter === f ? '' : 'ghost'} sm filter-btn" data-f="${f}">${label}</button>`;
   }
-  document.getElementById("mrpSettingsModal").style.display="flex";
-}
-function closeMrpSettings(){ document.getElementById("mrpSettingsModal").style.display="none"; }
-function saveMrpSettings(){
-  document.querySelectorAll(".mrpBrandChk").forEach(chk=>{ brandMrpVisibility[chk.dataset.brand]=chk.checked; });
-  saveBrandMrpVisibility();
-  applyMrpVisibility();
-  if(typeof renderCmpTable==="function") renderCmpTable();
-  closeMrpSettings();
-}
 
-function calc(){
-  let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[11].innerText);
-  sub.innerText=s.toFixed(2);
-  const cashPct=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
-  const cashAmt=cashPct>0?(s*cashPct/100):0,taxable=s-cashAmt;
-  const cashDiscRow=document.getElementById("cashDiscRow"),taxableRow=document.getElementById("taxableRow");
-  if(cashPct>0){ document.getElementById("cashDiscAmt").innerText="- "+cashAmt.toFixed(2); document.getElementById("taxableAmt").innerText=taxable.toFixed(2); if(cashDiscRow) cashDiscRow.style.display=""; if(taxableRow) taxableRow.style.display=""; }
-  else{ if(cashDiscRow) cashDiscRow.style.display="none"; if(taxableRow) taxableRow.style.display="none"; }
-  gst.innerText=gstToggle.checked?(taxable*0.18).toFixed(2):"0.00";
-  const grandTotal=taxable+(+gst.innerText);
-  gt.innerText=grandTotal.toFixed(2);
-  const rounded=Math.round(grandTotal),roundOff=rounded-grandTotal;
-  document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
-  document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
-  applyMrpVisibility();
-  const anyMrpVisibleReg=[...tbody.rows].some(r=>{
-    if(r.dataset.mrpRaw===undefined||r.dataset.mrpRaw==='-'||r.dataset.mrpRaw==='') return false;
-    const brand=r.dataset.brand||r.cells[1].innerText;
-    return isBrandMrpVisible(brand);
-  });
-  document.querySelectorAll(".mrpCol").forEach(c=>c.style.display=anyMrpVisibleReg?"":"none");
-  const hasIndCopper=[...tbody.rows].some(r=>r.cells[5].innerText==="COIL"&&r.cells[10].innerText!=="-");
-  document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
-  document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
-}
-
-function printQuotation(){
-  const originalTitle = document.title;
-  document.title = exportFileName();
-  window.print();
-  setTimeout(()=>{ document.title = originalTitle; }, 1000);
-}
-
-function exportFileName(){
-  const docNoVal = (qno.value||"").trim();
-  // Doc number format: SGE-SSE-{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
-  const m = docNoVal.match(/^SGE-SSE-0*(\d+)\/[^/]+\/(.+)$/i);
-  if(m){
-    const serial = m[1];
-    const custPart = m[2].trim();
-    return `${custPart} ${serial}`;
+  function pipelineStrip(current) {
+    const steps = [
+      ['leads', 'Lead / Client'], ['inventory', 'Pricing / Stock'], ['quotation', 'Indent → Quotation']
+    ];
+    return `<div class="pipeline">` + steps.map(([key, label], i) =>
+      `<span class="pipe-step ${key === current ? 'current' : ''}">${i + 1}. ${label}</span>` +
+      (i < steps.length - 1 ? `<span class="pipe-arrow">→</span>` : '')
+    ).join('') + `</div>`;
   }
-  if(docNoVal) return docNoVal.replace(/\//g,"-");
-  const code = partyCodeFromName(custName.value);
-  return code || DOC_TYPES[currentDocType].file;
-}
 
-function exportExcel(){
-  const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
-  const custAttnVal=document.getElementById("custAttn")?.value.trim()||"";
-  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
-  [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,12).map(c=>c.innerText)));
-  data.push([]);
-  data.push(["","","","","","","","","","","Sub Total",sub.innerText]);
-  const cashPctVal=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
-  if(cashPctVal>0){ data.push(["","","","","","","","","","","Cash Discount ("+cashPctVal+"%)","- "+document.getElementById("cashDiscAmt").innerText]); data.push(["","","","","","","","","","","Taxable Amount",document.getElementById("taxableAmt").innerText]); }
-  data.push(["","","","","","","","","","","GST 18%",gst.innerText]);
-  data.push(["","","","","","","","","","","Grand Total",gt.innerText]);
-  data.push(["","","","","","","","","","","Net Payable",document.getElementById("netPayable").innerText]);
-  if(remarksTxt) data.push(["Remarks",remarksTxt]);
-  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),DOC_TYPES[currentDocType].label); XLSX.writeFile(wb,exportFileName()+".xlsx");
-}
+  function table(rows) {
+    return `
+      <table>
+        <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Last Update</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map(p => `
+            <tr class="party-row" data-id="${p.id}" style="cursor:pointer;">
+              <td><b>${esc(p.name)}</b></td>
+              <td>${esc(p.phone) || '—'}</td>
+              <td><span class="badge ${p.status}">${p.status}</span></td>
+              <td>${fmtDate(p.updated_at)}</td>
+              <td style="text-align:right;">
+                ${p.type === 'lead' ? `<button class="btn sm amber convert-btn" data-id="${p.id}">Convert to Client</button>` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
 
-function exportPDF(){
-  document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:exportFileName()+".pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
-}
-</script>
-
-<script>
-/* ====================================================================
-   PRICE COMPARISON — completely self-contained, separate data store
-   ==================================================================== */
-
-/* cmpRows stores each added comparison row:
-   { desc, hsn, unit, qty, colour, mrp:[m1,m2,m3], disc:[d1,d2,d3], rate:[r1,r2,r3], perMtr:[p1,p2,p3] }
-*/
-let cmpRows = [];
-
-function populateCmpBrandLists(){
-  const brands = Object.keys(items);
-  [1,2,3].forEach(n=>{
-    const dl = document.getElementById("cmpBrandList"+n);
-    if(dl) dl.innerHTML = brands.map(b=>`<option value="${b}">`).join("");
-  });
-  populateCmpItemDropdowns();
-  populateCmpNormalBrandDropdown();
-}
-
-/* ===== Common Items: EXACT same Brand>Item cascading picker as Regular Quotation ===== */
-function populateCmpNormalBrandDropdown(){
-  const sel=document.getElementById("cmpNBrand");
-  if(!sel) return;
-  const prev=sel.value;
-  sel.innerHTML="<option value=''>Select Brand</option>";
-  Object.keys(items).forEach(b=>{const o=document.createElement("option");o.textContent=b;o.value=b;sel.appendChild(o);});
-  if(prev&&items[prev]){ sel.value=prev; cmpNBrandChanged(); }
-}
-function cmpNBrandChanged(){
-  const brand=document.getElementById("cmpNBrand").value;
-  const itemSel=document.getElementById("cmpNItem");
-  itemSel.innerHTML="<option value=''>Select Item</option>";
-  document.getElementById("cmpNMRP").value="";
-  document.getElementById("cmpNDisc").value="";
-  document.getElementById("cmpNRate").value="";
-  const showChk=document.getElementById("cmpNShowMRP");
-  if(showChk&&brand){ const db=getDisplayBrand(brand); showChk.checked=Object.prototype.hasOwnProperty.call(brandMrpVisibility,db)?!!brandMrpVisibility[db]:true; }
-  if(!brand||!items[brand]) return;
-  items[brand].forEach(i=>{
-    const o=document.createElement("option");
-    o.textContent=i.name; o.value=i.mrp; o.dataset.hsn=i.hsn||"";
-    itemSel.appendChild(o);
-  });
-}
-function cmpNItemChanged(){
-  const sel=document.getElementById("cmpNItem");
-  const opt=sel.options[sel.selectedIndex];
-  document.getElementById("cmpNMRP").value=(opt&&opt.value)?opt.value:"";
-}
-
-/* Adds ONE row to the comparison table using the picked Brand+Item —
-   exactly like Regular Quotation's Add Item flow (MRP, Disc%, Net Rate).
-   The same item and rate are shown under every brand column automatically. */
-function addCmpNormalItem(){
-  const brand=document.getElementById("cmpNBrand").value;
-  const itemSel=document.getElementById("cmpNItem");
-  const opt=itemSel.options[itemSel.selectedIndex];
-  if(!brand||!opt||!opt.value){ alert("Please select Brand and Item."); return; }
-  const mrpVal=parseFloat(document.getElementById("cmpNMRP").value)||0;
-  const discVal=parseFloat(document.getElementById("cmpNDisc").value)||0;
-  let rateVal=parseFloat(document.getElementById("cmpNRate").value);
-  if(isNaN(rateVal)||!rateVal){ rateVal=discVal?mrpVal-(mrpVal*discVal/100):mrpVal; }
-  const qty=parseFloat(document.getElementById("cmpNQty").value)||1;
-  const unit=document.getElementById("cmpNUnit").value;
-  const itemName=opt.text;
-  const hsn=opt.dataset.hsn||getHSN(brand,itemName);
-
-  cmpRows.push({
-    desc: `${itemName} (${getDisplayBrand(brand)})`, hsn, unit, qty, colour:"", isCommon:true, commonBrand:getDisplayBrand(brand),
-    mrp:[mrpVal,mrpVal,mrpVal], disc:[discVal,discVal,discVal], rate:[rateVal,rateVal,rateVal],
-    coil:[0,0,0], perMtr:[0,0,0]
-  });
-  brandMrpVisibility[getDisplayBrand(brand)]=document.getElementById("cmpNShowMRP").checked;
-  saveBrandMrpVisibility();
-
-  itemSel.value=""; document.getElementById("cmpNMRP").value=""; document.getElementById("cmpNDisc").value="";
-  document.getElementById("cmpNRate").value=""; document.getElementById("cmpNQty").value="1";
-  renderCmpTable();
-  calcCmpTotals();
-}
-
-/* ===== Common Items: manual/custom entry — EXACT same idea as Regular Quotation's Custom Item ===== */
-function toggleCmpCustomItem(){
-  document.getElementById("cmpCustomItemBox").style.display=document.getElementById("cmpCustomToggle").checked?"block":"none";
-}
-function addCmpCustomItem(){
-  const brand=document.getElementById("cmpC_brand").value.trim()||"NA";
-  const desc=document.getElementById("cmpC_item").value.trim();
-  const unit=document.getElementById("cmpC_unit").value.trim()||"NOS";
-  const qty=parseFloat(document.getElementById("cmpC_qty").value)||1;
-  const rate=parseFloat(document.getElementById("cmpC_rate").value)||0;
-  if(!desc||!rate){ alert("Please enter Description and Rate."); return; }
-
-  cmpRows.push({
-    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"", isCommon:true, commonBrand:brand,
-    mrp:[0,0,0], disc:[0,0,0], rate:[rate,rate,rate],
-    coil:[0,0,0], perMtr:[0,0,0]
-  });
-  brandMrpVisibility[brand]=document.getElementById("cmpCShowMRP").checked;
-  saveBrandMrpVisibility();
-
-  document.getElementById("cmpC_item").value="";
-  document.getElementById("cmpC_rate").value="";
-  document.getElementById("cmpC_qty").value="1";
-  renderCmpTable();
-  calcCmpTotals();
-}
-
-/* Populate each brand's Item <select> from the master inventory list,
-   matched against whatever the user typed/picked in the Brand input. */
-function populateCmpItemDropdowns(){
-  [1,2,3].forEach(n=>{
-    const brandInput=(document.getElementById("cmpBrand"+n).value||"").trim();
-    const sel=document.getElementById("cmpItemSel"+n);
-    if(!sel) return;
-    const prevVal=sel.value;
-    sel.innerHTML="<option value=''>— Select Item —</option>";
-    // exact match first, then case-insensitive contains match against known brand keys
-    let matchedKey=null;
-    if(items[brandInput]) matchedKey=brandInput;
-    else{
-      const upperInput=brandInput.toUpperCase();
-      matchedKey=Object.keys(items).find(k=>k.toUpperCase()===upperInput)
-              || Object.keys(items).find(k=>upperInput&&k.toUpperCase().includes(upperInput));
-    }
-    if(matchedKey){
-      items[matchedKey].forEach(it=>{
-        const o=document.createElement("option");
-        o.textContent=it.name; o.value=it.name; o.dataset.mrp=it.mrp; o.dataset.brandKey=matchedKey;
-        sel.appendChild(o);
+  function openAddModal() {
+    showModal('Add Lead', `
+      <div class="field"><label>Name *</label><input id="f-name" placeholder="Client / business name"></div>
+      <div class="field-row">
+        <div class="field"><label>Phone</label><input id="f-phone" placeholder="10-digit number"></div>
+        <div class="field"><label>GST No.</label><input id="f-gst" placeholder="Optional"></div>
+      </div>
+      <div class="field"><label>Address</label><input id="f-address" placeholder="Optional"></div>
+      <div class="field"><label>Source</label>
+        <select id="f-source">
+          <option value="field-visit">Field visit</option>
+          <option value="referral">Referral</option>
+          <option value="call-in">Call-in</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      <button class="btn amber" id="save-party" style="width:100%; justify-content:center; margin-top:6px;">Save Lead</button>
+    `);
+    document.getElementById('save-party').onclick = () => {
+      const name = document.getElementById('f-name').value.trim();
+      if (!name) { toast('Name is required'); return; }
+      Core.addParty({
+        name, phone: document.getElementById('f-phone').value.trim(),
+        gst: document.getElementById('f-gst').value.trim(),
+        address: document.getElementById('f-address').value.trim(),
+        source: document.getElementById('f-source').value,
+        notes: document.getElementById('f-notes').value.trim(),
+        type: 'lead'
       });
-      if([...sel.options].some(o=>o.value===prevVal)) sel.value=prevVal;
+      closeModal();
+      toast('Lead added');
+      render();
+    };
+  }
+
+  function openPartyDetail(id) {
+    const p = Core.getParty(id);
+    if (!p) return;
+    const timeline = Core.getPartyTimeline(id);
+    showModal(p.name, `
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <span class="badge ${p.status}">${p.status}</span>
+        <span class="badge new" style="background:var(--paper-dim); color:var(--ink-dim);">${p.type}</span>
+      </div>
+      <div style="font-size:13px; color:var(--ink-dim); margin-bottom:14px;">
+        ${p.phone ? `📞 ${esc(p.phone)}<br>` : ''}
+        ${p.address ? `📍 ${esc(p.address)}<br>` : ''}
+        ${p.gst ? `GST: ${esc(p.gst)}` : ''}
+      </div>
+
+      <div class="card-title">Timeline</div>
+      <div style="max-height:180px; overflow-y:auto; margin-bottom:16px;">
+        ${timeline.length ? timeline.map(t => `
+          <div style="font-size:12.5px; padding:6px 0; border-bottom:1px solid var(--paper-dim);">
+            <span style="color:var(--ink-dim);">${fmtDate(t.date)}</span> — ${esc(t.note)}
+          </div>
+        `).join('') : `<div class="hint">No activity yet.</div>`}
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        ${p.type === 'lead' ? `<button class="btn amber" id="act-convert">Convert to Client</button>` : ''}
+        ${p.type === 'lead' && p.status !== 'lost' ? `<button class="btn danger" id="act-lost">Mark Lost</button>` : ''}
+        <button class="btn ghost" id="act-indent">Raise Indent →</button>
+      </div>
+    `);
+    const convertBtn = document.getElementById('act-convert');
+    if (convertBtn) convertBtn.onclick = () => { Core.convertLeadToClient(id); closeModal(); toast('Converted to client'); render(); };
+    const lostBtn = document.getElementById('act-lost');
+    if (lostBtn) lostBtn.onclick = () => { Core.updatePartyStatus(id, 'lost'); closeModal(); toast('Marked lost'); render(); };
+    document.getElementById('act-indent').onclick = () => { closeModal(); App.go('quotation', { newIndentFor: id }); };
+  }
+
+  // event delegation for the inline "Convert to Client" button in the table
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('convert-btn')) {
+      e.stopPropagation();
+      Core.convertLeadToClient(e.target.dataset.id);
+      toast('Converted to client');
+      render();
     }
   });
-}
 
-/* When an item is picked from a brand's dropdown: auto-fill MRP, detect coil length,
-   compute per-mtr rate, and (if Description is empty) auto-fill Description. */
-function cmpItemPicked(n){
-  const sel=document.getElementById("cmpItemSel"+n);
-  const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.value) return;
-  const mrpVal=parseFloat(opt.dataset.mrp)||0;
-  const brandKey=opt.dataset.brandKey||"";
-  cmpRateManuallyEdited[n-1]=false;
-  document.getElementById("cmpMRP"+n).value=mrpVal||"";
-  document.getElementById("cmpDisc"+n).value="";
+  return { render };
+})();
 
-  const coilLen=getCoilLength(opt.value); // reuse existing helper (90/180/200/300mtr detection)
-  const coilLenInput=document.getElementById("cmpCoilLen"+n);
-  const isWire=isWireOrCableItemName(opt.value); // brand-agnostic — works for any future brand
-  if(coilLen && isWire){
-    coilLenInput.value=coilLen;
-    document.getElementById("cmpWireInfoBox").style.display="";
-  }else{
-    coilLenInput.value="";
+/* ===== inventory.js ===== */
+/* =========================================================================
+   INVENTORY module
+   Pipeline stage 2: Item master + pricing that Quotation reads from,
+   and the stock ledger that Quotation confirms write into.
+   ========================================================================= */
+
+const Inventory = (() => {
+
+  function render() {
+    const main = document.getElementById('main');
+    const items = Core.listItems();
+    const low = Core.lowStockItems();
+
+    main.innerHTML = `
+      <div class="page-head">
+        <div>
+          <div class="page-title">Inventory</div>
+          <div class="page-desc">Item master, pricing, and stock. Quotation reads prices from here; confirmed sales deduct stock here.</div>
+        </div>
+        <button class="btn amber" id="btn-add-item">+ Add Item</button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">${items.length}</div><div class="stat-label">Items</div></div>
+        <div class="stat"><div class="stat-num">${items.reduce((s, i) => s + i.stock_qty, 0)}</div><div class="stat-label">Total Stock Units</div></div>
+        <div class="stat"><div class="stat-num" style="color:${low.length ? 'var(--red)' : 'inherit'}">${low.length}</div><div class="stat-label">Low Stock Alerts</div></div>
+      </div>
+
+      ${low.length ? `
+        <div class="card" style="border-color:#e6c9c5;">
+          <div class="card-title" style="color:var(--red);">Low Stock</div>
+          ${low.map(i => `<div style="font-size:13px; padding:4px 0;"><b>${esc(i.name)}</b> — ${i.stock_qty} ${esc(i.unit)} left (threshold ${i.low_stock_threshold})</div>`).join('')}
+        </div>
+      ` : ''}
+
+      <div class="card">
+        <div class="card-title">Item Master</div>
+        ${items.length ? `
+          <table>
+            <thead><tr><th>Item</th><th>Brand</th><th>Cost</th><th>Sell</th><th>Stock</th><th></th></tr></thead>
+            <tbody>
+              ${items.map(i => `
+                <tr>
+                  <td><b>${esc(i.name)}</b><div style="font-size:11px; color:var(--ink-dim);">${esc(i.category || '')}</div></td>
+                  <td>${esc(i.brand) || '—'}</td>
+                  <td>₹${i.cost_price}</td>
+                  <td>₹${i.sell_price}</td>
+                  <td>${i.stock_qty <= i.low_stock_threshold && i.low_stock_threshold > 0 ? `<span class="badge low">${i.stock_qty} ${esc(i.unit)}</span>` : `${i.stock_qty} ${esc(i.unit)}`}</td>
+                  <td style="text-align:right;">
+                    <button class="btn sm ghost stock-in-btn" data-id="${i.id}">Stock In</button>
+                    <button class="btn sm ghost stock-out-btn" data-id="${i.id}">Stock Out</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : `<div class="empty">No items yet. <b>Add your first item.</b></div>`}
+      </div>
+    `;
+
+    document.getElementById('btn-add-item').onclick = openAddItemModal;
+    document.querySelectorAll('.stock-in-btn').forEach(b => b.onclick = () => openStockModal(b.dataset.id, 'in'));
+    document.querySelectorAll('.stock-out-btn').forEach(b => b.onclick = () => openStockModal(b.dataset.id, 'out'));
   }
 
-  // auto-fill shared Description if still blank — keep the FULL item name,
-  // coil length (90/180/200/300MTR) is important and must not be stripped
-  const descEl=document.getElementById("cmpItemDesc");
-  if(!descEl.value.trim()){
-    descEl.value=opt.value;
+  function openAddItemModal() {
+    showModal('Add Item', `
+      <div class="field"><label>Item Name *</label><input id="f-name" placeholder="e.g. 2.5 sq mm Copper Wire"></div>
+      <div class="field-row">
+        <div class="field"><label>Category</label><input id="f-cat" placeholder="Wire / Switch / Light..."></div>
+        <div class="field"><label>Brand</label><input id="f-brand" placeholder="Optional"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Unit</label>
+          <select id="f-unit"><option>Nos</option><option>Mtr</option><option>Box</option><option>Coil</option><option>Kg</option></select>
+        </div>
+        <div class="field"><label>Low Stock Alert At</label><input id="f-threshold" type="number" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Cost Price (₹)</label><input id="f-cost" type="number" value="0"></div>
+        <div class="field"><label>Sell Price (₹)</label><input id="f-sell" type="number" value="0"></div>
+      </div>
+      <div class="field"><label>HSN Code</label><input id="f-hsn" placeholder="Optional"></div>
+      <button class="btn amber" id="save-item" style="width:100%; justify-content:center; margin-top:6px;">Save Item</button>
+    `);
+    document.getElementById('save-item').onclick = () => {
+      const name = document.getElementById('f-name').value.trim();
+      if (!name) { toast('Item name is required'); return; }
+      Core.addItem({
+        name, category: document.getElementById('f-cat').value.trim(),
+        brand: document.getElementById('f-brand').value.trim(),
+        unit: document.getElementById('f-unit').value,
+        cost_price: document.getElementById('f-cost').value,
+        sell_price: document.getElementById('f-sell').value,
+        hsn: document.getElementById('f-hsn').value.trim(),
+        low_stock_threshold: document.getElementById('f-threshold').value
+      });
+      closeModal(); toast('Item added'); render();
+    };
   }
 
-  cmpRecalcRate(n);
-}
+  function openStockModal(item_id, type) {
+    const item = Core.getItem(item_id);
+    showModal(`${type === 'in' ? 'Stock In' : 'Stock Out'} — ${item.name}`, `
+      <div class="hint" style="margin-bottom:10px;">Current stock: <b>${item.stock_qty} ${esc(item.unit)}</b></div>
+      <div class="field"><label>Quantity</label><input id="f-qty" type="number" min="1" value="1"></div>
+      <div class="field"><label>Note</label><input id="f-note" placeholder="${type === 'in' ? 'e.g. Purchase from supplier' : 'e.g. Manual correction'}"></div>
+      <button class="btn amber" id="save-stock" style="width:100%; justify-content:center; margin-top:6px;">Confirm ${type === 'in' ? 'Stock In' : 'Stock Out'}</button>
+    `);
+    document.getElementById('save-stock').onclick = () => {
+      const qty = Number(document.getElementById('f-qty').value);
+      if (!qty || qty <= 0) { toast('Enter a valid quantity'); return; }
+      Core.stockMove(item_id, type, qty, { ref_type: type === 'in' ? 'purchase' : 'manual', notes: document.getElementById('f-note').value.trim() });
+      closeModal(); toast(`Stock ${type === 'in' ? 'in' : 'out'} recorded`); render();
+    };
+  }
 
-function getCmpBrandNames(){
-  return [1,2,3].map(n=>(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase()||("BRAND "+n));
-}
+  return { render };
+})();
 
-function toggleCmpBrandColMrp(n){
-  const brand=(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase();
-  if(!brand) return;
-  brandMrpVisibility[brand]=document.getElementById("cmpBrand"+n+"ShowMRP").checked;
-  saveBrandMrpVisibility();
-  renderCmpTable();
-}
-function syncCmpBrandColCheckboxes(){
-  [1,2,3].forEach(n=>{
-    const brand=(document.getElementById("cmpBrand"+n).value||"").trim().toUpperCase();
-    const chk=document.getElementById("cmpBrand"+n+"ShowMRP");
-    if(!chk) return;
-    chk.checked=brand&&Object.prototype.hasOwnProperty.call(brandMrpVisibility,brand)?!!brandMrpVisibility[brand]:true;
-  });
-}
-function refreshCmpHeaders(){
-  const names = getCmpBrandNames();
-  [1,2,3].forEach((n,i)=>{
-    document.getElementById("cmpPriceLabel"+n).innerText = names[i];
-    document.getElementById("cmpPriceLabel"+n).style.color = ["#1a3c6e","#1b7a4a","#6a1b9a"][i];
-  });
-  syncCmpBrandColCheckboxes();
-  populateCmpItemDropdowns();
-  renderCmpTable();
-}
+/* ===== quotation.js ===== */
+/* =========================================================================
+   QUOTATION module
+   Pipeline stage 3: Indent -> Pricing (pulled from Inventory) -> Quotation
+   Confirming here is what triggers stock-out (Inventory) + lead-won (Leads).
+   ========================================================================= */
 
-let cmpRateManuallyEdited=[false,false,false];
-function cmpRateManualEdit(n){ cmpRateManuallyEdited[n-1]=true; cmpUpdatePerMtrDisplay(n); }
+const Quotation = (() => {
 
-function cmpRecalcRate(n){
-  const mrpEl=document.getElementById("cmpMRP"+n), discEl=document.getElementById("cmpDisc"+n), rateEl=document.getElementById("cmpRate"+n);
-  const m=parseFloat(mrpEl.value)||0, d=parseFloat(discEl.value)||0;
-  if(m>0 && !cmpRateManuallyEdited[n-1]) rateEl.value=(m-m*d/100).toFixed(2);
-  cmpUpdatePerMtrDisplay(n);
-}
+  let pendingIndentParty = null; // set by App.go('quotation', {newIndentFor}) from Leads
 
-function cmpUpdatePerMtrDisplay(n){
-  const rate=parseFloat(document.getElementById("cmpRate"+n).value)||0;
-  const mrpV=parseFloat(document.getElementById("cmpMRP"+n).value)||0;
-  const len=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
-  const dispRate=document.getElementById("cmpPerMtr"+n);
-  const dispMrp=document.getElementById("cmpMrpPerMtr"+n);
-  if(rate>0 && len>0) dispRate.innerText="₹ "+(rate/len).toFixed(2)+" /mtr";
-  else dispRate.innerText="—";
-  if(mrpV>0 && len>0) dispMrp.innerText="₹ "+(mrpV/len).toFixed(2)+" /mtr";
-  else dispMrp.innerText="—";
-}
+  function render(params = {}) {
+    if (params.newIndentFor) pendingIndentParty = params.newIndentFor;
 
-/* ===== Comparison wire colour / FR type (shared across the 3 brands for a row) ===== */
-let cmpSelectedColour="";
-function cmpSelectColour(colour){
-  if(cmpSelectedColour===colour&&colour!=='CUSTOM'){cmpClearColour();return;}
-  cmpSelectedColour=colour;
-  document.querySelectorAll("#cmpWireInfoBox .clr-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById("cmpClr-"+colour).classList.add("active");
-  const ci=document.getElementById("cmpCustomColourInput");
-  if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();cmpSelectedColour=ci.value.toUpperCase()||"";}
-  else{ci.style.display="none";document.getElementById("cmpSelectedColourDisplay").innerText=colour;}
-}
-function cmpClearColour(){
-  cmpSelectedColour="";
-  document.querySelectorAll("#cmpWireInfoBox .clr-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById("cmpCustomColourInput").style.display="none";
-  document.getElementById("cmpCustomColourInput").value="";
-  document.getElementById("cmpSelectedColourDisplay").innerText="—";
-}
-function cmpGetSelectedColour(){
-  if(document.getElementById("cmpClr-CUSTOM").classList.contains("active")) return document.getElementById("cmpCustomColourInput").value.trim().toUpperCase()||"";
-  return cmpSelectedColour;
-}
+    const main = document.getElementById('main');
+    const indents = Core.listIndents();
+    const quotations = Core.listQuotations();
 
-function clearCmpEntry(){
-  document.getElementById("cmpItemDesc").value="";
-  document.getElementById("cmpItemHSN").value="";
-  document.getElementById("cmpItemQty").value="1";
-  document.getElementById("cmpFrType").value="";
-  cmpClearColour();
-  cmpRateManuallyEdited=[false,false,false];
-  [1,2,3].forEach(n=>{
-    document.getElementById("cmpItemSel"+n).value="";
-    document.getElementById("cmpMRP"+n).value="";
-    document.getElementById("cmpDisc"+n).value="";
-    document.getElementById("cmpRate"+n).value="";
-    document.getElementById("cmpCoilLen"+n).value="";
-    document.getElementById("cmpPerMtr"+n).innerText="—";
-    document.getElementById("cmpMrpPerMtr"+n).innerText="—";
-  });
-}
+    main.innerHTML = `
+      <div class="page-head">
+        <div>
+          <div class="page-title">Quotation</div>
+          <div class="page-desc">Raise an indent, price it against Inventory, generate the document, confirm the sale.</div>
+        </div>
+        <button class="btn amber" id="btn-new-indent">+ New Indent</button>
+      </div>
 
-function addCmpRow(){
-  let desc=(document.getElementById("cmpItemDesc").value||"").trim();
-  const hsn=(document.getElementById("cmpItemHSN").value||"").trim();
-  const unit=document.getElementById("cmpItemUnit").value;
-  const qty=parseFloat(document.getElementById("cmpItemQty").value)||1;
-  const frType=document.getElementById("cmpFrType").value||"";
-  const colourVal=cmpGetSelectedColour();
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">${indents.filter(i => i.status === 'requested').length}</div><div class="stat-label">Awaiting Pricing</div></div>
+        <div class="stat"><div class="stat-num">${quotations.filter(q => q.status === 'draft').length}</div><div class="stat-label">Awaiting Confirmation</div></div>
+        <div class="stat"><div class="stat-num">${quotations.filter(q => q.status === 'confirmed').length}</div><div class="stat-label">Confirmed Sales</div></div>
+        <div class="stat"><div class="stat-num">₹${quotations.filter(q => q.status === 'confirmed').reduce((s, q) => s + q.total, 0)}</div><div class="stat-label">Confirmed Value</div></div>
+      </div>
 
-  if(!desc){ alert("Please enter a Description."); return; }
-  if(frType) desc=`${desc} ${frType}`;
+      <div class="card">
+        <div class="card-title">Indents</div>
+        ${indents.length ? `
+          <table>
+            <thead><tr><th>Party</th><th>Items</th><th>Status</th><th>Raised</th><th></th></tr></thead>
+            <tbody>
+              ${indents.map(i => {
+                const party = Core.getParty(i.party_id);
+                return `
+                  <tr>
+                    <td><b>${esc(party ? party.name : '—')}</b></td>
+                    <td>${i.lines.length} item(s)</td>
+                    <td><span class="badge ${i.status}">${i.status}</span></td>
+                    <td>${fmtDate(i.created_at)}</td>
+                    <td style="text-align:right;">
+                      ${i.status === 'requested' ? `<button class="btn sm amber price-btn" data-id="${i.id}">Price This</button>` : ''}
+                      ${i.status === 'priced' ? `<button class="btn sm amber gen-btn" data-id="${i.id}">Generate Quotation</button>` : ''}
+                    </td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        ` : `<div class="empty">No indents yet. <b>Raise one from a lead's or client's page, or here.</b></div>`}
+      </div>
 
-  const mrpArr=[],discArr=[],rateArr=[],coilArr=[],perMtrArr=[];
-  [1,2,3].forEach(n=>{
-    mrpArr.push(parseFloat(document.getElementById("cmpMRP"+n).value)||0);
-    discArr.push(parseFloat(document.getElementById("cmpDisc"+n).value)||0);
-    const rateEl=document.getElementById("cmpRate"+n);
-    let rate=parseFloat(rateEl.value)||0;
-    // if rate empty but mrp entered, calculate it
-    if(!rate && mrpArr[n-1]>0) rate=mrpArr[n-1]-mrpArr[n-1]*discArr[n-1]/100;
-    rateArr.push(rate);
-    const coilLen=parseFloat(document.getElementById("cmpCoilLen"+n).value)||0;
-    coilArr.push(coilLen);
-    perMtrArr.push((rate>0&&coilLen>0) ? +(rate/coilLen).toFixed(2) : 0);
-  });
+      <div class="card">
+        <div class="card-title">Documents</div>
+        ${quotations.length ? `
+          <table>
+            <thead><tr><th>Doc No.</th><th>Party</th><th>Type</th><th>Total</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${quotations.map(q => {
+                const party = Core.getParty(q.party_id);
+                return `
+                  <tr>
+                    <td><b>${q.doc_no}</b></td>
+                    <td>${esc(party ? party.name : '—')}</td>
+                    <td>${q.doc_type}</td>
+                    <td>₹${q.total}</td>
+                    <td><span class="badge ${q.status}">${q.status}</span></td>
+                    <td style="text-align:right;">
+                      ${q.status === 'draft' ? `
+                        <button class="btn sm amber confirm-btn" data-id="${q.id}">Confirm Sale</button>
+                        <button class="btn sm danger reject-btn" data-id="${q.id}">Reject</button>
+                      ` : ''}
+                    </td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        ` : `<div class="empty">No quotations generated yet.</div>`}
+      </div>
+    `;
 
-  cmpRows.push({ desc, hsn, unit, qty, colour:colourVal, isCommon:false, mrp:mrpArr, disc:discArr, rate:rateArr, coil:coilArr, perMtr:perMtrArr });
-  clearCmpEntry();
-  renderCmpTable();
-  calcCmpTotals();
-}
+    document.getElementById('btn-new-indent').onclick = openIndentModal;
+    document.querySelectorAll('.price-btn').forEach(b => b.onclick = () => openPricingModal(b.dataset.id));
+    document.querySelectorAll('.gen-btn').forEach(b => b.onclick = () => openGenerateModal(b.dataset.id));
+    document.querySelectorAll('.confirm-btn').forEach(b => b.onclick = () => {
+      Core.confirmQuotation(b.dataset.id);
+      toast('Sale confirmed — stock deducted, party updated');
+      render();
+    });
+    document.querySelectorAll('.reject-btn').forEach(b => b.onclick = () => {
+      Core.rejectQuotation(b.dataset.id);
+      toast('Quotation rejected');
+      render();
+    });
 
-function toggleCommonRowMrp(idx){
-  const row=cmpRows[idx];
-  if(!row||!row.isCommon||!row.commonBrand) return;
-  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;
-  const current=isBrandMrpVisible(row.commonBrand, showCommonMRPCols);
-  brandMrpVisibility[row.commonBrand]=!current;
-  saveBrandMrpVisibility();
-  renderCmpTable();
-}
-
-function deleteCmpRow(idx){
-  cmpRows.splice(idx,1);
-  renderCmpTable();
-  calcCmpTotals();
-}
-
-function renderCmpTable(){
-  const thead=document.getElementById("cmpThead");
-  const tbody=document.getElementById("cmpTbody");
-  const brandNames=getCmpBrandNames();
-  const showMRPCols=document.getElementById("cmpShowMRP").checked;              // Comparison items (fallback default)
-  const showCommonMRPCols=document.getElementById("cmpShowCommonMRP").checked;  // Common items (fallback default)
-  const brand3NameEarly=(document.getElementById("cmpBrand3").value||"").trim();
-  const hasB3Early=brand3NameEarly.length>0;
-  const anyMRPCols=cmpRows.some(row=>[0,1,2].some(i=>{
-    if(i===2&&!hasB3Early) return false;
-    if(!row.mrp[i]) return false; // nothing to show for this column anyway
-    const visible=row.isCommon?isBrandMrpVisible(row.commonBrand,showCommonMRPCols):isBrandMrpVisible(brandNames[i],showMRPCols);
-    return visible;
-  })); // whether the MRP/Disc columns exist at all — collapses fully when nothing would actually show
-  const showPerMtrCols=document.getElementById("cmpShowPerMtr")?document.getElementById("cmpShowPerMtr").checked:true;
-  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
-  const hasB3=brand3Name.length>0;
-  const anyCoilData=cmpRows.some(r=>r.coil&&r.coil.some(c=>c>0));
-  const showPerMtr=showPerMtrCols&&anyCoilData;
-  const anyColour=cmpRows.some(r=>r.colour);
-
-  /* ---- build header ---- */
-  const colColors=["brand-header-1","brand-header-2","brand-header-3"];
-  const colBg=["brand-col-1","brand-col-2","brand-col-3"];
-
-  let headerHTML=`<tr>
-    <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:140px">S.No</th>
-    <th rowspan="2" style="background:#1a3c6e;color:#fff;min-width:160px">Description</th>
-    ${anyColour?`<th rowspan="2" style="background:#1a3c6e;color:#fff">Colour</th>`:``}
-    <th rowspan="2" style="background:#1a3c6e;color:#fff">HSN</th>
-    <th rowspan="2" style="background:#1a3c6e;color:#fff">Unit</th>
-    <th rowspan="2" style="background:#1a3c6e;color:#fff">Qty</th>`;
-
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    let colCount = 2; // Rate + Amount
-    if(anyMRPCols) colCount += 2; // + MRP + Disc%
-    if(showPerMtr) colCount += 1; // + Per-Mtr Rate
-    headerHTML += `<th colspan="${colCount}" class="${colColors[i]}">${brandNames[i]}</th>`;
-  });
-  headerHTML+=`<th rowspan="2" class="no-print" style="background:#1a3c6e;color:#fff">Del</th></tr><tr>`;
-
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    if(anyMRPCols){
-      headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">MRP</th><th class="${colColors[i]}" style="font-size:10px">Disc%</th>`;
+    // auto-open the indent modal if we arrived here from a lead's "Raise Indent"
+    if (pendingIndentParty) {
+      const pid = pendingIndentParty;
+      pendingIndentParty = null;
+      openIndentModal(pid);
     }
-    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Net Rate</th>`;
-    if(showPerMtr) headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">₹/Mtr</th>`;
-    headerHTML+=`<th class="${colColors[i]}" style="font-size:10px">Amount</th>`;
-  });
-  headerHTML+=`</tr>`;
-  thead.innerHTML=headerHTML;
-
-  /* ---- build body ---- */
-  let bodyHTML="";
-  cmpRows.forEach((row,idx)=>{
-    const colourStyle=row.colour?getColourStyle(row.colour):"";
-    // Each brand COLUMN's MRP/Disc visibility follows that specific brand's per-brand setting
-    // (falling back to the Comparison/Common default checkbox if the brand has no override saved).
-    // Common items use the row's actual product brand for all columns; comparison rows use each column's brand.
-    const colShowMRP=[0,1,2].map(i=>{
-      if(row.isCommon) return isBrandMrpVisible(row.commonBrand, showCommonMRPCols);
-      return isBrandMrpVisible(brandNames[i], showMRPCols);
-    });
-    bodyHTML+=`<tr>
-      <td>${idx+1}</td>
-      <td style="text-align:left">${row.desc}${row.isCommon?` <span style="font-size:9.5px;color:#156038;font-weight:700">[COMMON]</span> <button type="button" class="no-print" onclick="toggleCommonRowMrp(${idx})" title="Toggle MRP &amp; Disc% visibility for ${(row.commonBrand||'').replace(/"/g,'&quot;')}" style="font-size:9.5px;padding:1px 6px;background:${colShowMRP[0]?'#6a1b9a':'#999'};color:#fff;border:none;border-radius:10px;cursor:pointer">${colShowMRP[0]?'👁 MRP ON':'🚫 MRP OFF'}</button>`:``}</td>
-      ${anyColour?`<td style="${colourStyle}">${row.colour||"-"}</td>`:``}
-      <td>${row.hsn||"-"}</td>
-      <td>${row.unit}</td>
-      <td>${row.qty}</td>`;
-
-    [0,1,2].forEach(i=>{
-      if(i===2&&!hasB3) return;
-      const rate=row.rate[i]||0;
-      const amt=rate>0?rate*row.qty:0;
-      if(anyMRPCols){
-        bodyHTML+=`<td class="${colBg[i]}">${colShowMRP[i]?(row.mrp[i]||"-"):"-"}</td><td class="${colBg[i]}">${colShowMRP[i]?(row.disc[i]||"-"):"-"}</td>`;
-      }
-      bodyHTML+=`<td class="${colBg[i]}">${rate>0?rate.toFixed(2):"-"}</td>`;
-      if(showPerMtr){
-        const pm=(row.perMtr&&row.perMtr[i])?row.perMtr[i]:0;
-        bodyHTML+=`<td class="${colBg[i]}" style="font-size:10.5px;color:#555">${pm>0?pm.toFixed(2):"-"}</td>`;
-      }
-      bodyHTML+=`<td class="${colBg[i]}">${amt>0?amt.toFixed(2):"-"}</td>`;
-    });
-
-    bodyHTML+=`<td class="no-print"><button onclick="deleteCmpRow(${idx})" style="background:#c0392b;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px">✕</button></td></tr>`;
-  });
-
-  if(!cmpRows.length){
-    const perBrandCols=2+(anyMRPCols?2:0)+(showPerMtr?1:0);
-    const totalCols=5+(anyColour?1:0)+((hasB3?3:2)*perBrandCols)+1;
-    bodyHTML=`<tr><td colspan="${totalCols}" style="text-align:center;color:#999;padding:20px;font-style:italic">No items added yet. Use the form above to add items.</td></tr>`;
   }
 
-  tbody.innerHTML=bodyHTML;
-}
+  let indentLines = [];
 
-function calcCmpTotals(){
-  const wrap=document.getElementById("cmpTotalsWrap");
-  const brandNames=getCmpBrandNames();
-  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
-  const hasB3=brand3Name.length>0;
-  const gstOn=document.getElementById("cmpShowGST").checked;
-  const colColors=["#1a3c6e","#1b7a4a","#6a1b9a"];
+  function openIndentModal(presetPartyId = null) {
+    indentLines = [{ item_id: '', qty: 1 }];
+    const parties = Core.listParties({ type: 'lead' }).concat(Core.listParties({ type: 'customer' }));
+    const items = Core.listItems();
 
-  if(!cmpRows.length){ wrap.innerHTML=""; return; }
+    if (!parties.length) { toast('Add a lead or client first'); return; }
+    if (!items.length) { toast('Add an item in Inventory first'); return; }
 
-  /* compute per-brand totals */
-  const subTotals=[0,0,0];
-  cmpRows.forEach(row=>{
-    [0,1,2].forEach(i=>{
-      const rate=row.rate[i]||0;
-      if(rate>0) subTotals[i]+=rate*row.qty;
-    });
-  });
+    showModal('New Indent', `
+      <div class="field"><label>Party</label>
+        <select id="f-party">${parties.map(p => `<option value="${p.id}" ${p.id === presetPartyId ? 'selected' : ''}>${esc(p.name)} (${p.type})</option>`).join('')}</select>
+      </div>
+      <label>Items Requested</label>
+      <div id="indent-lines"></div>
+      <button class="btn ghost sm" id="add-line" style="margin-top:4px;">+ Add another item</button>
+      <div class="field" style="margin-top:12px;"><label>Notes</label><input id="f-notes" placeholder="Optional"></div>
+      <button class="btn amber" id="save-indent" style="width:100%; justify-content:center; margin-top:10px;">Raise Indent</button>
+    `);
 
-  const gstAmts=subTotals.map(s=>gstOn?s*0.18:0);
-  const grandTotals=subTotals.map((s,i)=>s+gstAmts[i]);
-  const netPayables=grandTotals.map(g=>Math.round(g));
+    const items_opts = items.map(i => `<option value="${i.id}">${esc(i.name)}</option>`).join('');
 
-  const lightBg=["#eef3fb","#eaf6f0","#f6eefa"];      // pale brand tints, used throughout
+    function renderLines() {
+      document.getElementById('indent-lines').innerHTML = indentLines.map((l, idx) => `
+        <div class="field-row" style="margin-bottom:6px; align-items:flex-end;">
+          <div class="field" style="margin-bottom:0;"><select class="line-item" data-idx="${idx}">${items_opts}</select></div>
+          <div class="field" style="margin-bottom:0; flex:0 0 80px;"><input class="line-qty" data-idx="${idx}" type="number" min="1" value="${l.qty}"></div>
+        </div>
+      `).join('');
+      document.querySelectorAll('.line-item').forEach(s => s.value = indentLines[s.dataset.idx].item_id || s.options[0].value);
+      document.querySelectorAll('.line-item').forEach(s => s.onchange = () => indentLines[s.dataset.idx].item_id = s.value);
+      document.querySelectorAll('.line-qty').forEach(s => s.onchange = () => indentLines[s.dataset.idx].qty = Number(s.value));
+    }
+    renderLines();
 
-  let html=`<div class="cmp-totals-box"><table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead>
-      <tr>
-        <th style="background:#f0f4fb;color:#1a3c6e;padding:8px 10px;text-align:left;border:1px solid #c5d3e8">Summary</th>`;
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    html+=`<th style="background:${lightBg[i]};color:${colColors[i]};padding:8px 10px;text-align:right;border:1px solid #c5d3e8;border-bottom:2px solid ${colColors[i]}">${brandNames[i]}</th>`;
-  });
-  html+=`</tr></thead><tbody>
-    <tr>
-      <td style="padding:7px 10px;border:1px solid #c5d3e8;color:#1a1a2e">Sub Total</td>`;
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:600">₹ ${subTotals[i]>0?subTotals[i].toFixed(2):"-"}</td>`;
-  });
-  html+=`</tr>`;
+    document.getElementById('add-line').onclick = () => { indentLines.push({ item_id: '', qty: 1 }); renderLines(); };
 
-  if(gstOn){
-    html+=`<tr><td style="padding:7px 10px;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">GST 18%</td>`;
-    [0,1,2].forEach(i=>{
-      if(i===2&&!hasB3) return;
-      html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:#fffaf0;color:#7a5000">₹ ${gstAmts[i]>0?gstAmts[i].toFixed(2):"-"}</td>`;
-    });
-    html+=`</tr>`;
+    document.getElementById('save-indent').onclick = () => {
+      const party_id = document.getElementById('f-party').value;
+      const lines = indentLines.filter(l => l.item_id && l.qty > 0);
+      if (!lines.length) { toast('Add at least one item'); return; }
+      Core.createIndent(party_id, lines, document.getElementById('f-notes').value.trim());
+      closeModal(); toast('Indent raised'); render();
+    };
   }
 
-  html+=`<tr>`;
-  html+=`<td style="padding:7px 10px;border:1px solid #c5d3e8;background:#f5f8fd;color:#1a3c6e;font-weight:700">Grand Total</td>`;
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    html+=`<td style="padding:7px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800">${grandTotals[i]>0?"₹ "+grandTotals[i].toFixed(2):"-"}</td>`;
-  });
-  html+=`</tr>`;
+  function openPricingModal(indent_id) {
+    const priced = Core.priceIndent(indent_id);
+    showModal('Pricing (pulled from Inventory)', `
+      <table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+        <tbody>
+          ${priced.map(l => `<tr><td>${esc(l.name)}</td><td>${l.qty}</td><td>₹${l.rate}</td><td>₹${l.amount}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="text-align:right; font-weight:700; margin-top:10px; font-size:14px;">
+        Total: ₹${priced.reduce((s, l) => s + l.amount, 0).toFixed(2)}
+      </div>
+      <div class="hint">Prices pulled live from the Inventory item master. Update prices there if these look off.</div>
+      <button class="btn amber" id="close-pricing" style="width:100%; justify-content:center; margin-top:12px;">Done — status set to Priced</button>
+    `);
+    document.getElementById('close-pricing').onclick = () => { closeModal(); render(); };
+  }
 
-  html+=`<tr>`;
-  html+=`<td style="padding:8px 10px;border:1px solid #c5d3e8;background:#f0f9f4;color:#156038;font-weight:800;font-size:13px">Net Payable</td>`;
-  [0,1,2].forEach(i=>{
-    if(i===2&&!hasB3) return;
-    html+=`<td style="padding:8px 10px;text-align:right;border:1px solid #c5d3e8;background:${lightBg[i]};color:#1a1a2e;font-weight:800;font-size:13px">${netPayables[i]>0?"₹ "+netPayables[i].toLocaleString("en-IN"):"-"}</td>`;
-  });
-  html+=`</tr>`;
+  function openGenerateModal(indent_id) {
+    const indent = Core.getIndent(indent_id);
+    const priced = indent.lines.map(l => {
+      const item = Core.getItem(l.item_id);
+      const rate = item ? item.sell_price : 0;
+      return { item_id: l.item_id, name: item ? item.name : '', qty: l.qty, rate, amount: +(rate * l.qty).toFixed(2) };
+    });
+    showModal('Generate Document', `
+      <div class="field"><label>Document Type</label>
+        <select id="f-doctype">
+          <option value="QTN">Quotation (needs confirm later)</option>
+          <option value="PI">Proforma Invoice (needs confirm later)</option>
+          <option value="CB">Cash Bill (confirms + deducts stock immediately)</option>
+        </select>
+      </div>
+      <div class="hint" style="margin-bottom:10px;">Total: ₹${priced.reduce((s, l) => s + l.amount, 0).toFixed(2)}</div>
+      <button class="btn amber" id="gen-doc" style="width:100%; justify-content:center;">Generate</button>
+    `);
+    document.getElementById('gen-doc').onclick = () => {
+      const doc_type = document.getElementById('f-doctype').value;
+      const q = Core.createQuotation(indent_id, doc_type, priced);
+      closeModal();
+      toast(doc_type === 'CB' ? `${q.doc_no} confirmed — stock deducted` : `${q.doc_no} created — awaiting confirmation`);
+      render();
+    };
+  }
 
-  html+=`</tbody></table></div>`;
-  wrap.innerHTML=html;
+  return { render };
+})();
+
+/* ===== app.js ===== */
+/* =========================================================================
+   APP SHELL — navigation between the three capabilities + shared UI helpers.
+   Nothing business-logic-specific lives here; that's all in core.js and the
+   three module files. This file just wires the sidebar to the views.
+   ========================================================================= */
+
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtDate(iso) { const d = new Date(iso); return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); }
+
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
 }
 
-function printCmp(){ window.print(); }
-
-function exportCmpExcel(){
-  const brandNames=getCmpBrandNames();
-  const brand3Name=(document.getElementById("cmpBrand3").value||"").trim();
-  const hasB3=brand3Name.length>0;
-  const gstOn=document.getElementById("cmpShowGST").checked;
-
-  const brands=hasB3?brandNames:brandNames.slice(0,2);
-  let data=[
-    ["SAI GANESH ELECTRICALS – SSE — PRICE COMPARISON"],
-    ["Quotation No",document.getElementById("cmpQno").value,"Date",document.getElementById("cmpDate").value],
-    ["Customer",document.getElementById("cmpCust").value,"GSTIN",document.getElementById("cmpGST").value],
-    ["Address",document.getElementById("cmpAddr")?.value||"","Kind Attn",document.getElementById("cmpAttn")?.value||""],
-    [],
-    ["S.No","Description","Colour","HSN","Unit","Qty",...brands.flatMap(b=>[b+" MRP",b+" Disc%",b+" Rate",b+" Rate/Mtr",b+" Amt"])]
-  ];
-
-  cmpRows.forEach((row,idx)=>{
-    const rowData=[idx+1,row.desc,row.colour||"",row.hsn,row.unit,row.qty];
-    [0,1,2].forEach(i=>{ if(i===2&&!hasB3) return; rowData.push(row.mrp[i]||"",row.disc[i]||"",row.rate[i]||"",(row.perMtr&&row.perMtr[i])||"",row.rate[i]>0?(row.rate[i]*row.qty).toFixed(2):""); });
-    data.push(rowData);
-  });
-
-  data.push([]);
-  data.push(["TOTALS",""," "," "," "," ",...brands.flatMap(b=>["","","","",""])]);
-  const subTotals=[0,0,0]; cmpRows.forEach(row=>{ [0,1,2].forEach(i=>{ if(row.rate[i]>0) subTotals[i]+=row.rate[i]*row.qty; }); });
-  const subRow=["Sub Total",""," "," "," "," "]; brands.forEach((_,i)=>subRow.push("","","","",subTotals[i]>0?subTotals[i].toFixed(2):""));
-  data.push(subRow);
-  if(gstOn){ const gstRow=["GST 18%",""," "," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
-  const gtRow=["Net Payable",""," "," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
-
-  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Price Comparison"); XLSX.writeFile(wb,"SSE_PriceComparison.xlsx");
+function showModal(title, bodyHtml) {
+  closeModal();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.id = 'active-modal';
+  bg.innerHTML = `
+    <div class="modal">
+      <div class="modal-head"><h3>${esc(title)}</h3><button class="modal-close" id="modal-close-btn">✕</button></div>
+      <div>${bodyHtml}</div>
+    </div>
+  `;
+  bg.onclick = (e) => { if (e.target === bg) closeModal(); };
+  document.body.appendChild(bg);
+  document.getElementById('modal-close-btn').onclick = closeModal;
 }
+function closeModal() { const m = document.getElementById('active-modal'); if (m) m.remove(); }
 
-function exportCmpPDF(){
-  document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
-  html2pdf().set({margin:5,filename:"SSE_PriceComparison.pdf",html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}}).from(document.getElementById("printArea")).save().then(()=>{ document.querySelectorAll(".pdf-hide").forEach(e=>e.classList.remove("pdf-hide")); });
-}
-</script>
+const App = (() => {
+  const views = {
+    dashboard: { label: 'Dashboard', icon: '◆', render: renderDashboard },
+    leads: { label: 'Leads & Clients', icon: '①', render: (p) => Leads.render(p) },
+    inventory: { label: 'Inventory', icon: '②', render: (p) => Inventory.render(p) },
+    quotation: { label: 'Quotation', icon: '③', render: (p) => Quotation.render(p) },
+  };
+  let current = 'dashboard';
+
+  function init() {
+    document.getElementById('nav').innerHTML = Object.entries(views).map(([key, v]) => `
+      <button class="nav-item" data-view="${key}"><span class="n-icon">${v.icon}</span> ${v.label}</button>
+    `).join('');
+    Object.keys(views).forEach(key => {
+      document.querySelector(`[data-view="${key}"]`).onclick = () => go(key);
+    });
+    document.addEventListener('core:change', () => { if (current === 'dashboard') renderDashboard(); });
+    document.addEventListener('core:sync', renderSyncStatus);
+    renderSyncStatus();
+    Core.tryAutoConnectCloud();
+    go('dashboard');
+  }
+
+  function renderSyncStatus() {
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    const s = Core.cloudStatus();
+    let dot = '#7f8ea3', label = 'Not connected';
+    if (s.enabled && s.syncing) { dot = '#e8a53d'; label = 'Syncing…'; }
+    else if (s.enabled && s.error) { dot = '#b0463c'; label = 'Sync error'; }
+    else if (s.enabled) { dot = '#3f7d5c'; label = 'Synced'; }
+    el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dot};margin-right:6px;"></span>${label}`;
+    el.title = s.error || '';
+  }
+
+  function openSettingsModal() {
+    const s = Core.cloudStatus();
+    showModal('Cloud Sync Settings', `
+      <div class="hint" style="margin-bottom:12px;">
+        Paste your Supabase project URL and anon/public API key. Create a free project at
+        <a href="https://supabase.com" target="_blank">supabase.com</a> and run the setup SQL first — see the README that came with this app.
+      </div>
+      <div class="field"><label>Supabase URL</label><input id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
+      <div class="field"><label>Anon / Publishable Key</label><input id="cfg-key" placeholder="eyJ..."></div>
+      <button class="btn amber" id="cfg-save" style="width:100%; justify-content:center; margin-top:6px;">Connect</button>
+      <div class="hint" style="margin-top:10px;">Status: ${s.enabled ? (s.error ? 'Error — ' + esc(s.error) : 'Connected') : 'Not connected (working offline, this device only)'}</div>
+    `);
+    document.getElementById('cfg-save').onclick = () => {
+      const url = document.getElementById('cfg-url').value.trim();
+      const key = document.getElementById('cfg-key').value.trim();
+      if (!url || !key) { toast('Both fields are required'); return; }
+      Core.enableCloudSync(url, key);
+      closeModal(); toast('Connecting to cloud…');
+    };
+  }
+
+  function go(view, params = {}) {
+    current = view;
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    views[view].render(params);
+  }
+
+  function renderDashboard() {
+    const main = document.getElementById('main');
+    const parties = Core._db().parties;
+    const items = Core._db().items;
+    const quotations = Core._db().quotations;
+    const leads = parties.filter(p => p.type === 'lead' && p.status !== 'won' && p.status !== 'lost');
+    const lowStock = Core.lowStockItems();
+    const pendingConfirm = quotations.filter(q => q.status === 'draft');
+    const confirmedValue = quotations.filter(q => q.status === 'confirmed').reduce((s, q) => s + q.total, 0);
+
+    main.innerHTML = `
+      <div class="page-head">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">One system, one spine: Lead → Client → Indent → Pricing → Quotation → Stock-out / Won.</div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">${leads.length}</div><div class="stat-label">Open Leads</div></div>
+        <div class="stat"><div class="stat-num">${items.length}</div><div class="stat-label">Items Tracked</div></div>
+        <div class="stat"><div class="stat-num">${pendingConfirm.length}</div><div class="stat-label">Awaiting Confirmation</div></div>
+        <div class="stat"><div class="stat-num">₹${confirmedValue}</div><div class="stat-label">Confirmed Sales Value</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pipeline</div>
+        <div class="pipeline">
+          <span class="pipe-step">Lead (${parties.filter(p=>p.type==='lead').length})</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step">Client (${parties.filter(p=>p.type==='customer').length})</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step">Indent (${Core._db().indents.length})</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step">Priced (${Core._db().indents.filter(i=>i.status!=='requested').length})</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step">Quoted (${quotations.length})</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step">Confirmed (${quotations.filter(q=>q.status==='confirmed').length})</span>
+        </div>
+      </div>
+
+      ${lowStock.length ? `
+        <div class="card" style="border-color:#e6c9c5;">
+          <div class="card-title" style="color:var(--red);">Low Stock</div>
+          ${lowStock.map(i => `<div style="font-size:13px; padding:3px 0;">${esc(i.name)} — ${i.stock_qty} ${esc(i.unit)} left</div>`).join('')}
+        </div>
+      ` : ''}
+
+      ${!parties.length ? `
+        <div class="card">
+          <div class="empty">Nothing here yet. <b>Start in Leads & Clients</b> to add your first lead, or <b>Inventory</b> to add items.</div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  return { init, go };
+})();
+
+document.addEventListener('DOMContentLoaded', App.init);
+  </script>
 </body>
 </html>
