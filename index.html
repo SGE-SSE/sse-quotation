@@ -256,6 +256,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
     <div><label>Brand</label><input type="text" id="c_brand" placeholder="Local / NA"></div>
     <div><label>Description</label><input type="text" id="c_item" placeholder="Nut Bolt / Spring Wire"></div>
+    <div><label>HSN Code</label><input type="text" id="c_hsn" placeholder="Optional"></div>
     <div><label>Unit</label><input type="text" id="c_unit" placeholder="KG / NOS / MTR"></div>
     <div><label>Qty</label><input type="number" id="c_qty" value="1"></div>
     <div><label>Rate</label><input type="number" id="c_rate"></div>
@@ -579,9 +580,10 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 
     <label style="margin-top:8px"><input type="checkbox" id="cmpCustomToggle" onchange="toggleCmpCustomItem()"> Add Custom Item (Unbranded / Misc)</label>
     <div id="cmpCustomItemBox" style="display:none;margin-top:8px;background:#f5f8fd;border:1px solid #c5d3e8;border-radius:6px;padding:10px">
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
         <div><label>Brand</label><input type="text" id="cmpC_brand" placeholder="Local / NA"></div>
         <div><label>Description</label><input type="text" id="cmpC_item" placeholder="Nut Bolt / Spring Wire"></div>
+        <div><label>HSN Code</label><input type="text" id="cmpC_hsn" placeholder="Optional"></div>
         <div><label>Unit</label><input type="text" id="cmpC_unit" placeholder="KG / NOS / MTR"></div>
         <div><label>Qty</label><input type="number" id="cmpC_qty" value="1"></div>
         <div><label>Rate</label><input type="number" id="cmpC_rate"></div>
@@ -1610,12 +1612,12 @@ function addItem(){
 
 function toggleCustomItem(){customItemBox.style.display=customToggle.checked?"block":"none";}
 function addCustomItem(){
-  const brand=c_brand.value||"NA",item=c_item.value,unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
+  const brand=c_brand.value||"NA",item=c_item.value,hsn=(c_hsn.value||"").trim(),unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value;
   if(!item||!unit||!qty||!rate) return;
   const r=tbody.insertRow();
   r.dataset.brand=brand; r.dataset.mrpRaw='-'; r.dataset.discRaw='-';
-  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>-</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
-  renumber();calc();c_item.value=c_rate.value="";
+  r.innerHTML=`<td></td><td>${brand}</td><td>${item}</td><td>-</td><td>${hsn||"-"}</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+  renumber();calc();c_item.value=c_rate.value=c_hsn.value="";
 }
 function delRow(b){b.closest("tr").remove();renumber();calc();}
 
@@ -1943,13 +1945,14 @@ function toggleCmpCustomItem(){
 function addCmpCustomItem(){
   const brand=document.getElementById("cmpC_brand").value.trim()||"NA";
   const desc=document.getElementById("cmpC_item").value.trim();
+  const hsn=document.getElementById("cmpC_hsn").value.trim();
   const unit=document.getElementById("cmpC_unit").value.trim()||"NOS";
   const qty=parseFloat(document.getElementById("cmpC_qty").value)||1;
   const rate=parseFloat(document.getElementById("cmpC_rate").value)||0;
   if(!desc||!rate){ alert("Please enter Description and Rate."); return; }
 
   cmpRows.push({
-    desc: `${desc} (${brand})`, hsn:"", unit, qty, colour:"", isCommon:true, commonBrand:brand,
+    desc: `${desc} (${brand})`, hsn, unit, qty, colour:"", isCommon:true, commonBrand:brand,
     mrp:[0,0,0], disc:[0,0,0], rate:[rate,rate,rate],
     coil:[0,0,0], perMtr:[0,0,0]
   });
@@ -1957,6 +1960,7 @@ function addCmpCustomItem(){
   saveBrandMrpVisibility();
 
   document.getElementById("cmpC_item").value="";
+  document.getElementById("cmpC_hsn").value="";
   document.getElementById("cmpC_rate").value="";
   document.getElementById("cmpC_qty").value="1";
   renderCmpTable();
