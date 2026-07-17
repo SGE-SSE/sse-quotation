@@ -176,9 +176,9 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
       <input type="text" id="custName" autocomplete="off" oninput="onPartyNameInput()" onfocus="onPartyNameInput()" onblur="setTimeout(hidePartySuggestions,150)">
       <div id="partySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
     </div>
-    <div><label>Customer GSTIN</label><input type="text" id="custGST"></div>
-    <div><label>Customer Address</label><textarea id="custAddr"></textarea></div>
-    <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person"></div>
+    <div><label>Customer GSTIN</label><input type="text" id="custGST" oninput="syncPartyFields('regular')"></div>
+    <div><label>Customer Address</label><textarea id="custAddr" oninput="syncPartyFields('regular')"></textarea></div>
+    <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
   </div>
 </div>
 
@@ -476,11 +476,16 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
     <div><label>Date</label><input type="date" id="cmpDate"></div>
   </div>
   <div class="customer-grid" style="margin-top:8px">
-    <div><label>Customer Name</label><input type="text" id="cmpCust"></div>
-    <div><label>Customer GSTIN</label><input type="text" id="cmpGST"></div>
-    <div><label>Customer Address</label><textarea id="cmpAddr"></textarea></div>
-    <div><label>Kind Attn</label><input type="text" id="cmpAttn" placeholder="Contact Person"></div>
+    <div style="position:relative">
+      <label>Customer Name</label>
+      <input type="text" id="cmpCust" autocomplete="off" oninput="onCmpPartyNameInput()" onfocus="onCmpPartyNameInput()" onblur="setTimeout(hideCmpPartySuggestions,150)">
+      <div id="cmpPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
+    </div>
+    <div><label>Customer GSTIN</label><input type="text" id="cmpGST" oninput="syncPartyFields('compare')"></div>
+    <div><label>Customer Address</label><textarea id="cmpAddr" oninput="syncPartyFields('compare')"></textarea></div>
+    <div><label>Kind Attn</label><input type="text" id="cmpAttn" placeholder="Contact Person" oninput="syncPartyFields('compare')"></div>
   </div>
+  <div class="no-print" style="margin-top:4px;font-size:10.5px;color:#5a6a85;font-style:italic">🔗 Same party as Regular Quotation — editing either side keeps both in sync.</div>
 </div>
 
 <!-- Brand Setup -->
@@ -533,7 +538,10 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 <div class="entry-panel no-print">
   <div class="section-title">➕ Add Item to Compare</div>
   <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end">
-    <div><label>Description / Item Name</label><input type="text" id="cmpItemDesc" placeholder="e.g. 1.5 Sq.mm FR Wire"></div>
+    <div><label>Description / Item Name</label><input type="text" id="cmpItemDesc" list="cmpItemDescList" placeholder="e.g. 1.5 Sq.mm FR Wire" oninput="cmpDescPicked()">
+      <datalist id="cmpItemDescList"></datalist>
+      <div class="no-print" style="font-size:10px;color:#5a6a85;font-style:italic;margin-top:2px">Pick a matching item here or in any brand column below — it auto-fills the same item across all brands (only MRP / Disc% / Net Rate differ).</div>
+    </div>
     <div><label>HSN Code</label><input type="text" id="cmpItemHSN" placeholder="8544"></div>
     <div><label>Unit</label>
       <select id="cmpItemUnit">
@@ -685,14 +693,88 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   </table>
 </div>
 
+<!-- T&C (mirrors Regular Quotation exactly, same underlying Payment/Validity/Remarks) -->
+<div style="margin:12px 14px 14px">
+<table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #c5d3e8;border-radius:6px;table-layout:fixed">
+  <colgroup><col style="width:110px"><col style="width:12px"><col></colgroup>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;text-align:left;white-space:nowrap">PAYMENTS</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomPaymentCmp">AGAINST DELIVERY</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">STOCK</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">EX STOCK</td>
+  </tr>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">VALIDITY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0" id="tcBottomValidityCmp">7 DAYS</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">TOLERANCE</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0">+/- 5%</td>
+  </tr>
+  <tr style="background:#f5f8fd">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap">DELIVERY</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word">WITHIN 7 DAYS OF ORDER CONFIRMATION</td>
+  </tr>
+  <tr style="background:#fff8e1">
+    <td style="padding:4px 8px;font-weight:800;color:#c0392b;border:none;border-bottom:1px solid #e0e8f0" colspan="3">TRANSPORTATION EXTRA</td>
+  </tr>
+  <tr id="remarksRowCmp" style="display:none">
+    <td style="padding:4px 8px;font-weight:700;color:#1a3c6e;border:none;border-bottom:1px solid #e0e8f0;white-space:nowrap;vertical-align:top">REMARKS</td>
+    <td style="padding:4px 2px;color:#888;border:none;border-bottom:1px solid #e0e8f0;vertical-align:top">:</td>
+    <td style="padding:4px 6px;font-weight:600;color:#1a1a2e;border:none;border-bottom:1px solid #e0e8f0;word-wrap:break-word" id="tcBottomRemarksCmp"></td>
+  </tr>
+  <tr style="background:#f9f9f9">
+    <td style="padding:5px 8px;font-style:italic;color:#666;font-size:10px;border:none" colspan="3"><i>"We hope you will find our prices competitive. Awaiting your valuable order."</i></td>
+  </tr>
+</table>
+</div>
+
+<!-- Payment / Validity / Remarks — same underlying values as Regular Quotation, editable here too -->
+<div class="no-print" style="margin:0 14px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff7e6;border:1px solid #f0c060;border-radius:7px;padding:6px 10px">
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💳 Payment:</span>
+  <select id="payTermSelectCmp" onchange="cmpPayTermChanged()" style="width:auto;min-width:160px;font-size:11.5px">
+    <option value="AGAINST DELIVERY">Against Delivery</option>
+    <option value="100% ADVANCE">100% Advance</option>
+    <option value="PARTIAL ADVANCE">Partial Advance</option>
+    <option value="PDC">PDC (Post Dated Cheque)</option>
+  </select>
+  <div id="remainWrapCmp" style="display:none;align-items:center;gap:6px">
+    <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">Advance %:</span>
+    <input type="number" id="advancePctCmp" min="1" max="99" step="1" placeholder="e.g. 30" oninput="cmpPayTermChanged()" style="width:60px;font-size:11.5px">
+    <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">Remaining:</span>
+    <select id="remainTermSelectCmp" onchange="cmpPayTermChanged()" style="width:auto;min-width:140px;font-size:11.5px">
+      <option value="AGAINST DELIVERY">Against Delivery</option>
+      <option value="PDC">PDC (Post Dated Cheque)</option>
+    </select>
+  </div>
+  <div id="pdcDaysWrapCmp" style="display:none;align-items:center;gap:6px">
+    <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">PDC Days:</span>
+    <input type="number" id="pdcDaysCmp" min="1" max="365" placeholder="e.g. 30" oninput="cmpPayTermChanged()" style="width:70px;font-size:11.5px">
+  </div>
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
+  <input type="text" id="validityInputCmp" value="7 DAYS" oninput="cmpValidityRemarksChanged()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px">
+  <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
+  <input type="text" id="remarksInputCmp" oninput="cmpValidityRemarksChanged()" style="width:220px;font-size:11.5px" placeholder="Optional note for this quotation">
+  <span style="font-size:10.5px;color:#7a5000;font-style:italic">🔗 Same as Regular Quotation</span>
+</div>
+
 <!-- Comparison Totals -->
 <div id="cmpTotalsWrap" style="margin:10px 14px"></div>
 
 <!-- Action Buttons -->
 <div class="no-print action-btns" style="margin:10px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn-save" id="saveCmpBtn" onclick="saveCmpQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE COMPARISON</button>
   <button class="btn-print" onclick="printCmp()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportCmpExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportCmpPDF()">📄 PDF</button>
+  <span id="saveStatusCmp" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
 </div>
 
 </div><!-- end #compareSection -->
@@ -716,14 +798,31 @@ function switchMode(mode){
   document.getElementById('tabRegular').style.color = isRegular ? '#fff' : '#1a3c6e';
   document.getElementById('tabCompare').style.background = isRegular ? '#f0f4fb' : '#1a3c6e';
   document.getElementById('tabCompare').style.color = isRegular ? '#1a3c6e' : '#fff';
-  if(!isRegular){ populateCmpBrandLists(); }
+  if(!isRegular){ populateCmpBrandLists(); syncPartyFields('regular'); syncCmpPayUIVisibility(); }
 }
 
-/* ===== PARTY AUTOCOMPLETE ===== */
+/* ===== PARTY IS UNIVERSAL — one customer shared by Regular & Comparison ===== */
+/* source: 'regular' pushes Regular's fields -> Comparison; 'compare' pushes Comparison's fields -> Regular */
+function syncPartyFields(source){
+  if(source==='regular'){
+    document.getElementById('cmpCust').value = custName.value;
+    document.getElementById('cmpGST').value = custGST.value;
+    document.getElementById('cmpAddr').value = custAddr.value;
+    document.getElementById('cmpAttn').value = custAttn.value;
+  }else{
+    custName.value = document.getElementById('cmpCust').value;
+    custGST.value = document.getElementById('cmpGST').value;
+    custAddr.value = document.getElementById('cmpAddr').value;
+    custAttn.value = document.getElementById('cmpAttn').value;
+  }
+}
+
+/* ===== PARTY AUTOCOMPLETE (Regular) ===== */
 let partySearchTimer = null;
 function onPartyNameInput(){
   currentPartyId = null;
   clearTimeout(partySearchTimer);
+  syncPartyFields('regular');
   const q = custName.value.trim();
   if(!q){ hidePartySuggestions(); return; }
   partySearchTimer = setTimeout(async ()=>{
@@ -735,6 +834,7 @@ function onPartyNameInput(){
       custAddr.value = p.address || "";
       currentPartyId = p.id;
       hidePartySuggestions();
+      syncPartyFields('regular');
     });
   }, 200);
 }
@@ -746,6 +846,29 @@ function renderPartySuggestions(list, containerId, onPick){
   box.style.display = "block";
 }
 function hidePartySuggestions(){ document.getElementById("partySuggestions").style.display="none"; }
+
+/* ===== PARTY AUTOCOMPLETE (Comparison) — same "parties" table, same universal party ===== */
+let cmpPartySearchTimer = null;
+function onCmpPartyNameInput(){
+  currentPartyId = null;
+  clearTimeout(cmpPartySearchTimer);
+  syncPartyFields('compare');
+  const q = document.getElementById('cmpCust').value.trim();
+  if(!q){ hideCmpPartySuggestions(); return; }
+  cmpPartySearchTimer = setTimeout(async ()=>{
+    const { data, error } = await sb.from("parties").select("id,name,gstin,address").ilike("name", `%${q}%`).limit(8);
+    if(error){ console.error(error); return; }
+    renderPartySuggestions(data||[], "cmpPartySuggestions", (p)=>{
+      document.getElementById('cmpCust').value = p.name;
+      document.getElementById('cmpGST').value = p.gstin || "";
+      document.getElementById('cmpAddr').value = p.address || "";
+      currentPartyId = p.id;
+      hideCmpPartySuggestions();
+      syncPartyFields('compare');
+    });
+  }, 200);
+}
+function hideCmpPartySuggestions(){ document.getElementById("cmpPartySuggestions").style.display="none"; }
 
 async function findOrCreateParty(name, gstin, addr){
   name = name.trim();
@@ -773,13 +896,18 @@ function getFinancialYear(dateObj){
   };
 }
 
+/* Starting serial for each document type's numbering. Everything defaults to 1;
+   Proforma Invoice is set to start its own series at 100 (100, 101, 102...). */
+const DOC_SERIAL_START = { QTN:1, CB:1, PI:100 };
+
 /* Counts existing quotations for THIS customer + doc_type within the financial
-   year, so each customer's numbering starts fresh at 001 and increments on its own. */
+   year, so each customer's numbering starts fresh (per DOC_SERIAL_START) and increments on its own. */
 async function getNextDocSerial(partyId, docType, fy){
   const { count, error } = await sb.from("quotations").select("id", { count:"exact", head:true })
     .eq("party_id", partyId).eq("doc_type", docType).gte("doc_date", fy.startStr).lt("doc_date", fy.endExclusiveStr);
   if(error) throw error;
-  return (count||0)+1;
+  const start = DOC_SERIAL_START[docType] || 1;
+  return start + (count||0);
 }
 
 function collectItemsFromTable(){
@@ -812,9 +940,9 @@ async function saveQuotation(){
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
     const baseSerial = await getNextDocSerial(partyId, currentDocType, fy);
     let docNo, lastErr;
-    for(let attempt=0; attempt<5; attempt++){
+    for(let attempt=0; attempt<20; attempt++){
       const serial = baseSerial + attempt;
-      docNo = `SGE-SSE-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
+      docNo = `SGE-SSE-${currentDocType}-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
       const payload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -836,6 +964,58 @@ async function saveQuotation(){
     }
     if(lastErr) throw lastErr;
     qno.value = docNo;
+    status.textContent = `Saved as ${docNo} ✓`;
+    setTimeout(()=>status.textContent="", 5000);
+  }catch(err){
+    console.error(err);
+    alert("Could not save: " + (err.message||err));
+    status.textContent = "";
+  }finally{ btn.disabled = false; }
+}
+
+/* Saves a Price Comparison quotation. The serial number is drawn from the EXACT
+   same counter as the Regular Quotation (getNextDocSerial for the currently
+   selected doc type), so the Comparison numbering continues on from Regular
+   rather than keeping its own separate series. */
+async function saveCmpQuotation(){
+  const btn = document.getElementById("saveCmpBtn");
+  const status = document.getElementById("saveStatusCmp");
+  const cName = document.getElementById("cmpCust");
+  const cGST = document.getElementById("cmpGST");
+  const cAddr = document.getElementById("cmpAddr");
+  try{
+    if(!cName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
+    if(!cmpRows.length){ alert("Add at least one item before saving."); return; }
+    btn.disabled = true; status.textContent = "Saving…";
+    const partyId = await findOrCreateParty(cName.value, cGST.value, cAddr.value);
+    currentPartyId = partyId;
+    const cmpDateEl = document.getElementById("cmpDate");
+    const dateObj = new Date(cmpDateEl.value || new Date());
+    const fy = getFinancialYear(dateObj);
+    const custFullName = cName.value.trim().toUpperCase();
+    const baseSerial = await getNextDocSerial(partyId, currentDocType, fy); // same counter as Regular Quotation
+    const brandNames = getCmpBrandNames();
+    let docNo, lastErr;
+    for(let attempt=0; attempt<20; attempt++){
+      const serial = baseSerial + attempt;
+      docNo = `SGE-SSE-${currentDocType}-CMP-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
+      const payload = {
+        party_id: partyId, doc_type: currentDocType, doc_no: docNo,
+        doc_date: cmpDateEl.value || new Date().toISOString().slice(0,10),
+        cust_name: cName.value.trim(), cust_gst: cGST.value.trim(), cust_addr: cAddr.value.trim(),
+        gst_applied: !!document.getElementById("cmpShowGST").checked,
+        validity: document.getElementById("validityInputCmp")?.value || "",
+        remarks: document.getElementById("remarksInputCmp")?.value || "",
+        items: { type:"comparison", brands: brandNames, rows: cmpRows },
+        sub_total: 0, cash_disc_amt: 0, taxable: 0, gst_amt: 0, grand_total: 0, round_off: 0, net_payable: 0
+      };
+      const { error: saveErr } = await sb.from("quotations").insert(payload);
+      if(!saveErr){ lastErr = null; break; }
+      lastErr = saveErr;
+      if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
+    }
+    if(lastErr) throw lastErr;
+    document.getElementById("cmpQno").value = docNo;
     status.textContent = `Saved as ${docNo} ✓`;
     setTimeout(()=>status.textContent="", 5000);
   }catch(err){
@@ -977,6 +1157,47 @@ function updateTCDisplay(){
   const rEl=document.getElementById("remarksInput");
   const remarksRow=document.getElementById("remarksRow");
   if(rEl&&remarksRow){ const txt=rEl.value.trim(); document.getElementById("tcBottomRemarks").innerText=txt; remarksRow.style.display=txt?"":"none"; }
+
+  /* ===== Mirror into Comparison Quotation — T&C there must read EXACTLY like Regular ===== */
+  const tcPayCmp=document.getElementById("tcBottomPaymentCmp"); if(tcPayCmp) tcPayCmp.innerText=display;
+  const payCmp=document.getElementById("payTermSelectCmp");
+  if(payCmp){
+    payCmp.value=v;
+    document.getElementById("advancePctCmp").value=document.getElementById("advancePct").value;
+    document.getElementById("remainTermSelectCmp").value=document.getElementById("remainTermSelect").value;
+    document.getElementById("pdcDaysCmp").value=days;
+    syncCmpPayUIVisibility();
+  }
+  const valCmp=document.getElementById("validityInputCmp"); if(valCmp&&vEl) valCmp.value=vEl.value;
+  const tcValCmp=document.getElementById("tcBottomValidityCmp"); if(tcValCmp&&vEl) tcValCmp.innerText=vEl.value.toUpperCase()||"7 DAYS";
+  const remCmp=document.getElementById("remarksInputCmp"); if(remCmp&&rEl) remCmp.value=rEl.value;
+  const tcRemCmp=document.getElementById("tcBottomRemarksCmp"); const remarksRowCmp=document.getElementById("remarksRowCmp");
+  if(rEl&&remarksRowCmp){ const txt=rEl.value.trim(); if(tcRemCmp) tcRemCmp.innerText=txt; remarksRowCmp.style.display=txt?"":"none"; }
+}
+
+/* ===== Comparison-side Payment/Validity/Remarks controls — push into the
+   SAME shared fields used by Regular Quotation, so both stay identical. ===== */
+function cmpPayTermChanged(){
+  document.getElementById("payTermSelect").value=document.getElementById("payTermSelectCmp").value;
+  document.getElementById("advancePct").value=document.getElementById("advancePctCmp").value;
+  document.getElementById("remainTermSelect").value=document.getElementById("remainTermSelectCmp").value;
+  document.getElementById("pdcDays").value=document.getElementById("pdcDaysCmp").value;
+  handlePayTermChange();
+}
+function syncCmpPayUIVisibility(){
+  const selCmp=document.getElementById("payTermSelectCmp");
+  if(!selCmp) return;
+  const v=selCmp.value;
+  const isPartial=(v==="PARTIAL ADVANCE");
+  document.getElementById("remainWrapCmp").style.display=isPartial?"flex":"none";
+  const remainV=document.getElementById("remainTermSelectCmp").value;
+  const showPdcDays=(v==="PDC")||(isPartial&&remainV==="PDC");
+  document.getElementById("pdcDaysWrapCmp").style.display=showPdcDays?"flex":"none";
+}
+function cmpValidityRemarksChanged(){
+  document.getElementById("validityInput").value=document.getElementById("validityInputCmp").value;
+  document.getElementById("remarksInput").value=document.getElementById("remarksInputCmp").value;
+  updateTCDisplay();
 }
 
 /* ===== FALLBACK INVENTORY ===== */
@@ -1116,7 +1337,9 @@ window.onload=()=>{
   qdate.valueAsDate=new Date();
   qno.value=generateQuotationNo();
   document.getElementById("cmpDate").valueAsDate=new Date();
-  document.getElementById("cmpQno").value="SSE/CMP/"+new Date().getFullYear()+"/001";
+  document.getElementById("cmpQno").value="(assigned on Save)";
+  updateTCDisplay();
+  syncCmpPayUIVisibility();
   refreshPrices(false);
 };
 
@@ -1535,8 +1758,8 @@ function printQuotation(){
 
 function exportFileName(){
   const docNoVal = (qno.value||"").trim();
-  // Doc number format: SGE-SSE-{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
-  const m = docNoVal.match(/^SGE-SSE-0*(\d+)\/[^/]+\/(.+)$/i);
+  // Doc number format: SGE-SSE-{TYPE-}{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
+  const m = docNoVal.match(/^SGE-SSE-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
   if(m){
     const serial = m[1];
     const custPart = m[2].trim();
@@ -1599,6 +1822,56 @@ function populateCmpBrandLists(){
   });
   populateCmpItemDropdowns();
   populateCmpNormalBrandDropdown();
+  populateCmpDescList();
+}
+
+/* Master list of every known item name across every brand, so picking one
+   Description auto-matches the same item under each brand column below. */
+function populateCmpDescList(){
+  const dl=document.getElementById("cmpItemDescList");
+  if(!dl) return;
+  const names=new Set();
+  Object.values(items).forEach(arr=>arr.forEach(it=>names.add(it.name)));
+  dl.innerHTML=[...names].sort().map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join("");
+}
+
+/* Normalizes an item name for loose cross-brand matching (case/space/punct-insensitive). */
+function cmpNormName(s){ return (s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
+
+/* Finds the option in brand column n's Item <select> that best matches itemName
+   (exact match first, then a normalized/loose match), or null if none found. */
+function cmpFindMatchingOption(n, itemName){
+  const sel=document.getElementById("cmpItemSel"+n);
+  if(!sel||!sel.options.length) return null;
+  const upper=(itemName||"").trim().toUpperCase();
+  if(!upper) return null;
+  let opt=[...sel.options].find(o=>o.value&&o.value.trim().toUpperCase()===upper);
+  if(!opt){
+    const target=cmpNormName(upper);
+    opt=[...sel.options].find(o=>o.value&&cmpNormName(o.value)===target);
+  }
+  return opt||null;
+}
+
+/* Requirement: same item compared across brands — selecting it in ONE place
+   (Description field or any brand column) fills the SAME item into the other
+   brand columns automatically. Only MRP / Disc% / Net Rate stay per-brand. */
+function cmpDescPicked(){
+  const val=(document.getElementById("cmpItemDesc").value||"").trim();
+  if(!val) return;
+  [1,2,3].forEach(n=>{
+    const opt=cmpFindMatchingOption(n, val);
+    const sel=document.getElementById("cmpItemSel"+n);
+    if(opt && sel.value!==opt.value){ sel.value=opt.value; cmpItemPicked(n); }
+  });
+}
+function cmpSyncFromBrand(sourceN, itemName){
+  [1,2,3].forEach(n=>{
+    if(n===sourceN) return;
+    const opt=cmpFindMatchingOption(n, itemName);
+    const sel=document.getElementById("cmpItemSel"+n);
+    if(opt && sel.value!==opt.value){ sel.value=opt.value; cmpItemPicked(n); }
+  });
 }
 
 /* ===== Common Items: EXACT same Brand>Item cascading picker as Regular Quotation ===== */
@@ -1748,6 +2021,7 @@ function cmpItemPicked(n){
   }
 
   cmpRecalcRate(n);
+  cmpSyncFromBrand(n, opt.value); // same item -> auto-fill into the other brand columns
 }
 
 function getCmpBrandNames(){
@@ -2092,6 +2366,12 @@ function exportCmpExcel(){
   data.push(subRow);
   if(gstOn){ const gstRow=["GST 18%",""," "," "," "," "]; brands.forEach((_,i)=>gstRow.push("","","","",subTotals[i]>0?(subTotals[i]*0.18).toFixed(2):"")); data.push(gstRow); }
   const gtRow=["Net Payable",""," "," "," "," "]; brands.forEach((_,i)=>gtRow.push("","","","",subTotals[i]>0?Math.round(subTotals[i]*(gstOn?1.18:1)).toLocaleString("en-IN"):"")); data.push(gtRow);
+
+  data.push([]);
+  data.push(["Payment",document.getElementById("tcBottomPaymentCmp")?.innerText||""]);
+  data.push(["Validity",document.getElementById("tcBottomValidityCmp")?.innerText||""]);
+  const remarksTxtCmp=document.getElementById("remarksInputCmp")?.value.trim()||"";
+  if(remarksTxtCmp) data.push(["Remarks",remarksTxtCmp]);
 
   let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Price Comparison"); XLSX.writeFile(wb,"SSE_PriceComparison.xlsx");
 }
