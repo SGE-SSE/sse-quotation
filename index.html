@@ -364,7 +364,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 </div>
 
 <div class="no-print action-btns" style="margin:12px 14px 14px;display:flex;gap:8px;flex-wrap:wrap">
-  <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 SAVE QUOTATION</button>
+  <button class="btn-save" id="saveQuotationBtn" onclick="saveQuotation()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">💾 <span id="saveBtnLabel">SAVE QUOTATION</span></button>
   <button class="btn-print" onclick="printQuotation()">🖨️ PRINT</button>
   <button class="btn-excel" onclick="exportExcel()">📊 EXCEL</button>
   <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
@@ -403,7 +403,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 <div id="partyHistoryModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,0);z-index:1000;transition:background .25s ease" onclick="if(event.target===this)closePartyHistory()">
   <div id="partyHistoryDrawer" style="position:absolute;top:0;right:0;bottom:0;width:min(420px,92vw);background:#fff;box-shadow:-8px 0 28px rgba(0,0,0,.18);overflow-y:auto;padding:18px 20px;transform:translateX(100%);transition:transform .28s ease;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="margin:0;color:#1a3c6e;font-size:16px">📜 Party History</h3>
+      <h3 style="margin:0;color:#1a3c6e;font-size:16px" id="partyHistoryTitle">📜 Party History</h3>
       <button onclick="closePartyHistory()" style="background:#eee;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
     </div>
     <div style="margin-bottom:14px;position:relative">
@@ -849,7 +849,9 @@ function openPartyHistory(){
   const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
   overlay.style.display="block";
   document.getElementById("historyPartySearch").value="";
-  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>`;
+  const d=DOC_TYPES[currentDocType];
+  document.getElementById("partyHistoryTitle").innerText=`📜 ${d.label} History`;
+  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past ${d.label.toLowerCase()}s.</div>`;
   requestAnimationFrame(()=>{ overlay.style.background="rgba(20,20,30,.45)"; drawer.style.transform="translateX(0)"; });
   setTimeout(()=>document.getElementById("historyPartySearch").focus(),280);
 }
@@ -876,12 +878,13 @@ function onHistoryPartySearch(){
 }
 async function loadPartyQuotations(partyId, partyName){
   const list = document.getElementById("historyList");
+  const d=DOC_TYPES[currentDocType];
   list.style.textAlign="left"; list.style.padding="0";
   list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
-  const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).order("created_at", { ascending:false });
+  const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).eq("doc_type", currentDocType).order("created_at", { ascending:false });
   if(error){ list.innerHTML = `<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading history.</div>`; return; }
-  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved quotations yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
-  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} record(s)</div>
+  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved ${d.label.toLowerCase()}s yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
+  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} ${d.label.toLowerCase()}(s)</div>
     <div style="display:flex;flex-direction:column;gap:10px">` +
     data.map(q=>`<div id="hist-row-${q.id}" style="border:1px solid #c5d3e8;border-radius:10px;padding:11px 13px;background:#f8fafd">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -1081,6 +1084,8 @@ function switchDocType(type){
   document.getElementById("addItemTitle").innerText=d.addTitle;
   document.getElementById("itemsTitle").innerText=d.itemsTitle;
   document.getElementById("docTypeBanner").innerText=d.label;
+  const saveLbl=document.getElementById("saveBtnLabel");
+  if(saveLbl) saveLbl.innerText=`SAVE ${d.label}`;
   qno.value="(assigned on Save)";
 }
 function generateQuotationNo(){
