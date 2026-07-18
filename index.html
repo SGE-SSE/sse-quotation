@@ -373,6 +373,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
   <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
   <button class="btn-prices" onclick="addAllItemsToInventory(this)" style="background:#185FA5;color:#fff">🏭 ADD ITEMS TO INVENTORY</button>
+  <button class="btn-prices" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <span id="invStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
@@ -382,6 +383,18 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   <span id="indentBannerText" style="font-size:12.5px;font-weight:600;color:#8a5a00;flex:1"></span>
   <button onclick="generateIndentPDF()" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:12px">📋 Print / Save Indent as PDF</button>
   <button onclick="dismissIndentBanner()" style="background:none;border:1px solid #c9a227;color:#8a5a00;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px">Dismiss</button>
+</div>
+
+<!-- REDUCE STOCK — LOCATION PICKER -->
+<div id="reduceStockOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;width:100%;max-width:340px;border-radius:10px;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">
+    <strong style="font-size:15px;color:#1a3c6e;display:block;margin-bottom:16px">Reduce stock from which location?</strong>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button id="reduceStockGodown" style="background:#1a3c6e;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">GODOWN</button>
+      <button id="reduceStockOffice" style="background:#1b7a4a;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">OFFICE</button>
+    </div>
+    <button id="reduceStockCancel" style="margin-top:16px;background:none;border:1px solid #c5d3e8;color:#5a6a85;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">Cancel</button>
+  </div>
 </div>
 
 <!-- EDIT PRICES MODAL -->
@@ -978,6 +991,116 @@ async function addAllItemsToInventory(btn){
   }catch(e){
     console.error(e);
     alert("Could not add items to Inventory: "+(e.message||e));
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=original; }
+  }
+}
+
+/* ===== REDUCE STOCK (manual, on-demand) =====
+   Deducts stock for the items currently in the quotation table when
+   goods actually go out. Never runs automatically. All-or-nothing:
+   if ANY item is short or untracked at the chosen location, nothing
+   is written.
+
+   SCHEMA ASSUMPTION — please read: this app has no visibility into
+   the Inventory system's real database schema. Stock there is said
+   to live in a separate movements/transactions table (items table
+   only holds opening_stock), so I'm guessing a table named
+   "stock_movements" with columns item_id, location, qty, type, note.
+   If that's wrong, the very first click will surface the exact
+   Supabase error (e.g. "Could not find the 'qty' column of
+   'stock_movements'") in the confirmation popup — send me that exact
+   text and I'll correct the table/column names in one edit. */
+
+function pickReduceLocation(){
+  return new Promise(resolve=>{
+    const overlay=document.getElementById("reduceStockOverlay");
+    overlay.style.display="flex";
+    const cleanup=(val)=>{ overlay.style.display="none"; resolve(val); };
+    document.getElementById("reduceStockGodown").onclick=()=>cleanup("GODOWN");
+    document.getElementById("reduceStockOffice").onclick=()=>cleanup("OFFICE");
+    document.getElementById("reduceStockCancel").onclick=()=>cleanup(null);
+  });
+}
+
+/* Every item currently in the quotation table (not just untracked
+   ones — reducing needs the full list of what's going out). */
+function collectRowsForReduce(){
+  const rows=[];
+  [...tbody.rows].forEach(r=>{
+    const cells=r.cells;
+    if(!cells||cells.length<7) return;
+    const brand=cells[1].innerText.trim();
+    const desc=cells[2].innerText.trim();
+    const qty=parseFloat(cells[6].innerText)||0;
+    if(!qty) return;
+    rows.push({brand,desc,qty});
+  });
+  return rows;
+}
+
+async function findInventoryItemId(brand,name){
+  let { data, error } = await invSb.from("items").select("id,name,brand")
+    .ilike("name",name).ilike("brand",brand).limit(1);
+  if(error) throw error;
+  if(data && data.length) return data[0].id;
+  ({ data, error } = await invSb.from("items").select("id,name,brand").ilike("name",name).limit(1));
+  if(error) throw error;
+  return (data && data.length) ? data[0].id : null;
+}
+
+async function insertStockMovementOut(itemId,location,qty,note){
+  const { error } = await invSb.from("stock_movements").insert({
+    item_id:itemId, location, qty:-Math.abs(qty), type:"OUT", note
+  });
+  if(error) throw error;
+}
+
+async function reduceStockFromQuotation(btn){
+  const rows=collectRowsForReduce();
+  if(!rows.length){ alert("No items in the quotation table to reduce."); return; }
+
+  const location=await pickReduceLocation();
+  if(!location) return; // cancelled
+
+  if(!inventoryLoaded) await loadInventoryStock();
+
+  const problems=[], plan=[];
+  rows.forEach(r=>{
+    const match=findInventoryMatch(r.brand,r.desc);
+    const available=match ? (match.byLoc[location]||0) : 0;
+    if(!match || available<=0){
+      problems.push(r.desc+" ("+(r.brand||"no brand")+") — not tracked at "+location);
+      return;
+    }
+    if(r.qty>available+1e-9){
+      problems.push(r.desc+" ("+(r.brand||"no brand")+") — need "+r.qty+", only "+available+" at "+location);
+      return;
+    }
+    plan.push(r);
+  });
+
+  if(problems.length){
+    alert("Cannot reduce stock — the following item(s) are short or untracked at "+location+":\n\n"+problems.join("\n")+"\n\nNo stock was changed.");
+    return;
+  }
+
+  const original=btn?btn.textContent:"";
+  if(btn){ btn.disabled=true; btn.textContent="⏳ Reducing…"; }
+  let done=0; const failed=[];
+  try{
+    for(const r of plan){
+      try{
+        const itemId=await findInventoryItemId(r.brand,r.desc);
+        if(!itemId){ failed.push(r.desc+" — item id not found"); continue; }
+        await insertStockMovementOut(itemId,location,r.qty,"Reduced via Quotation tool");
+        done++;
+      }catch(e){ failed.push(r.desc+" — "+e.message); }
+    }
+    if(done) await loadInventoryStock();
+    let msg=done+" item(s) reduced from "+location+" ✓";
+    if(failed.length) msg+="\n\n"+failed.length+" failed:\n"+failed.join("\n")+"\n\n(Likely means the stock_movements table/column names differ from my guess — send me this exact text and I'll fix it.)";
+    alert(msg);
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=original; }
   }
