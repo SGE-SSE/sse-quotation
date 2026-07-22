@@ -853,14 +853,14 @@ async function loadInventoryStock(){
   updateStockBadge();
 }
 
-/* Exact brand+name match first; falls back to a name-only match across
-   brands (useful since the two systems don't share a common item ID). */
+/* STRICT brand+name match only. A previous version fell back to
+   matching by name ALONE across brands when no exact match was found —
+   that meant a different brand's stock (e.g. GREATWHITE 1 MODULE PLATE)
+   could get shown as if it belonged to the brand you actually picked
+   (e.g. ANCHOR PENTA), since plate/switch stock is brand-specific here.
+   Fixed: no match unless brand AND name both agree. */
 function findInventoryMatch(brand,name){
-  const exact=inventoryMap[normKey(brand,name)];
-  if(exact) return exact;
-  const nameU=String(name||"").trim().toUpperCase();
-  const foundKey=Object.keys(inventoryMap).find(k=>k.split("|")[1]===nameU);
-  return foundKey?inventoryMap[foundKey]:null;
+  return inventoryMap[normKey(brand,name)] || null;
 }
 
 function updateStockBadge(){
@@ -1040,11 +1040,12 @@ function collectRowsForReduce(){
 }
 
 async function findInventoryItemId(brand,name){
-  let { data, error } = await invSb.from("items").select("id,name,brand")
+  /* STRICT brand+name only — no cross-brand fallback. Reducing stock
+     with the wrong item id would deduct from a different brand's stock
+     entirely, so an unmatched item must come back null (and get
+     reported as "untracked") rather than guessing. */
+  const { data, error } = await invSb.from("items").select("id,name,brand")
     .ilike("name",name).ilike("brand",brand).limit(1);
-  if(error) throw error;
-  if(data && data.length) return data[0].id;
-  ({ data, error } = await invSb.from("items").select("id,name,brand").ilike("name",name).limit(1));
   if(error) throw error;
   return (data && data.length) ? data[0].id : null;
 }
