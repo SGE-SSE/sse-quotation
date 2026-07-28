@@ -825,15 +825,28 @@ let lastShortfalls = [];     // populated after each save, used by the indent PD
 let lastIndentMeta = {};
 
 function normKey(brand,name){
-  return String(brand||"").trim().toUpperCase()+"|"+String(name||"").trim().toUpperCase();
+  return normStr(brand)+"|"+normStr(name);
+}
+function normStr(s){
+  return String(s||"").trim().toUpperCase().replace(/\s+/g," ");
 }
 
 async function loadInventoryStock(){
   const badge=document.getElementById("invStatus");
   try{
     if(badge) badge.textContent="Checking stock…";
-    const { data, error } = await invSb.from("item_stock_fast").select("*");
-    if(error) throw error;
+    // Supabase/PostgREST caps a single query at 1000 rows by default. Your Inventory
+    // has 2500+ items across both locations, so a single unpaginated fetch was silently
+    // missing everything past row 1000 — making already-tracked items look "not tracked"
+    // and get added again. Paging through in batches of 1000 fixes that for good.
+    let data=[], from=0, pageSize=1000;
+    while(true){
+      const { data:page, error } = await invSb.from("items").select("*").range(from, from+pageSize-1);
+      if(error) throw error;
+      data=data.concat(page||[]);
+      if(!page || page.length<pageSize) break;
+      from+=pageSize;
+    }
     inventoryMap = {};
     (data||[]).forEach(i=>{
       const k=normKey(i.brand,i.name);
@@ -931,6 +944,7 @@ function guessInventoryCategory(name){
 async function autoAddUntrackedToInventory(untracked){
   const added=[];
   for(const u of untracked){
+    if(findInventoryMatch(u.brand,u.desc)) continue; // re-check right before inserting — belt and suspenders
     try{
       const unit=mapUnitToInventory(u.unit);
       const payload={ name:u.desc, category:guessInventoryCategory(u.desc), unit, opening_stock:0, min_stock:0, brand:u.brand||"", location:"GODOWN" };
@@ -966,13 +980,17 @@ async function addAllItemsToInventory(btn){
   const original=btn ? btn.textContent : "";
   if(btn){ btn.disabled=true; btn.textContent="⏳ Adding…"; }
   try{
-    if(!inventoryLoaded) await loadInventoryStock();
+    await loadInventoryStock(); // always re-check live, never trust a stale in-session cache here
     const toAdd=[];
+    const queued=new Set(); // catches duplicate name+brand entries already sitting in the price catalog itself
     Object.keys(items).forEach(brand=>{
       (items[brand]||[]).forEach(it=>{
         const desc=it.name;
         if(!desc) return;
+        const key=normKey(brand,desc);
         if(findInventoryMatch(brand,desc)) return; // already tracked — skip
+        if(queued.has(key)) return; // same item listed more than once in the catalog — skip the repeat
+        queued.add(key);
         toAdd.push({brand, desc, unit: guessUnitFromName(desc)});
       });
     });
