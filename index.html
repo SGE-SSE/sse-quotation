@@ -2586,9 +2586,10 @@ function cmpGetSelectedColour(){
 
 function clearCmpEntry(){
   document.getElementById("cmpItemDesc").value="";
-  document.getElementById("cmpItemHSN").value="";
   document.getElementById("cmpItemQty").value="1";
-  document.getElementById("cmpFrType").value="";
+  // HSN Code, Wire Type (FR/FRLS/etc.) and Unit are intentionally NOT reset here —
+  // they usually stay the same across items being compared (e.g. same wire spec,
+  // different brands), so they persist until the user changes them manually.
   cmpClearColour();
   cmpRateManuallyEdited=[false,false,false];
   [1,2,3].forEach(n=>{
@@ -2820,7 +2821,25 @@ function calcCmpTotals(){
   wrap.innerHTML=html;
 }
 
-function printCmp(){ window.print(); }
+function cmpExportFileName(){
+  const docNoVal = (document.getElementById("cmpQno").value||"").trim();
+  // Doc number format: SGE-SSE-{TYPE-}{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
+  const m = docNoVal.match(/^SGE-SSE-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
+  if(m){
+    const serial = m[1];
+    const custPart = m[2].trim();
+    return `${custPart} ${serial}`;
+  }
+  if(docNoVal && docNoVal!=="(assigned on Save)") return docNoVal.replace(/\//g,"-");
+  const code = partyCodeFromName(document.getElementById("cmpCust").value);
+  return code || "Price Comparison";
+}
+function printCmp(){
+  const originalTitle = document.title;
+  document.title = cmpExportFileName();
+  window.print();
+  setTimeout(()=>{ document.title = originalTitle; }, 1000);
+}
 
 function exportCmpExcel(){
   const brandNames=getCmpBrandNames();
@@ -2867,9 +2886,9 @@ function exportCmpPDF(){
   const el = document.getElementById("printArea");
   const opt = {
     margin: 8,
-    filename: "SSE_PriceComparison.pdf",
-    html2canvas: { scale: 2, useCORS: true, windowWidth: el.scrollWidth, scrollX: 0, scrollY: 0 },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    filename: cmpExportFileName()+".pdf",
+    html2canvas: { scale: 2, useCORS: true, width: el.scrollWidth, height: el.scrollHeight, windowWidth: el.scrollWidth, windowHeight: el.scrollHeight, scrollX: 0, scrollY: 0 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
     pagebreak: { mode: ["css","legacy"], avoid: ["tr", ".section-panel", ".totals-table", "thead"] }
   };
   html2pdf().set(opt).from(el).save().then(()=>{
