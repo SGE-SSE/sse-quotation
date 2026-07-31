@@ -390,6 +390,8 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   <button onclick="dismissIndentBanner()" style="background:none;border:1px solid #c9a227;color:#8a5a00;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px">Dismiss</button>
 </div>
 
+</div><!-- end #regularSection (moved up so modals below are NOT hidden when Compare tab is active) -->
+
 <!-- REDUCE STOCK — LOCATION PICKER -->
 <div id="reduceStockOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:340px;border-radius:10px;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">
@@ -476,6 +478,38 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   </div>
 </div>
 
+<!-- ===================== EDIT COMPARISON ROW MODAL ===================== -->
+<div id="editCmpRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border-radius:12px;overflow-x:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
+    <div style="background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2">
+      <strong style="font-size:15px">✏️ Edit Comparison Row</strong>
+      <button onclick="closeEditCmpRow()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:16px 18px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:span 2"><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Description</label><input type="text" id="ecDesc" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase">Colour</label><input type="text" id="ecColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">HSN Code</label><input type="text" id="ecHSN" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label><select id="ecUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"><option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option></select></div>
+        <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="ecQty" min="0" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
+      </div>
+
+      <div id="ecBrandGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px"></div>
+
+      <label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:#333">
+        <input type="checkbox" id="ecIsCommon"> Mark as Common Item (same price shown across all brand columns)
+      </label>
+    </div>
+    <div style="padding:10px 18px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eee">
+      <span style="font-size:11px;color:#aaa">Changes only affect this row</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEditCmpRow()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:700">✕ Cancel</button>
+        <button onclick="saveEditCmpRow()" style="background:#e67e22;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-weight:800">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PER-BRAND MRP SETTINGS MODAL -->
 <div id="mrpSettingsModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1150;align-items:center;justify-content:center;padding:12px">
   <div style="background:#fff;width:100%;max-width:420px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
@@ -491,8 +525,6 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
     </div>
   </div>
 </div>
-
-</div><!-- end #regularSection -->
 
 <!-- ===================== PRICE COMPARISON SECTION ===================== -->
 <div id="compareSection" style="display:none">
@@ -2699,6 +2731,88 @@ function deleteCmpRow(idx){
   calcCmpTotals();
 }
 
+/* ===== Edit Comparison Row — lets any already-added row (per-brand MRP/Disc/
+   Rate/Coil, plus Description/HSN/Unit/Qty/Colour) be corrected without
+   deleting and re-adding it. ===== */
+function editCmpRow(idx){
+  const row=cmpRows[idx];
+  if(!row) return;
+  const brandNames=getCmpBrandNames();
+  const hasB3=((document.getElementById("cmpBrand3").value||"").trim().length>0);
+  const colColors=["#1a3c6e","#1b7a4a","#6a1b9a"];
+  const colBg=["#e8f0fb","#e8f5ee","#f3e5f5"];
+
+  document.getElementById("ecDesc").value=row.desc||"";
+  document.getElementById("ecColour").value=row.colour||"";
+  document.getElementById("ecHSN").value=row.hsn||"";
+  document.getElementById("ecUnit").value=row.unit||"NOS";
+  document.getElementById("ecQty").value=row.qty||1;
+  document.getElementById("ecIsCommon").checked=!!row.isCommon;
+
+  const grid=document.getElementById("ecBrandGrid");
+  let gridHTML="";
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3) return;
+    gridHTML+=`<div style="background:${colBg[i]};border:1px solid ${colColors[i]};border-radius:6px;padding:8px">
+      <div style="font-size:11px;font-weight:800;color:${colColors[i]};margin-bottom:6px">${brandNames[i]}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>MRP</label><input type="number" id="ecMRP${i}" min="0" oninput="ecRecalcRate(${i})" value="${row.mrp&&row.mrp[i]?row.mrp[i]:''}" placeholder="0"></div>
+        <div><label>Disc %</label><input type="number" id="ecDisc${i}" min="0" max="100" step="0.01" oninput="ecRecalcRate(${i})" value="${row.disc&&row.disc[i]?row.disc[i]:''}" placeholder="0" style="border-color:#c0392b;color:#c0392b;font-weight:700"></div>
+        <div><label>Net Rate</label><input type="number" id="ecRate${i}" min="0" value="${row.rate&&row.rate[i]?row.rate[i]:''}" placeholder="0" style="border-color:#1b7a4a;color:#1b7a4a;font-weight:700"></div>
+        <div><label>Coil Len (Mtr)</label><input type="number" id="ecCoil${i}" min="0" value="${row.coil&&row.coil[i]?row.coil[i]:''}" placeholder="—" style="font-size:11px"></div>
+      </div>
+    </div>`;
+  });
+  grid.innerHTML=gridHTML;
+
+  document.getElementById("editCmpRowModal")._targetIdx=idx;
+  document.getElementById("editCmpRowModal").style.display="flex";
+}
+
+function ecRecalcRate(i){
+  const mrpV=parseFloat(document.getElementById("ecMRP"+i).value)||0;
+  const discV=parseFloat(document.getElementById("ecDisc"+i).value)||0;
+  if(mrpV>0){
+    document.getElementById("ecRate"+i).value=(mrpV-mrpV*discV/100).toFixed(2);
+  }
+}
+
+function saveEditCmpRow(){
+  const modal=document.getElementById("editCmpRowModal");
+  const idx=modal._targetIdx;
+  const row=cmpRows[idx];
+  if(row===undefined){ closeEditCmpRow(); return; }
+
+  const hasB3=((document.getElementById("cmpBrand3").value||"").trim().length>0);
+  const mrpArr=[0,0,0], discArr=[0,0,0], rateArr=[0,0,0], coilArr=[0,0,0], perMtrArr=[0,0,0];
+  [0,1,2].forEach(i=>{
+    if(i===2&&!hasB3){ mrpArr[i]=row.mrp?row.mrp[i]||0:0; discArr[i]=row.disc?row.disc[i]||0:0; rateArr[i]=row.rate?row.rate[i]||0:0; coilArr[i]=row.coil?row.coil[i]||0:0; perMtrArr[i]=row.perMtr?row.perMtr[i]||0:0; return; }
+    const mrpEl=document.getElementById("ecMRP"+i);
+    const mrpV=parseFloat(mrpEl&&mrpEl.value)||0;
+    const discV=parseFloat(document.getElementById("ecDisc"+i).value)||0;
+    let rateV=parseFloat(document.getElementById("ecRate"+i).value);
+    if(isNaN(rateV)||!rateV){ rateV=mrpV?mrpV-mrpV*discV/100:0; }
+    const coilV=parseFloat(document.getElementById("ecCoil"+i).value)||0;
+    mrpArr[i]=mrpV; discArr[i]=discV; rateArr[i]=rateV; coilArr[i]=coilV;
+    perMtrArr[i]=(rateV>0&&coilV>0)?+(rateV/coilV).toFixed(2):0;
+  });
+
+  row.desc=(document.getElementById("ecDesc").value||"").trim()||row.desc;
+  row.colour=(document.getElementById("ecColour").value||"").trim().toUpperCase();
+  row.hsn=(document.getElementById("ecHSN").value||"").trim();
+  row.unit=document.getElementById("ecUnit").value;
+  row.qty=parseFloat(document.getElementById("ecQty").value)||1;
+  row.isCommon=document.getElementById("ecIsCommon").checked;
+  if(!row.isCommon) row.commonBrand=null;
+  row.mrp=mrpArr; row.disc=discArr; row.rate=rateArr; row.coil=coilArr; row.perMtr=perMtrArr;
+
+  closeEditCmpRow();
+  renderCmpTable();
+  calcCmpTotals();
+}
+
+function closeEditCmpRow(){ document.getElementById("editCmpRowModal").style.display="none"; }
+
 function renderCmpTable(){
   const thead=document.getElementById("cmpThead");
   const tbody=document.getElementById("cmpTbody");
@@ -2739,7 +2853,7 @@ function renderCmpTable(){
     if(showPerMtr) colCount += 1; // + Per-Mtr Rate
     headerHTML += `<th colspan="${colCount}" class="${colColors[i]}">${brandNames[i]}</th>`;
   });
-  headerHTML+=`<th rowspan="2" class="no-print" style="background:#1a3c6e;color:#fff">Del</th></tr><tr>`;
+  headerHTML+=`<th rowspan="2" class="no-print" style="background:#1a3c6e;color:#fff">Actions</th></tr><tr>`;
 
   [0,1,2].forEach(i=>{
     if(i===2&&!hasB3) return;
@@ -2787,7 +2901,7 @@ function renderCmpTable(){
       bodyHTML+=`<td class="${colBg[i]}">${amt>0?amt.toFixed(2):"-"}</td>`;
     });
 
-    bodyHTML+=`<td class="no-print"><button onclick="deleteCmpRow(${idx})" style="background:#c0392b;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px">✕</button></td></tr>`;
+    bodyHTML+=`<td class="no-print"><button onclick="editCmpRow(${idx})" style="background:#e67e22;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px;margin-right:3px">✏️</button><button onclick="deleteCmpRow(${idx})" style="background:#c0392b;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px">✕</button></td></tr>`;
   });
 
   if(!cmpRows.length){
