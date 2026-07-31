@@ -498,7 +498,10 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 <div id="compareSection" style="display:none">
 
 <div class="section-panel">
-  <div class="section-title">⚖️ Price Comparison Quotation</div>
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>⚖️ Price Comparison Quotation</span>
+    <button type="button" class="no-print" onclick="openPartyHistory('compare')" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+  </div>
   <div class="header-grid">
     <div><label>Quotation No</label><input type="text" id="cmpQno"></div>
     <div><label>Date</label><input type="date" id="cmpDate"></div>
@@ -553,7 +556,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
       <input type="checkbox" id="cmpShowCommonMRP" onchange="renderCmpTable()"> Show MRP &amp; Disc% (Common Items, default)
     </label>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
-      <input type="checkbox" id="cmpShowGST" onchange="calcCmpTotals()"> Include GST 18%
+      <input type="checkbox" id="cmpShowGST" checked onchange="calcCmpTotals()"> Include GST 18%
     </label>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px">
       <input type="checkbox" id="cmpShowPerMtr" checked onchange="renderCmpTable()"> Show Per-Mtr Rate columns
@@ -1485,13 +1488,16 @@ async function saveCmpQuotation(){
   }finally{ btn.disabled = false; }
 }
 
-function openPartyHistory(){
+let historyMode = 'regular'; // 'regular' or 'compare' — controls which quotations are listed/opened
+function openPartyHistory(mode){
+  historyMode = mode==='compare' ? 'compare' : 'regular';
   const overlay=document.getElementById("partyHistoryModal"), drawer=document.getElementById("partyHistoryDrawer");
   overlay.style.display="block";
   document.getElementById("historyPartySearch").value="";
   const d=DOC_TYPES[currentDocType];
-  document.getElementById("partyHistoryTitle").innerText=`📜 ${d.label} History`;
-  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past ${d.label.toLowerCase()}s.</div>`;
+  const label = historyMode==='compare' ? `${d.label} — Price Comparison` : d.label;
+  document.getElementById("partyHistoryTitle").innerText=`📜 ${label} History`;
+  document.getElementById("historyList").innerHTML=`<div style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past ${label.toLowerCase()}s.</div>`;
   requestAnimationFrame(()=>{ overlay.style.background="rgba(20,20,30,.45)"; drawer.style.transform="translateX(0)"; });
   setTimeout(()=>document.getElementById("historyPartySearch").focus(),280);
 }
@@ -1519,12 +1525,18 @@ function onHistoryPartySearch(){
 async function loadPartyQuotations(partyId, partyName){
   const list = document.getElementById("historyList");
   const d=DOC_TYPES[currentDocType];
+  const isCmp = historyMode==='compare';
+  const label = isCmp ? `${d.label} — Price Comparison` : d.label;
   list.style.textAlign="left"; list.style.padding="0";
   list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
-  const { data, error } = await sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).eq("doc_type", currentDocType).order("created_at", { ascending:false });
+  let query = sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).eq("doc_type", currentDocType);
+  // Regular and Comparison quotations share the same "quotations" table and doc_type —
+  // they're only distinguished by "-CMP-" inside doc_no, so filter on that here.
+  query = isCmp ? query.ilike("doc_no", "%-CMP-%") : query.not("doc_no", "ilike", "%-CMP-%");
+  const { data, error } = await query.order("created_at", { ascending:false });
   if(error){ list.innerHTML = `<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading history.</div>`; return; }
-  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved ${d.label.toLowerCase()}s yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
-  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} ${d.label.toLowerCase()}(s)</div>
+  if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved ${label.toLowerCase()}s yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
+  list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} ${label.toLowerCase()}(s)</div>
     <div style="display:flex;flex-direction:column;gap:10px">` +
     data.map(q=>`<div id="hist-row-${q.id}" style="border:1px solid #c5d3e8;border-radius:10px;padding:11px 13px;background:#f8fafd">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -1533,7 +1545,7 @@ async function loadPartyQuotations(partyId, partyName){
       </div>
       <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 10px">${q.doc_type} &bull; ${q.doc_date}</div>
       <div style="display:flex;gap:8px">
-        <button onclick="reopenQuotation(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open</button>
+        <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open &amp; Edit</button>
         <button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="flex:1;background:#c0392b;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">🗑️ Delete</button>
       </div>
     </div>`).join("") + `</div>`;
@@ -1571,6 +1583,43 @@ async function reopenQuotation(id){
   renumber(); calc();
   closePartyHistory();
   document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.`;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* Reopens a saved Price Comparison quotation for editing. Comparison quotations
+   store their line items as { type:"comparison", brands:[...], rows:[...] } (an
+   object, not an array like Regular Quotation), so this needs its own loader —
+   feeding a comparison row into reopenQuotation() would silently fail since
+   (q.items||[]).forEach() isn't valid on that object shape. */
+async function reopenCmpQuotation(id){
+  const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
+  if(error){ alert("Could not load that quotation."); return; }
+  switchMode('compare');
+  switchDocType(q.doc_type);
+  document.getElementById("cmpQno").value=q.doc_no;
+  document.getElementById("cmpDate").value=q.doc_date;
+  document.getElementById("cmpCust").value=q.cust_name||"";
+  document.getElementById("cmpGST").value=q.cust_gst||"";
+  document.getElementById("cmpAddr").value=q.cust_addr||"";
+  currentPartyId=q.party_id;
+  document.getElementById("cmpShowGST").checked=!!q.gst_applied;
+
+  const items = q.items||{};
+  const brands = items.brands||[];
+  [1,2,3].forEach((n,i)=>{ document.getElementById("cmpBrand"+n).value = (brands[i]&&!/^BRAND \d$/.test(brands[i])) ? brands[i] : ""; });
+  refreshCmpHeaders();
+
+  cmpRows = items.rows||[];
+
+  if(document.getElementById("validityInputCmp")) document.getElementById("validityInputCmp").value=q.validity||"7 DAYS";
+  if(document.getElementById("remarksInputCmp")) document.getElementById("remarksInputCmp").value=q.remarks||"";
+  if(typeof cmpValidityRemarksChanged==="function") cmpValidityRemarksChanged();
+
+  renderCmpTable();
+  calcCmpTotals();
+  syncPartyFields('compare');
+  closePartyHistory();
+  document.getElementById("saveStatusCmp").textContent=`Loaded ${q.doc_no} — review, then Save/Print.`;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 </script>
