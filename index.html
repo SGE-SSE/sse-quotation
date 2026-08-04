@@ -1196,80 +1196,88 @@ function getNextIndentNo(){
   return "SGE-SSE-IND-"+String(seq).padStart(3,"0");
 }
 
+// Fixed display order for indent categories — matches guessInventoryCategory()'s
+// category names so grouping stays consistent with what Inventory uses.
+const INDENT_CATEGORY_ORDER=["Wires & Cables","Lights & Fixtures","Conduits & Fittings","MCB & Distribution","Switches & Sockets","Fans & Motors","Other"];
+
 function generateIndentPDF(){
   if(!lastShortfalls.length && !lastUntracked.length){ alert("No shortfall or untracked items to raise an indent for."); return; }
   const now=new Date();
-  const indentNo=getNextIndentNo();
-  const rows=lastShortfalls.map((s,i)=>`
-    <tr>
-      <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
-      <td style="padding:6px 8px;border:1px solid #ccc">${s.brand||"-"}</td>
-      <td style="padding:6px 8px;border:1px solid #ccc">${s.desc}</td>
-      <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${s.unit||"-"}</td>
-      <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.shortQty}</td>
-    </tr>`).join("");
-  const orderSection = lastShortfalls.length ? `
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="background:#f0f4fa">
-          <th style="padding:6px 8px;border:1px solid #ccc">#</th>
-          <th style="padding:6px 8px;border:1px solid #ccc">Brand</th>
-          <th style="padding:6px 8px;border:1px solid #ccc">Item Description</th>
-          <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
-          <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>` : `<div style="font-size:12px;color:#777;font-style:italic">No confirmed shortfall items — nothing here to order.</div>`;
-  const untrackedRows=lastUntracked.map((s,i)=>`
-    <tr>
-      <td style="padding:6px 8px;border:1px solid #e0c060;text-align:center">${i+1}</td>
-      <td style="padding:6px 8px;border:1px solid #e0c060">${s.brand||"-"}</td>
-      <td style="padding:6px 8px;border:1px solid #e0c060">${s.desc}</td>
-      <td style="padding:6px 8px;border:1px solid #e0c060;text-align:center">${s.unit||"-"}</td>
-      <td style="padding:6px 8px;border:1px solid #e0c060;text-align:center">${s.qtyReq}</td>
-    </tr>`).join("");
-  const untrackedSection = lastUntracked.length ? `
-      <div style="margin-top:22px;padding:10px 12px;background:#fffbe6;border:1px dashed #e0c060;border-radius:6px">
-        <div style="font-size:12.5px;font-weight:700;color:#8a6d00;margin-bottom:6px">⚠ NOT TRACKED IN INVENTORY — verify stock manually before ordering (internal check, not confirmed shortage):</div>
-        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
-          <thead><tr style="background:#fff3c4">
-            <th style="padding:5px 8px;border:1px solid #e0c060">#</th>
-            <th style="padding:5px 8px;border:1px solid #e0c060">Brand</th>
-            <th style="padding:5px 8px;border:1px solid #e0c060">Item Description</th>
-            <th style="padding:5px 8px;border:1px solid #e0c060">Unit</th>
-            <th style="padding:5px 8px;border:1px solid #e0c060">Qty Quoted</th>
+
+  // Different suppliers handle different categories (wires vs pipes/conduits
+  // vs lights, etc.), so each category gets its OWN indent number, its own
+  // Supplier/Approved-By blanks, and its own printed page — instead of one
+  // mixed indent that can't actually be handed to a single supplier.
+  const byCat={};
+  lastShortfalls.forEach(s=>{
+    const cat=guessInventoryCategory(s.desc);
+    (byCat[cat]=byCat[cat]||{shortfalls:[],untracked:[]}).shortfalls.push(s);
+  });
+  lastUntracked.forEach(s=>{
+    const cat=guessInventoryCategory(s.desc);
+    (byCat[cat]=byCat[cat]||{shortfalls:[],untracked:[]}).untracked.push(s);
+  });
+  const presentCats=INDENT_CATEGORY_ORDER.filter(c=>byCat[c]);
+  Object.keys(byCat).forEach(c=>{ if(!presentCats.includes(c)) presentCats.push(c); }); // any category not in the fixed list still gets printed
+
+  const pages=presentCats.map((cat,catIdx)=>{
+    const {shortfalls=[],untracked=[]}=byCat[cat];
+    const indentNo=getNextIndentNo();
+    // One plain item list per category — no internal tracking/warning notes,
+    // just what needs to be ordered. Shortfall qty and quoted qty (for
+    // untracked items) both go in the same "Qty" column.
+    const allItems=[
+      ...shortfalls.map(s=>({brand:s.brand,desc:s.desc,unit:s.unit,qty:s.shortQty})),
+      ...untracked.map(s=>({brand:s.brand,desc:s.desc,unit:s.unit,qty:s.qtyReq}))
+    ];
+    const rows=allItems.map((s,i)=>`
+      <tr>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc">${s.brand||"-"}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc">${s.desc}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${s.unit||"-"}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>
+      </tr>`).join("");
+    const orderSection = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f0f4fa">
+            <th style="padding:6px 8px;border:1px solid #ccc">#</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Brand</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Item Description</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>
           </tr></thead>
-          <tbody>${untrackedRows}</tbody>
+          <tbody>${rows}</tbody>
+        </table>`;
+    const isLastPage=catIdx===presentCats.length-1;
+    return `
+      <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px;${isLastPage?"":"page-break-after:always"}">
+        <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
+          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
+          <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
+          <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
+          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${cat}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+          <tr><td style="padding:3px 0"><b>Indent No:</b> ${indentNo}</td><td style="padding:3px 0"><b>Date:</b> ${now.toLocaleDateString("en-IN")}</td></tr>
         </table>
-        <div style="font-size:11px;color:#8a6d00;margin-top:6px">Tip: add these items to the Inventory system so future indents track them automatically.</div>
-      </div>` : "";
-  const html=`
-    <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px">
-      <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
-        <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
-        <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
-        <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
-        <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
-        <tr><td style="padding:3px 0"><b>Indent No:</b> ${indentNo}</td><td style="padding:3px 0"><b>Date:</b> ${now.toLocaleDateString("en-IN")}</td></tr>
-      </table>
-      ${orderSection}
-      ${untrackedSection}
-      <div style="margin-top:26px;font-size:12px"><b>Supplier:</b> _____________________________ &nbsp;&nbsp; <b>Expected Date:</b> ______________</div>
-      <div style="margin-top:8px;font-size:12px"><b>Remarks:</b> ___________________________________________________________</div>
-      <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:12px">
-        <div>Prepared By: ______________</div>
-        <div>Approved By: ______________</div>
-      </div>
-    </div>`;
+        ${orderSection}
+        <div style="margin-top:26px;font-size:12px"><b>Supplier:</b> _____________________________ &nbsp;&nbsp; <b>Expected Date:</b> ______________</div>
+        <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:12px">
+          <div>Prepared By: ______________</div>
+          <div>Approved By: ______________</div>
+        </div>
+      </div>`;
+  }).join("");
+
   const holder=window.open("","_blank");
   if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
-  holder.document.write(`<!DOCTYPE html><html><head><title>Indent_${indentNo.replace(/[\/:]/g,"-")}</title>
+  holder.document.write(`<!DOCTYPE html><html><head><title>Indents_${now.toISOString().slice(0,10)}</title>
     <style>
       @page{ margin:14mm; }
       body{ font-family:Arial,sans-serif; color:#1a1a1a; margin:0; padding:0; }
     </style>
-    </head><body>${html}
+    </head><body>${pages}
     <script>
       window.onload=function(){ setTimeout(function(){ window.print(); }, 200); };
       window.onafterprint=function(){ window.close(); };
