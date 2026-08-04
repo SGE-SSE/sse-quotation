@@ -1398,12 +1398,25 @@ async function getNextDocSerial(partyId, docType, fy){
 }
 
 function collectItemsFromTable(){
-  return [...tbody.rows].map(r=>({
-    sno: r.cells[0].innerText, brand: r.cells[1].innerText, description: r.cells[2].innerText,
-    colour: r.cells[3].innerText, hsn: r.cells[4].innerText, unit: r.cells[5].innerText,
-    qty: r.cells[6].innerText, mrp: r.cells[7].innerText, discount: r.cells[8].innerText,
-    rate: r.cells[9].innerText, perMtr: r.cells[10].innerText, amount: r.cells[11].innerText
-  }));
+  // IMPORTANT: mrp/discount must come from the row's dataset (dataset.mrpRaw /
+  // dataset.discRaw), NOT from cells[7]/cells[8].innerText. Those cells get
+  // blanked to "-" on screen whenever a brand's "Show MRP" toggle is off
+  // (see applyMrpVisibility()), even though the true value is preserved in
+  // the dataset. Saving from the visible cell text was silently persisting
+  // "-" as the discount whenever MRP was hidden at save time, which
+  // permanently lost the real discount and made the OFFICE USE ONLY —
+  // Brand Discount Summary box unable to reconstruct itself after
+  // reopening that quotation from a party's history.
+  return [...tbody.rows].map(r=>{
+    const mrpRaw = (r.dataset.mrpRaw !== undefined) ? r.dataset.mrpRaw : r.cells[7].innerText;
+    const discRaw = (r.dataset.discRaw !== undefined) ? r.dataset.discRaw : r.cells[8].innerText;
+    return {
+      sno: r.cells[0].innerText, brand: r.dataset.brand || r.cells[1].innerText, description: r.cells[2].innerText,
+      colour: r.cells[3].innerText, hsn: r.cells[4].innerText, unit: r.cells[5].innerText,
+      qty: r.cells[6].innerText, mrp: mrpRaw, discount: discRaw, discMode: r.dataset.discMode||'pct',
+      rate: r.cells[9].innerText, perMtr: r.cells[10].innerText, amount: r.cells[11].innerText
+    };
+  });
 }
 
 function partyCodeFromName(name){
@@ -1609,7 +1622,7 @@ async function reopenQuotation(id){
     const r=tbody.insertRow();
     const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
     if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
-    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount;
+    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount; r.dataset.discMode=it.discMode||'pct';
     r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
@@ -2125,18 +2138,19 @@ function addItem(){
   const isIndCopper=isWireItem&&!!coilLenDetected;   // has an explicit coil length -> coil-priced (MRP ÷ length)
   const isArmFlx=isWireItem&&!coilLenDetected;        // wire/cable item without a coil length -> priced per metre already
   const buildSuffix=base=>frType?`${base} ${frType}`:base;
+  let coilRate;
   if(isIndCopper){
     const len=+document.getElementById("coilLen").value||coilLenDetected||1;
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate=(coilRate/len).toFixed(2);
     description=buildSuffix(itemName);
     if(unit.value==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
     else{ displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;finalRate=coilRate; }
   }else if(isArmFlx){
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);finalRate=coilRate;
   }else{
-    let coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
+    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
   }
   const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
@@ -2146,7 +2160,15 @@ function addItem(){
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
   r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||coilLenDetected||1):'';
-  r.dataset.brand=displayBrand; r.dataset.mrpRaw=displayMRP; r.dataset.discRaw=disc.value||0;
+  // Track HOW the price was entered: if Net Rate was typed directly (Discount%
+  // left blank), the OFFICE ONLY summary should show that exact Net Rate —
+  // not a back-calculated discount percentage, since no discount% was ever
+  // actually entered for that line.
+  let discMode='pct', discDisplayVal=disc.value||0;
+  if((disc.value===''||disc.value===undefined||disc.value===null)&&net.value){
+    discMode='net'; discDisplayVal=(+net.value).toFixed(2);
+  }
+  r.dataset.brand=displayBrand; r.dataset.mrpRaw=displayMRP; r.dataset.discRaw=discDisplayVal; r.dataset.discMode=discMode;
   const mrpCellTxt=isBrandMrpVisible(displayBrand)?displayMRP:'-', discCellTxt=isBrandMrpVisible(displayBrand)?(disc.value||0):'-';
   r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${mrpCellTxt}</td><td class="mrpCol">${discCellTxt}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
@@ -2302,13 +2324,23 @@ function updateBrandDiscSummary(){
     const brand=(r.dataset.brand||r.cells[1]?.innerText||"").trim();
     let discRaw=r.dataset.discRaw;
     if(discRaw===undefined||discRaw===null||discRaw==='') discRaw=r.cells[8]?.innerText;
-    const discNum=parseFloat(discRaw);
+    let discNum=parseFloat(discRaw);
+    const isNetMode=r.dataset.discMode==='net';
+    if(isNaN(discNum)&&!isNetMode){
+      // Fallback for records saved before this fix, where the discount was
+      // masked to "-" at save time: reconstruct it from MRP vs Net Rate if
+      // both are still known numbers.
+      const mrpNum=parseFloat(r.dataset.mrpRaw), rateNum=parseFloat(r.cells[9]?.innerText);
+      if(!isNaN(mrpNum)&&mrpNum>0&&!isNaN(rateNum)) discNum=+(((mrpNum-rateNum)/mrpNum)*100).toFixed(2);
+    }
     if(!brand||brand==='-'||isNaN(discNum)) return;
     if(!map.has(brand)) map.set(brand,new Set());
-    map.get(brand).add(discNum.toString());
+    // Net-Rate-entered lines are tagged so they display as "₹30 (Net)"
+    // instead of a back-calculated "%", since no discount% was ever typed.
+    map.get(brand).add(isNetMode?("₹"+discNum.toFixed(2)+" (Net)"):(discNum+"%"));
   });
   if(map.size===0){ box.style.display="none"; out.innerHTML=""; return; }
-  const parts=[...map.entries()].map(([brand,discs])=>brand.toUpperCase()+" - "+[...discs].join("% / ")+"%");
+  const parts=[...map.entries()].map(([brand,discs])=>brand.toUpperCase()+" - "+[...discs].join(" / "));
   out.innerHTML=parts.join(" &nbsp;|&nbsp; ");
   box.style.display="";
 }
