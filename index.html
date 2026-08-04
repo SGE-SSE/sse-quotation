@@ -191,8 +191,12 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 <label>Brand</label>
 <select id="brand"></select>
 <label>Item</label>
-<select id="item"></select>
+<input type="text" id="itemSearch" placeholder="🔍 Search item — checks ALL brands..." autocomplete="off"
+  style="width:100%;padding:8px 10px;margin-bottom:4px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;box-sizing:border-box"
+  oninput="filterItemDropdown()" onfocus="filterItemDropdown()">
+<select id="item" size="1"></select>
 <div id="stockBadge" style="font-size:11.5px;font-weight:600;margin:-2px 0 8px 1px"></div>
+
 <div class="entry-grid-mobile">
   <div>
     <label>Unit</label>
@@ -1873,10 +1877,11 @@ const tbody=document.querySelector("#qt tbody");
 
 brandSel.onchange=()=>{
   itemSel.innerHTML="<option value=''>Select Item</option>";
+  document.getElementById("itemSearch").value="";
   mrp.value=net.value=disc.value="";
   document.getElementById("indCopperBox").style.display="none";
   if(!brandSel.value) return;
-  items[brandSel.value].forEach(i=>{let o=document.createElement("option");o.textContent=i.name;o.value=i.mrp;itemSel.appendChild(o);});
+  items[brandSel.value].forEach(i=>{let o=document.createElement("option");o.textContent=i.name;o.value=i.mrp;o.dataset.brand=brandSel.value;itemSel.appendChild(o);});
   // Brand-agnostic default unit hint, based on how this brand's items are actually named
   const brandItems=items[brandSel.value]||[];
   const hasCoilItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&getCoilLength(i.name));
@@ -1886,6 +1891,32 @@ brandSel.onchange=()=>{
   updateQtyLabel();
   updateStockBadge();
 };
+
+// Item search box: with no text, shows the currently selected brand's items
+// (old behavior). With text typed, it searches EVERY brand's item list at
+// once — so "150X3.5CORE ALU CABLE" finds it under whichever brand(s) carry
+// it, grouped by brand — regardless of what's currently selected in Brand.
+// Picking a result auto-switches Brand to match (see itemSel.onchange below).
+function filterItemDropdown(){
+  const q=(document.getElementById("itemSearch").value||"").trim().toLowerCase();
+  itemSel.innerHTML="<option value=''>Select Item</option>";
+  if(!q){
+    if(!brandSel.value) return;
+    (items[brandSel.value]||[]).forEach(i=>{
+      const o=document.createElement("option"); o.textContent=i.name; o.value=i.mrp; o.dataset.brand=brandSel.value; itemSel.appendChild(o);
+    });
+    return;
+  }
+  Object.keys(items).sort().forEach(brand=>{
+    const matches=(items[brand]||[]).filter(i=>i.name.toLowerCase().includes(q));
+    if(!matches.length) return;
+    const grp=document.createElement("optgroup"); grp.label=brand;
+    matches.forEach(i=>{
+      const o=document.createElement("option"); o.textContent=i.name; o.value=i.mrp; o.dataset.brand=brand; grp.appendChild(o);
+    });
+    itemSel.appendChild(grp);
+  });
+}
 
 window.onload=()=>{
   refreshBrandDropdown();
@@ -2104,7 +2135,14 @@ function updateQtyLabel(){
   else qtyLabel.innerText="Qty";
 }
 
-itemSel.onchange=()=>{ mrp.value=itemSel.value; updateIndCopperBox(); updateQtyLabel(); updateStockBadge(); };
+itemSel.onchange=()=>{
+  // A search result picked from a brand other than the one currently
+  // selected must switch Brand to match — everything downstream (MRP, HSN,
+  // stock lookup, discount summary) is keyed off brandSel.value.
+  const opt=itemSel.options[itemSel.selectedIndex];
+  if(opt&&opt.dataset.brand&&opt.dataset.brand!==brandSel.value) brandSel.value=opt.dataset.brand;
+  mrp.value=itemSel.value; updateIndCopperBox(); updateQtyLabel(); updateStockBadge();
+};
 qty.addEventListener("input", updateStockBadge);
 document.getElementById("disc").addEventListener("input",()=>{ updateNetPerMtr(); });
 document.getElementById("net").addEventListener("input",()=>{ updateNetPerMtr(); });
