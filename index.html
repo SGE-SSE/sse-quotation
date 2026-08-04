@@ -162,6 +162,14 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   <div class="header-grid">
     <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
     <div><label id="docDateLabel">Quotation Date</label><input type="date" id="qdate"></div>
+    <div class="no-print">
+      <label>Status <span style="font-weight:400;font-style:italic">(office only)</span></label>
+      <select id="docStatus" onchange="onDocStatusChange()" style="font-weight:700">
+        <option value="Quoted">📄 Quoted</option>
+        <option value="Confirmed">✅ Confirmed (Sale)</option>
+        <option value="Cancelled">❌ Cancelled</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -868,6 +876,34 @@ let inventoryLoaded = false;
 let lastShortfalls = [];     // populated after each save, used by the indent PDF button
 let lastIndentMeta = {};
 
+// Tracks which SAVED quotation record (if any) is currently loaded, and its
+// sale/stock status — because not every quotation becomes an actual sale,
+// stock should only ever be reduced for one explicitly marked "Confirmed",
+// and never twice for the same quotation. Requires the DB columns
+// doc_status / stock_reduced / stock_reduced_at / stock_reduced_location on
+// the "quotations" table (see migration note near saveQuotation()).
+let currentQuotationId = null;
+let currentStockReduced = false;
+let currentStockReducedAt = null;
+let currentStockReducedLocation = null;
+
+// True when Supabase rejects a query because doc_status / stock_reduced /
+// stock_reduced_at / stock_reduced_location don't exist on "quotations" yet
+// (Postgres "undefined column" error). Lets Save/History/Reduce Stock all
+// degrade gracefully instead of breaking while the migration is pending.
+function isMissingColumnError(err){
+  if(!err) return false;
+  if(err.code==="42703") return true;
+  const msg=(err.message||"")+" "+(err.details||"");
+  return /column .*(doc_status|stock_reduced|stock_reduced_at|stock_reduced_location).* does not exist/i.test(msg);
+}
+
+function onDocStatusChange(){
+  // Purely a manual office-side marker at this point (saved with the
+  // quotation on next Save); reduceStockFromQuotation() is what actually
+  // enforces that only a Confirmed, not-yet-reduced quotation can proceed.
+}
+
 function normKey(brand,name){
   return normStr(brand)+"|"+normStr(name);
 }
@@ -1123,6 +1159,26 @@ async function reduceStockFromQuotation(btn){
   const rows=collectRowsForReduce();
   if(!rows.length){ alert("No items in the quotation table to reduce."); return; }
 
+  // Not every quotation turns into a sale — so stock only reduces for a
+  // record that's (a) actually saved, (b) manually marked Confirmed via the
+  // Status dropdown, and (c) hasn't already been reduced before. This is a
+  // hard block, not a warning, to rule out double-deducting inventory.
+  if(!currentQuotationId){
+    alert("Please Save this quotation first — stock can only be reduced for a saved, Confirmed quotation (so the system can remember it's been done).");
+    return;
+  }
+  const statusNow=document.getElementById("docStatus")?.value||"Quoted";
+  if(statusNow!=="Confirmed"){
+    alert("This quotation's Status is \""+statusNow+"\". Set Status to \"✅ Confirmed (Sale)\" and Save before reducing stock — this keeps plain quotations that never became a sale from touching inventory.");
+    return;
+  }
+  if(currentStockReduced){
+    const when=currentStockReducedAt?new Date(currentStockReducedAt).toLocaleDateString("en-IN"):"earlier";
+    const where=currentStockReducedLocation?" at "+currentStockReducedLocation:"";
+    alert("Stock was already reduced for this exact quotation on "+when+where+". Blocked to prevent double-deduction.");
+    return;
+  }
+
   const location=await pickReduceLocation();
   if(!location) return; // cancelled
 
@@ -1161,6 +1217,16 @@ async function reduceStockFromQuotation(btn){
       }catch(e){ failed.push(r.desc+" — "+e.message); }
     }
     if(done) await loadInventoryStock();
+    if(done){
+      // Record on the quotation itself that stock has now been reduced, so
+      // reopening it later — or clicking this button again — is blocked.
+      const nowIso=new Date().toISOString();
+      const { error: markErr } = await sb.from("quotations").update({
+        stock_reduced:true, stock_reduced_at:nowIso, stock_reduced_location:location
+      }).eq("id", currentQuotationId);
+      if(!markErr){ currentStockReduced=true; currentStockReducedAt=nowIso; currentStockReducedLocation=location; }
+      else if(isMissingColumnError(markErr)) console.warn("Stock reduced, but couldn't record it on the quotation — run the Supabase migration to enable double-reduction protection.");
+    }
     let msg=done+" item(s) reduced from "+location+" ✓";
     if(failed.length) msg+="\n\n"+failed.length+" failed:\n"+failed.join("\n")+"\n\n(Likely means the stock_movements table/column names differ from my guess — send me this exact text and I'll fix it.)";
     alert(msg);
@@ -1452,10 +1518,11 @@ async function saveQuotation(){
     const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
     const baseSerial = await getNextDocSerial(partyId, currentDocType, fy);
     let docNo, lastErr;
+    let statusColumnsMissing=false; // set true the first time Supabase reports the new columns don't exist yet
     for(let attempt=0; attempt<20; attempt++){
       const serial = baseSerial + attempt;
       docNo = `SGE-SSE-${currentDocType}-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
-      const payload = {
+      const corePayload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
         cust_name: custName.value.trim(), cust_gst: custGST.value.trim(), cust_addr: custAddr.value.trim(),
@@ -1469,11 +1536,31 @@ async function saveQuotation(){
         round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
         net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
       };
-      const { error: saveErr } = await sb.from("quotations").insert(payload);
-      if(!saveErr){ lastErr = null; break; }
+      // doc_status / stock_reduced* only exist once the Supabase migration has
+      // been run. Try with them first; if the columns aren't there yet, fall
+      // back to saving without them so Save Quotation never breaks in the
+      // meantime — the Status/Stock-Reduced tracking will just start working
+      // automatically the moment those columns exist, no redeploy needed.
+      const payload = statusColumnsMissing ? corePayload : {
+        ...corePayload,
+        doc_status: document.getElementById("docStatus")?.value || "Quoted",
+        stock_reduced: false, stock_reduced_at: null, stock_reduced_location: null
+      };
+      let { data: savedRow, error: saveErr } = await sb.from("quotations").insert(payload).select("id").single();
+      if(saveErr && !statusColumnsMissing && isMissingColumnError(saveErr)){
+        statusColumnsMissing=true;
+        ({ data: savedRow, error: saveErr } = await sb.from("quotations").insert(corePayload).select("id").single());
+      }
+      if(!saveErr){
+        lastErr = null;
+        currentQuotationId = savedRow?.id || null;
+        currentStockReduced = false; currentStockReducedAt = null; currentStockReducedLocation = null;
+        break;
+      }
       lastErr = saveErr;
       if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
     }
+    if(statusColumnsMissing) console.warn("Saved without Status/Stock-Reduced tracking — run the Supabase migration (doc_status, stock_reduced, stock_reduced_at, stock_reduced_location columns on 'quotations') to enable it.");
     if(lastErr) throw lastErr;
     qno.value = docNo;
     status.textContent = `Saved as ${docNo} ✓`;
@@ -1527,7 +1614,8 @@ async function saveCmpQuotation(){
         validity: document.getElementById("validityInputCmp")?.value || "",
         remarks: document.getElementById("remarksInputCmp")?.value || "",
         items: { type:"comparison", brands: brandNames, rows: cmpRows },
-        sub_total: 0, cash_disc_amt: 0, taxable: 0, gst_amt: 0, grand_total: 0, round_off: 0, net_payable: 0
+        sub_total: 0, cash_disc_amt: 0, taxable: 0, gst_amt: 0, grand_total: 0, round_off: 0, net_payable: 0,
+        doc_status: "Quoted", stock_reduced: false, stock_reduced_at: null, stock_reduced_location: null
       };
       const { error: saveErr } = await sb.from("quotations").insert(payload);
       if(!saveErr){ lastErr = null; break; }
@@ -1586,13 +1674,33 @@ async function loadPartyQuotations(partyId, partyName){
   const label = isCmp ? `${d.label} — Price Comparison` : d.label;
   list.style.textAlign="left"; list.style.padding="0";
   list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
-  let query = sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).eq("doc_type", currentDocType);
+  let query = sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable,doc_status,stock_reduced").eq("party_id", partyId).eq("doc_type", currentDocType);
   // Regular and Comparison quotations share the same "quotations" table and doc_type —
   // they're only distinguished by "-CMP-" inside doc_no, so filter on that here.
   query = isCmp ? query.ilike("doc_no", "%-CMP-%") : query.not("doc_no", "ilike", "%-CMP-%");
-  const { data, error } = await query.order("created_at", { ascending:false });
+  let { data, error } = await query.order("created_at", { ascending:false });
+  if(error && isMissingColumnError(error)){
+    // Migration not run yet — retry without the new columns so History still works.
+    let fallbackQuery = sb.from("quotations").select("id,doc_type,doc_no,doc_date,net_payable").eq("party_id", partyId).eq("doc_type", currentDocType);
+    fallbackQuery = isCmp ? fallbackQuery.ilike("doc_no", "%-CMP-%") : fallbackQuery.not("doc_no", "ilike", "%-CMP-%");
+    ({ data, error } = await fallbackQuery.order("created_at", { ascending:false }));
+  }
   if(error){ list.innerHTML = `<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading history.</div>`; return; }
   if(!data.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No saved ${label.toLowerCase()}s yet for <b style="color:#1a3c6e">${partyName}</b>.</div>`; return; }
+  // Status badge (manual office marker) + stock badge (whether this exact
+  // record actually reduced inventory) — shown together so it's obvious at a
+  // glance which past quotations were real sales vs which never went through.
+  const statusBadge=st=>{
+    const s=st||"Quoted";
+    const style=s==="Confirmed"?"background:#e3f6ea;color:#1b7a4a"
+      :s==="Cancelled"?"background:#fdeaea;color:#c0392b"
+      :"background:#eef3fb;color:#5a6a85";
+    const label=s==="Confirmed"?"✅ Confirmed":s==="Cancelled"?"❌ Cancelled":"📄 Quoted";
+    return `<span style="${style};font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">${label}</span>`;
+  };
+  const stockBadge=reduced=>reduced
+    ? `<span style="background:#e3f6ea;color:#1b7a4a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Stock Reduced</span>`
+    : `<span style="background:#f0f1f4;color:#666;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">📄 Quotation Only</span>`;
   list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} ${label.toLowerCase()}(s)</div>
     <div style="display:flex;flex-direction:column;gap:10px">` +
     data.map(q=>`<div id="hist-row-${q.id}" style="border:1px solid #c5d3e8;border-radius:10px;padding:11px 13px;background:#f8fafd">
@@ -1600,7 +1708,8 @@ async function loadPartyQuotations(partyId, partyName){
         <span style="font-size:13.5px;font-weight:800;color:#1a3c6e">${q.doc_no}</span>
         <span style="font-size:13.5px;font-weight:800;color:#1a1a2e">₹ ${(+q.net_payable).toLocaleString("en-IN")}</span>
       </div>
-      <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 10px">${q.doc_type} &bull; ${q.doc_date}</div>
+      <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 6px">${q.doc_type} &bull; ${q.doc_date}</div>
+      <div style="display:flex;gap:6px;margin-bottom:9px">${statusBadge(q.doc_status)}${stockBadge(q.stock_reduced)}</div>
       <div style="display:flex;gap:8px">
         <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open &amp; Edit</button>
         <button onclick="deleteQuotation(${q.id},'${(q.doc_no||"").replace(/'/g,"\\'")}',${partyId},'${(partyName||"").replace(/'/g,"\\'")}')" style="flex:1;background:#c0392b;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">🗑️ Delete</button>
@@ -1625,6 +1734,13 @@ async function reopenQuotation(id){
   qno.value=q.doc_no; qdate.value=q.doc_date; custName.value=q.cust_name||"";
   custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
   currentPartyId=q.party_id; gstToggle.checked=q.gst_applied;
+  // Restore this record's Status + stock-reduction history so REDUCE STOCK
+  // enforces "Confirmed only, once only" against the actual saved state.
+  currentQuotationId=q.id;
+  currentStockReduced=!!q.stock_reduced;
+  currentStockReducedAt=q.stock_reduced_at||null;
+  currentStockReducedLocation=q.stock_reduced_location||null;
+  if(document.getElementById("docStatus")) document.getElementById("docStatus").value=q.doc_status||"Quoted";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
   if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=q.remarks||"";
@@ -1639,7 +1755,8 @@ async function reopenQuotation(id){
   });
   renumber(); calc();
   closePartyHistory();
-  document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.`;
+  const stockNote=currentStockReduced?` — stock already reduced${currentStockReducedAt?" on "+new Date(currentStockReducedAt).toLocaleDateString("en-IN"):""}${currentStockReducedLocation?" at "+currentStockReducedLocation:""}.`:"";
+  document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.${stockNote}`;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
