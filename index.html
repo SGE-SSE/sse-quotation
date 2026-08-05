@@ -893,9 +893,15 @@ let currentStockReducedLocation = null;
 // degrade gracefully instead of breaking while the migration is pending.
 function isMissingColumnError(err){
   if(!err) return false;
-  if(err.code==="42703") return true;
-  const msg=(err.message||"")+" "+(err.details||"");
-  return /column .*(doc_status|stock_reduced|stock_reduced_at|stock_reduced_location).* does not exist/i.test(msg);
+  // Raw Postgres error (42703 = undefined_column) AND Supabase/PostgREST's
+  // own schema-cache error (code PGRST204, message like "Could not find the
+  // 'doc_status' column of 'quotations' in the schema cache") both mean the
+  // same thing here: the migration hasn't been run yet on this table.
+  if(err.code==="42703" || err.code==="PGRST204") return true;
+  const msg=(err.message||"")+" "+(err.details||"")+" "+(err.hint||"");
+  if(/column .*(doc_status|stock_reduced|stock_reduced_at|stock_reduced_location).* does not exist/i.test(msg)) return true;
+  if(/could not find the .*(doc_status|stock_reduced|stock_reduced_at|stock_reduced_location).* column/i.test(msg)) return true;
+  return false;
 }
 
 function onDocStatusChange(){
@@ -1603,10 +1609,11 @@ async function saveCmpQuotation(){
     const baseSerial = await getNextDocSerial(partyId, currentDocType, fy); // same counter as Regular Quotation
     const brandNames = getCmpBrandNames();
     let docNo, lastErr;
+    let statusColumnsMissingCmp=false;
     for(let attempt=0; attempt<20; attempt++){
       const serial = baseSerial + attempt;
       docNo = `SGE-SSE-${currentDocType}-CMP-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
-      const payload = {
+      const corePayload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: cmpDateEl.value || new Date().toISOString().slice(0,10),
         cust_name: cName.value.trim(), cust_gst: cGST.value.trim(), cust_addr: cAddr.value.trim(),
@@ -1614,10 +1621,19 @@ async function saveCmpQuotation(){
         validity: document.getElementById("validityInputCmp")?.value || "",
         remarks: document.getElementById("remarksInputCmp")?.value || "",
         items: { type:"comparison", brands: brandNames, rows: cmpRows },
-        sub_total: 0, cash_disc_amt: 0, taxable: 0, gst_amt: 0, grand_total: 0, round_off: 0, net_payable: 0,
+        sub_total: 0, cash_disc_amt: 0, taxable: 0, gst_amt: 0, grand_total: 0, round_off: 0, net_payable: 0
+      };
+      // Same doc_status/stock_reduced fallback as the regular quotation save —
+      // works whether or not the Supabase migration has been run yet.
+      const payload = statusColumnsMissingCmp ? corePayload : {
+        ...corePayload,
         doc_status: "Quoted", stock_reduced: false, stock_reduced_at: null, stock_reduced_location: null
       };
-      const { error: saveErr } = await sb.from("quotations").insert(payload);
+      let { error: saveErr } = await sb.from("quotations").insert(payload);
+      if(saveErr && !statusColumnsMissingCmp && isMissingColumnError(saveErr)){
+        statusColumnsMissingCmp=true;
+        ({ error: saveErr } = await sb.from("quotations").insert(corePayload));
+      }
       if(!saveErr){ lastErr = null; break; }
       lastErr = saveErr;
       if(!(saveErr.code === "23505" && /doc_no/i.test(saveErr.message||""))) break;
