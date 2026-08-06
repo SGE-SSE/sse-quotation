@@ -1474,8 +1474,13 @@ const DOC_SERIAL_START = { QTN:1, CB:1, PI:100 };
 /* Counts existing quotations for THIS customer + doc_type within the financial
    year, so each customer's numbering starts fresh (per DOC_SERIAL_START) and increments on its own. */
 async function getNextDocSerial(partyId, docType, fy){
-  const { count, error } = await sb.from("quotations").select("id", { count:"exact", head:true })
-    .eq("party_id", partyId).eq("doc_type", docType).gte("doc_date", fy.startStr).lt("doc_date", fy.endExclusiveStr);
+  // Quotation (and Comparison Quotation, which shares docType "QTN") stays
+  // party-wise — each party's own 1,2,3... Cash Bill and Proforma Invoice
+  // use ONE continuous serial across every party instead — plain 1,2,3,4,5,6...
+  let query = sb.from("quotations").select("id", { count:"exact", head:true })
+    .eq("doc_type", docType).gte("doc_date", fy.startStr).lt("doc_date", fy.endExclusiveStr);
+  if(docType === "QTN") query = query.eq("party_id", partyId);
+  const { count, error } = await query;
   if(error) throw error;
   const start = DOC_SERIAL_START[docType] || 1;
   return start + (count||0);
