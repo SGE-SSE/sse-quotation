@@ -1,4 +1,4 @@
-<!DOCTYPE  html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -473,7 +473,8 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
       <div><label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase">🏷️ Discount %</label><input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate</label><input type="number" id="editRate" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1b7a4a;text-transform:uppercase">Net Rate</label><input type="number" id="editRate" min="0" oninput="onEditRateTyped()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #81c784;border-radius:5px;font-weight:700;color:#1b7a4a;background:#f1f8f4"></div>
+      <div id="editModeHint" style="grid-column:span 2;font-size:10.5px;color:#888;margin-top:-4px">Leave Discount % blank when typing Net Rate directly — the item stays tagged as "Net" for the Office section.</div>
       <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">Per Mtr Rate</label><input type="text" id="editPerMtr" readonly placeholder="—" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;color:#888;background:#f5f5f5;cursor:not-allowed"></div>
       <div style="grid-column:span 2;background:linear-gradient(135deg,#1a3c6e,#2a5298);border-radius:7px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
         <span style="color:#c8d8f5;font-size:12px;font-weight:700">AMOUNT (Qty × Net Rate)</span>
@@ -1772,7 +1773,8 @@ async function reopenQuotation(id){
     const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
     if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
     r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount; r.dataset.discMode=it.discMode||'pct';
-    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${it.discount}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+    const discCellInit=(it.discMode==='net')?'-':it.discount;
+    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
   closePartyHistory();
@@ -2353,7 +2355,12 @@ function addItem(){
     discMode='net'; discDisplayVal=(+net.value).toFixed(2);
   }
   r.dataset.brand=displayBrand; r.dataset.mrpRaw=displayMRP; r.dataset.discRaw=discDisplayVal; r.dataset.discMode=discMode;
-  const mrpCellTxt=isBrandMrpVisible(displayBrand)?displayMRP:'-', discCellTxt=isBrandMrpVisible(displayBrand)?(disc.value||0):'-';
+  // Net-mode items have no real discount % — showing the ₹ Net Rate number
+  // under a "Disc%" column header (even if it happens to read the same as
+  // a plausible percentage, like 20) is misleading. Show a dash there
+  // instead; the actual ₹ figure already lives correctly in the Net Rate
+  // column, and in the OFFICE ONLY summary as "₹20.00 (Net)".
+  const mrpCellTxt=isBrandMrpVisible(displayBrand)?displayMRP:'-', discCellTxt=isBrandMrpVisible(displayBrand)?(discMode==='net'?'-':discDisplayVal):'-';
   r.innerHTML=`<td></td><td>${displayBrand}</td><td>${description}</td><td style="${colourStyle}">${colourCell}</td><td>${hsn}</td><td>${displayUnit}</td><td>${finalQty}</td><td class="mrpCol">${mrpCellTxt}</td><td class="mrpCol">${discCellTxt}</td><td>${finalRate.toFixed(2)}</td><td class="perMtrCell" style="${showPerMtr?'':'display:none'}">${perMtrRate}</td><td>${amt.toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();
 }
@@ -2380,19 +2387,41 @@ function editRow(btn){
   document.getElementById("editQty").value=cells[6].innerText;
   const mrpRawVal=(r.dataset.mrpRaw!==undefined)?r.dataset.mrpRaw:cells[7].innerText;
   const discRawVal=(r.dataset.discRaw!==undefined)?r.dataset.discRaw:cells[8].innerText;
+  const wasNetMode=r.dataset.discMode==='net';
   document.getElementById("editMRP").value=(mrpRawVal==='-'||mrpRawVal===''||mrpRawVal===undefined)?'':mrpRawVal;
-  document.getElementById("editDisc").value=(discRawVal==='-'||discRawVal===''||discRawVal===undefined)?'':discRawVal;
+  // Net-mode rows store the ₹ Net Rate itself in discRaw, NOT a percentage —
+  // dropping it straight into Discount % (as before) mislabeled a ₹ amount
+  // as a %, and the very next keystroke would silently recompute a wrong
+  // rate from it. So: leave Discount % blank for Net-mode rows and let the
+  // real rate show only in the Net Rate field, where it belongs.
+  document.getElementById("editDisc").value=(wasNetMode||discRawVal==='-'||discRawVal===''||discRawVal===undefined)?'':discRawVal;
   document.getElementById("editRate").value=cells[9].innerText;
   document.getElementById("editPerMtr").value=(cells[10].innerText==='-'||cells[10].innerText==='')?'':cells[10].innerText;
   document.getElementById("editBrandList").innerHTML=Object.keys(items||{}).map(b=>`<option value="${b}">`).join('');
   document.getElementById("editRowModal")._targetRow=r;
+  // Tracks whether THIS edit session should save back as Net mode. Starts
+  // matching how the item was originally added; flips to false the moment
+  // the user actually types a Discount %, and flips true if they clear
+  // Discount % and type directly into Net Rate instead.
+  document.getElementById("editRowModal")._netMode=wasNetMode;
   document.getElementById("editRowModal").style.display="flex";
   recalcEditAmt();
   document.getElementById("editDisc").focus();
   document.getElementById("editDisc").select();
 }
+function onEditRateTyped(){
+  // Typing directly into Net Rate while Discount % is blank is exactly the
+  // "use Net Rate" action from Add Item — mark this edit session as Net mode
+  // so saving preserves MRP + the ₹ tag instead of discarding both.
+  const discEmpty=document.getElementById("editDisc").value==='';
+  if(discEmpty) document.getElementById("editRowModal")._netMode=true;
+  recalcEditAmt();
+}
 function recalcEditRate(){
   const mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value);
+  // Typing an actual Discount % always means "switch this row to % mode" —
+  // even if it was added via Net Rate originally.
+  if(document.getElementById("editDisc").value!=='') document.getElementById("editRowModal")._netMode=false;
   if(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV)){ const netRate=mrpV-mrpV*discV/100; document.getElementById("editRate").value=netRate.toFixed(2); const targetRow=document.getElementById("editRowModal")._targetRow; const coilLen=parseFloat(targetRow&&targetRow.dataset.coilLen); if(!isNaN(coilLen)&&coilLen>0) document.getElementById("editPerMtr").value=(netRate/coilLen).toFixed(2); }
   recalcEditAmt();
 }
@@ -2400,7 +2429,9 @@ function recalcEditAmt(){ const qty=parseFloat(document.getElementById("editQty"
 function saveEditRow(){
   const modal=document.getElementById("editRowModal"),r=modal._targetRow; if(!r){closeEditRow();return;}
   const cells=r.cells,mrpV=parseFloat(document.getElementById("editMRP").value),discV=parseFloat(document.getElementById("editDisc").value),qty=parseFloat(document.getElementById("editQty").value)||0;
-  let rate=(!isNaN(mrpV)&&mrpV>0&&!isNaN(discV))?mrpV-mrpV*discV/100:(parseFloat(document.getElementById("editRate").value)||0);
+  const netMode=!!modal._netMode && document.getElementById("editDisc").value===''; // belt-and-braces: never save as Net mode if a % was actually typed
+  const typedRate=parseFloat(document.getElementById("editRate").value);
+  let rate=(!netMode&&!isNaN(mrpV)&&mrpV>0&&!isNaN(discV))?mrpV-mrpV*discV/100:(!isNaN(typedRate)?typedRate:0);
   const colourVal=document.getElementById("editColour").value.trim().toUpperCase(),colourStyle=colourVal?getColourStyle(colourVal):"";
   cells[1].innerText=document.getElementById("editBrand").value.trim()||cells[1].innerText;
   cells[2].innerText=document.getElementById("editDescription").value.trim()||cells[2].innerText;
@@ -2409,10 +2440,22 @@ function saveEditRow(){
   cells[5].innerText=document.getElementById("editUnit").value;
   cells[6].innerText=qty;
   r.dataset.brand=cells[1].innerText;
-  r.dataset.mrpRaw=isNaN(mrpV)?'-':mrpV;
-  r.dataset.discRaw=isNaN(discV)?'-':discV;
-  cells[7].innerText=(isNaN(mrpV)||!isBrandMrpVisible(r.dataset.brand))?'-':mrpV;
-  cells[8].innerText=(isNaN(discV)||!isBrandMrpVisible(r.dataset.brand))?'-':discV;
+  if(netMode){
+    // Net mode: keep the real MRP (don't discard it just because Discount %
+    // is blank) and store the actual ₹ rate as discRaw, tagged 'net', so the
+    // OFFICE ONLY summary keeps showing "₹<rate> (Net)" — never skipped.
+    r.dataset.mrpRaw=isNaN(mrpV)?'-':mrpV;
+    r.dataset.discRaw=isNaN(typedRate)?'-':typedRate.toFixed(2);
+    r.dataset.discMode='net';
+  }else{
+    r.dataset.mrpRaw=isNaN(mrpV)?'-':mrpV;
+    r.dataset.discRaw=isNaN(discV)?'-':discV;
+    r.dataset.discMode='pct';
+  }
+  cells[7].innerText=(r.dataset.mrpRaw==='-'||!isBrandMrpVisible(r.dataset.brand))?'-':r.dataset.mrpRaw;
+  // Same as Add Item: never show the ₹ Net Rate number under the "Disc%"
+  // column — dash it instead, since it isn't actually a percentage.
+  cells[8].innerText=(netMode||r.dataset.discRaw==='-'||!isBrandMrpVisible(r.dataset.brand))?'-':r.dataset.discRaw;
   cells[9].innerText=rate.toFixed(2);
   const coilLen=parseFloat(r.dataset.coilLen); cells[10].innerText=(!isNaN(coilLen)&&coilLen>0)?(rate/coilLen).toFixed(2):'-';
   cells[11].innerText=(qty*rate).toFixed(2);
@@ -2437,8 +2480,13 @@ function applyMrpVisibility(){
     const brand=r.dataset.brand||r.cells[1].innerText;
     const visible=isBrandMrpVisible(brand);
     const mrpRaw=r.dataset.mrpRaw, discRaw=r.dataset.discRaw;
+    const isNetMode=r.dataset.discMode==='net';
     if(mrpRaw!==undefined) r.cells[7].innerText=(mrpRaw==='-'||mrpRaw==='')?'-':(visible?mrpRaw:'-');
-    if(discRaw!==undefined) r.cells[8].innerText=(discRaw==='-'||discRaw==='')?'-':(visible?discRaw:'-');
+    // Net-mode rows never show a number under "Disc%" — that column is only
+    // ever a true percentage. This is the actual point that was silently
+    // overwriting the correct '-' with the raw ₹ Net Rate value on every
+    // calc() call, regardless of what Add Item / Edit had just set.
+    if(discRaw!==undefined) r.cells[8].innerText=(isNetMode||discRaw==='-'||discRaw==='')?'-':(visible?discRaw:'-');
   });
 }
 function collectKnownBrands(){
@@ -2519,9 +2567,12 @@ function updateBrandDiscSummary(){
     }
     if(!brand||brand==='-'||isNaN(discNum)) return;
     if(!map.has(brand)) map.set(brand,new Set());
-    // Net-Rate-entered lines are tagged so they display as "₹30 (Net)"
-    // instead of a back-calculated "%", since no discount% was ever typed.
-    map.get(brand).add(isNetMode?("₹"+discNum.toFixed(2)+" (Net)"):(discNum+"%"));
+    // Net-Rate-entered lines are tagged so they display as
+    // "ITEM NAME: ₹30 (Net)" — naming the specific item, since Net Rate is
+    // a per-item exception, not a blanket brand rate like a %. A generic
+    // brand discount stays as plain "45%" since it applies broadly.
+    const desc=(r.cells[2]?.innerText||"").trim();
+    map.get(brand).add(isNetMode?(desc+": ₹"+discNum.toFixed(2)+" (Net)"):(discNum+"%"));
   });
   if(map.size===0){ box.style.display="none"; out.innerHTML=""; return; }
   const parts=[...map.entries()].map(([brand,discs])=>brand.toUpperCase()+" - "+[...discs].join(" / "));
