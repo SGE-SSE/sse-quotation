@@ -129,6 +129,16 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   .action-btns button{flex:1;min-width:80px}
   .cmp-brand-grid{grid-template-columns:1fr!important}
 }
+/* Delivery Challan mode: no pricing at all — item selection, Qty, Unit,
+   Make only. Hides the price-entry fields in Add Item, the MRP/GST toggle
+   row, and the MRP/Disc%/Net Rate/Per Mtr/Amount columns of the items table
+   (columns 8–12: MRP, Disc%, Net Rate, Per Mtr, Amount). */
+body.dc-mode .dc-hide-price{ display:none !important; }
+body.dc-mode #qt th:nth-child(8), body.dc-mode #qt td:nth-child(8),
+body.dc-mode #qt th:nth-child(9), body.dc-mode #qt td:nth-child(9),
+body.dc-mode #qt th:nth-child(10), body.dc-mode #qt td:nth-child(10),
+body.dc-mode #qt th:nth-child(11), body.dc-mode #qt td:nth-child(11),
+body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:none !important; }
 </style>
 </head>
 <body>
@@ -158,6 +168,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="QTN" checked onchange="switchDocType(this.value)"> Quotation</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="CB" onchange="switchDocType(this.value)"> Cash Bill</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="DC" onchange="switchDocType(this.value)"> Delivery Challan</label>
   </div>
   <div class="header-grid">
     <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
@@ -176,7 +187,10 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
 <div class="section-panel" style="margin-top:0">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
     <span>Customer Details</span>
-    <button type="button" class="no-print" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+    <span class="no-print" style="display:flex;gap:8px">
+      <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
+      <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+    </span>
   </div>
   <div class="customer-grid">
     <div style="position:relative">
@@ -187,6 +201,28 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
     <div><label>Customer GSTIN</label><input type="text" id="custGST" oninput="syncPartyFields('regular')"></div>
     <div><label>Customer Address</label><textarea id="custAddr" oninput="syncPartyFields('regular')"></textarea></div>
     <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
+  </div>
+  <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
+    <div class="customer-grid">
+      <div><label>Site</label><input type="text" id="dcSite" placeholder="Site / project name"></div>
+      <div><label>Phone</label><input type="text" id="dcPhone" placeholder="Contact number"></div>
+      <div><label>PO No</label><input type="text" id="dcPoNo"></div>
+      <div><label>PO Date</label><input type="date" id="dcPoDate"></div>
+      <div>
+        <label>Reason <span style="font-weight:400;font-style:italic">(office only)</span></label>
+        <select id="dcReason">
+          <option value="Direct to Customer">Direct to Customer</option>
+          <option value="Against Exchange">Against Exchange</option>
+          <option value="Sample">Sample</option>
+          <option value="Return/Replacement">Return / Replacement</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="no-print" id="dcBillingStatusBox" style="display:none">
+        <label>Billing Status <span style="font-weight:400;font-style:italic">(office only)</span></label>
+        <div id="dcBillingStatusReadout" style="padding:8px 10px;border:1.5px solid #c5d3e8;border-radius:5px;font-size:12.5px;font-weight:700"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -214,9 +250,9 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
     </select>
   </div>
   <div><label id="qtyLabel">Qty</label><input type="number" id="qty" value="1"></div>
-  <div><label>MRP</label><input type="number" id="mrp" readonly></div>
-  <div><label>Discount %</label><input type="number" id="disc"></div>
-  <div><label>Net Rate</label><input type="number" id="net"></div>
+  <div class="dc-hide-price"><label>MRP</label><input type="number" id="mrp" readonly></div>
+  <div class="dc-hide-price"><label>Discount %</label><input type="number" id="disc"></div>
+  <div class="dc-hide-price"><label>Net Rate</label><input type="number" id="net"></div>
   <div class="btn-add-wrap"><label>&nbsp;</label><button class="btn-add" style="width:100%" onclick="addItem()">➕ ADD</button></div>
 </div>
 
@@ -257,7 +293,7 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
   </div>
 </div>
 
-<div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+<div class="dc-hide-price" style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
   <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
   <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
   <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP &amp; Discount Settings</button>
@@ -454,6 +490,22 @@ body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!imp
       <div id="historyPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
     </div>
     <div id="historyList" style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>
+  </div>
+</div>
+
+<!-- DC BILLING DASHBOARD MODAL -->
+<div id="dcDashboardModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:760px;max-height:88vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#8a5a00,#b8790a);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">🚚 Delivery Challan — Billing Dashboard</strong>
+      <button onclick="closeDcDashboard()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:14px 18px;border-bottom:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onclick="setDcDashFilter('pending')" id="dcFilterBtnPending" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:16px;border:1.5px solid #c0392b;background:#c0392b;color:#fff;cursor:pointer">⏳ Pending</button>
+      <button type="button" onclick="setDcDashFilter('billed')" id="dcFilterBtnBilled" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:16px;border:1.5px solid #1b7a4a;background:#fff;color:#1b7a4a;cursor:pointer">✅ Billed</button>
+      <button type="button" onclick="setDcDashFilter('all')" id="dcFilterBtnAll" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:16px;border:1.5px solid #5a6a85;background:#fff;color:#5a6a85;cursor:pointer">All</button>
+    </div>
+    <div id="dcDashboardList" style="overflow-y:auto;padding:14px 18px;flex:1"></div>
   </div>
 </div>
 
@@ -905,6 +957,35 @@ function isMissingColumnError(err){
   return false;
 }
 
+function renderDcBillingStatus(id, dc){
+  const box=document.getElementById("dcBillingStatusBox"), out=document.getElementById("dcBillingStatusReadout");
+  if(!box||!out) return;
+  box.style.display="";
+  if(dc.billed){
+    out.innerHTML=`<span style="color:#1b7a4a">✅ Billed in Tally — Ref: ${dc.billedRefNo||"—"} (${dc.billedDate?new Date(dc.billedDate).toLocaleDateString("en-IN"):"—"})</span>
+      <button type="button" onclick="markDcBilled(${id})" style="margin-left:10px;font-size:10.5px;padding:2px 8px;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:4px;cursor:pointer">Change</button>`;
+  }else{
+    out.innerHTML=`<span style="color:#c0392b">⏳ Pending — not yet billed in Tally</span>
+      <button type="button" onclick="markDcBilled(${id})" style="margin-left:10px;font-size:10.5px;padding:3px 10px;background:#1b7a4a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700">✅ Mark as Billed</button>`;
+  }
+}
+// Marks (or updates) a saved Delivery Challan as billed in Tally, storing the
+// ref no + date inside its remarks JSON — re-reads the record first so a
+// concurrent edit to Site/Phone/PO No elsewhere isn't clobbered.
+async function markDcBilled(id){
+  const refNo=prompt("Tally Bill / Invoice Ref No:");
+  if(refNo===null) return; // cancelled
+  if(!refNo.trim()){ alert("Ref No is required to mark this Billed."); return; }
+  const { data: q, error: readErr } = await sb.from("quotations").select("remarks").eq("id", id).single();
+  if(readErr){ alert("Could not load this Delivery Challan to update."); return; }
+  let dc={}; try{ dc=JSON.parse(q.remarks||"{}"); }catch(e){}
+  dc.billed=true; dc.billedRefNo=refNo.trim(); dc.billedDate=new Date().toISOString().slice(0,10);
+  const { error: updErr } = await sb.from("quotations").update({ remarks: JSON.stringify(dc) }).eq("id", id);
+  if(updErr){ alert("Could not save billing status: "+updErr.message); return; }
+  if(currentQuotationId===id) renderDcBillingStatus(id, dc);
+  if(document.getElementById("dcDashboardModal")?.style.display==="flex") loadDcDashboard();
+  alert("Marked as billed ✓");
+}
 function onDocStatusChange(){
   // Purely a manual office-side marker at this point (saved with the
   // quotation on next Save); reduceStockFromQuotation() is what actually
@@ -1470,7 +1551,7 @@ function getFinancialYear(dateObj){
 
 /* Starting serial for each document type's numbering. Everything defaults to 1;
    Proforma Invoice is set to start its own series at 100 (100, 101, 102...). */
-const DOC_SERIAL_START = { QTN:1, CB:1, PI:100 };
+const DOC_SERIAL_START = { QTN:1, CB:1, PI:100, DC:1 };
 
 /* Counts existing quotations for THIS customer + doc_type within the financial
    year, so each customer's numbering starts fresh (per DOC_SERIAL_START) and increments on its own. */
@@ -1540,7 +1621,21 @@ async function saveQuotation(){
         cust_name: custName.value.trim(), cust_gst: custGST.value.trim(), cust_addr: custAddr.value.trim(),
         gst_applied: !!gstToggle.checked, cash_disc_pct: cashPct,
         validity: document.getElementById("validityInput")?.value || "",
-        remarks: document.getElementById("remarksInput")?.value || "",
+        // Delivery Challan's Site/Phone/PO No/PO Date/Reason + billing
+        // tracking (billed status, Tally ref no, billed date) all piggyback
+        // on the existing "remarks" text column as JSON — avoids needing yet
+        // more Supabase schema changes on top of the pending migration.
+        remarks: currentDocType==="DC"
+          ? JSON.stringify({
+              site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("dcPhone")?.value||"",
+              poNo:document.getElementById("dcPoNo")?.value||"", poDate:document.getElementById("dcPoDate")?.value||"",
+              reason:document.getElementById("dcReason")?.value||"Direct to Customer",
+              // A fresh Save always creates a brand-new DC document (new doc_no,
+              // same as every other doc type here) — so it starts as its own
+              // not-yet-billed record, same reasoning as stock_reduced above.
+              billed:false, billedRefNo:"", billedDate:""
+            })
+          : (document.getElementById("remarksInput")?.value || ""),
         items: collectItemsFromTable(),
         sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
@@ -1577,6 +1672,7 @@ async function saveQuotation(){
     qno.value = docNo;
     status.textContent = `Saved as ${docNo} ✓`;
     setTimeout(()=>status.textContent="", 5000);
+    if(currentDocType==="DC" && currentQuotationId) renderDcBillingStatus(currentQuotationId, {billed:false});
     try{
       /* No auto-create here anymore — saving a quotation only checks
          stock so the indent banner can warn about shortages/untracked
@@ -1673,6 +1769,53 @@ function closePartyHistory(){
   overlay.style.background="rgba(20,20,30,0)"; drawer.style.transform="translateX(100%)";
   setTimeout(()=>{ overlay.style.display="none"; },280);
 }
+
+// Cross-party dashboard: every Delivery Challan across every customer, so the
+// office can see at a glance which ones still need billing in Tally and
+// which are already billed (with the ref no) — a DC's status lives inside
+// its remarks JSON (see saveQuotation / markDcBilled), no new DB column.
+let dcDashFilter="pending";
+async function openDcDashboard(){
+  document.getElementById("dcDashboardModal").style.display="flex";
+  await loadDcDashboard();
+}
+function closeDcDashboard(){ document.getElementById("dcDashboardModal").style.display="none"; }
+function setDcDashFilter(f){
+  dcDashFilter=f;
+  ["pending","billed","all"].forEach(k=>{
+    const btn=document.getElementById("dcFilterBtn"+k[0].toUpperCase()+k.slice(1));
+    const on=k===f;
+    btn.style.background=on?(k==="pending"?"#c0392b":k==="billed"?"#1b7a4a":"#5a6a85"):"#fff";
+    btn.style.color=on?"#fff":(k==="pending"?"#c0392b":k==="billed"?"#1b7a4a":"#5a6a85");
+  });
+  loadDcDashboard();
+}
+async function loadDcDashboard(){
+  const list=document.getElementById("dcDashboardList");
+  list.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
+  const { data, error } = await sb.from("quotations").select("id,doc_no,doc_date,cust_name,remarks").eq("doc_type","DC").order("created_at",{ascending:false});
+  if(error){ list.innerHTML=`<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading Delivery Challans.</div>`; return; }
+  const rows=(data||[]).map(q=>{ let dc={}; try{ dc=JSON.parse(q.remarks||"{}"); }catch(e){} return {...q, dc}; });
+  const filtered=rows.filter(r=>dcDashFilter==="all"?true:dcDashFilter==="billed"?r.dc.billed:!r.dc.billed);
+  if(!filtered.length){ list.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">No ${dcDashFilter==="all"?"":dcDashFilter+" "}Delivery Challans found.</div>`; return; }
+  list.innerHTML=`<div style="display:flex;flex-direction:column;gap:9px">`+filtered.map(r=>`
+    <div style="border:1px solid #c5d3e8;border-radius:9px;padding:10px 13px;background:#f8fafd">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:13px;font-weight:800;color:#1a3c6e">${r.doc_no}</span>
+        <span style="font-size:11px;color:#5a6a85">${r.doc_date||""}</span>
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:#1a1a2e;margin-top:2px">${r.cust_name||"—"}</div>
+      <div style="font-size:11px;color:#888;margin:2px 0 8px">${r.dc.reason||"Direct to Customer"}${r.dc.site?" · "+r.dc.site:""}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:700;${r.dc.billed?"color:#1b7a4a":"color:#c0392b"}">${r.dc.billed?("✅ Billed — Ref: "+(r.dc.billedRefNo||"—")+" ("+(r.dc.billedDate?new Date(r.dc.billedDate).toLocaleDateString("en-IN"):"—")+")"):"⏳ Pending billing"}</span>
+        <span style="display:flex;gap:6px">
+          <button onclick="reopenQuotation(${r.id})" style="font-size:10.5px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📂 Open</button>
+          <button onclick="markDcBilled(${r.id})" style="font-size:10.5px;padding:4px 10px;background:${r.dc.billed?'#eef3fb':'#1b7a4a'};color:${r.dc.billed?'#1a3c6e':'#fff'};border:${r.dc.billed?'1px solid #c5d3e8':'none'};border-radius:4px;cursor:pointer;font-weight:700">${r.dc.billed?'Change':'✅ Mark Billed'}</button>
+        </span>
+      </div>
+    </div>`).join("")+`</div>`;
+}
+
 let historySearchTimer = null;
 function onHistoryPartySearch(){
   clearTimeout(historySearchTimer);
@@ -1765,7 +1908,20 @@ async function reopenQuotation(id){
   if(document.getElementById("docStatus")) document.getElementById("docStatus").value=q.doc_status||"Quoted";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=q.remarks||"";
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC")?"":(q.remarks||"");
+  if(q.doc_type==="DC"){
+    try{
+      const dc=JSON.parse(q.remarks||"{}");
+      if(document.getElementById("dcSite")) document.getElementById("dcSite").value=dc.site||"";
+      if(document.getElementById("dcPhone")) document.getElementById("dcPhone").value=dc.phone||"";
+      if(document.getElementById("dcPoNo")) document.getElementById("dcPoNo").value=dc.poNo||"";
+      if(document.getElementById("dcPoDate")) document.getElementById("dcPoDate").value=dc.poDate||"";
+      if(document.getElementById("dcReason")) document.getElementById("dcReason").value=dc.reason||"Direct to Customer";
+      renderDcBillingStatus(q.id, dc);
+    }catch(e){ /* older/non-JSON remarks — ignore, fields just stay blank */ }
+  }else{
+    const statusBox=document.getElementById("dcBillingStatusBox"); if(statusBox) statusBox.style.display="none";
+  }
   if(typeof updateTCDisplay==="function") updateTCDisplay();
   tbody.innerHTML="";
   (q.items||[]).forEach(it=>{
@@ -1778,6 +1934,7 @@ async function reopenQuotation(id){
   });
   renumber(); calc();
   closePartyHistory();
+  if(document.getElementById("dcDashboardModal")) closeDcDashboard();
   const stockNote=currentStockReduced?` — stock already reduced${currentStockReducedAt?" on "+new Date(currentStockReducedAt).toLocaleDateString("en-IN"):""}${currentStockReducedLocation?" at "+currentStockReducedLocation:""}.`:"";
   document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.${stockNote}`;
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1999,7 +2156,8 @@ function refreshBrandDropdown(){
 const DOC_TYPES={
   QTN:{label:"QUOTATION",noLabel:"Quotation No",dateLabel:"Quotation Date",section:"Quotation Details",addTitle:"Add Item to Quotation",itemsTitle:"Quotation Items",prefix:"SSE/QTN",storageKey:"SSE_QTN",file:"SSE_Quotation"},
   CB:{label:"CASH BILL",noLabel:"Cash Bill No",dateLabel:"Cash Bill Date",section:"Cash Bill Details",addTitle:"Add Item",itemsTitle:"Cash Bill Items",prefix:"SSE/CB",storageKey:"SSE_CB",file:"SSE_CashBill"},
-  PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"}
+  PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"},
+  DC:{label:"DELIVERY CHALLAN",noLabel:"DC No",dateLabel:"DC Date",section:"Delivery Challan Details",addTitle:"Add Item to Delivery Challan",itemsTitle:"Delivery Challan Items",prefix:"SSE/DC",storageKey:"SSE_DC",file:"SSE_DeliveryChallan"}
 };
 let currentDocType="QTN";
 function switchDocType(type){
@@ -2014,6 +2172,9 @@ function switchDocType(type){
   const saveLbl=document.getElementById("saveBtnLabel");
   if(saveLbl) saveLbl.innerText=`SAVE ${d.label}`;
   qno.value="(assigned on Save)";
+  const dcBox=document.getElementById("dcExtraBox");
+  if(dcBox) dcBox.style.display=(type==="DC")?"":"none";
+  document.body.classList.toggle("dc-mode", type==="DC");
 }
 function generateQuotationNo(){
   return "(assigned on Save)";
@@ -2581,10 +2742,95 @@ function updateBrandDiscSummary(){
 }
 
 function printQuotation(){
+  if(currentDocType==="DC"){ printDeliveryChallan(); return; }
   const originalTitle = document.title;
   document.title = exportFileName();
   window.print();
   setTimeout(()=>{ document.title = originalTitle; }, 1000);
+}
+
+// Delivery Challan gets its own dedicated print layout (not the shared
+// pricing-table view) — replicates the exact company Delivery Challan
+// format: title/letterhead, To+Site+Name+Phone box, No/Date/PO No/Date/GST
+// No box, plain S.No/Description/Make/Qty/Units item table, and the
+// signature footer — plain black & white, no pricing columns at all.
+const DC_COMPANY_GST = "36ALWPD5924D1ZZ";
+function printDeliveryChallan(){
+  if(!tbody.rows.length){ alert("Add at least one item before printing the Delivery Challan."); return; }
+  const rows=[...tbody.rows].map((r,i)=>({
+    sno:i+1, desc:r.cells[2].innerText, make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
+  }));
+  const site=document.getElementById("dcSite")?.value||"", phone=document.getElementById("dcPhone")?.value||"";
+  const poNo=document.getElementById("dcPoNo")?.value||"", poDate=document.getElementById("dcPoDate")?.value||"";
+  const dcNo=qno.value||"", dcDate=qdate.value ? new Date(qdate.value).toLocaleDateString("en-IN") : "";
+  const poDateFmt=poDate ? new Date(poDate).toLocaleDateString("en-IN") : "";
+
+  const itemRows=rows.map(r=>`
+    <tr>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.sno}</td>
+      <td style="border:1px solid #000;padding:5px 6px">${r.desc}</td>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.make}</td>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.qty}</td>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.unit}</td>
+    </tr>`).join("");
+  // Pad with a few blank rows so short challans don't look oddly empty, same
+  // spirit as the original form's many pre-printed blank rows — capped low
+  // since this is a generated document, not a blank carbon-copy pad.
+  const padCount=Math.max(0, Math.min(8, 12-rows.length));
+  const padRows=Array.from({length:padCount}).map(()=>`
+    <tr><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td></tr>`).join("");
+
+  const html=`
+    <div style="font-family:Arial,sans-serif;color:#000;padding:16px">
+      <div style="text-align:center;font-size:17px;font-weight:800;letter-spacing:1px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:4px">DELIVERY CHALLAN</div>
+      <div style="text-align:center;font-size:16px;font-weight:800;margin-top:6px">SAI GANESH ELETRICALS-SSE</div>
+      <div style="text-align:center;font-size:11px;margin-top:2px">#Plot No. 19, Shop No. 9, Ground Floor, Raghavendra Colony, Suchitra, Quthbullapur Mandal</div>
+      <div style="text-align:center;font-size:11px;margin-bottom:10px">Medchal,Malkajgiri, Hyd. ,Ph:9652498905, E-mail: Krishnadsge@gmail.com</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px">
+        <tr>
+          <td style="border:1px solid #000;padding:6px 10px;width:55%;vertical-align:top">
+            <div style="font-weight:700">To</div>
+            <div style="margin-top:4px"><b>SITE:</b> ${site}</div>
+            <div><b>NAME:</b> ${custName.value||""}</div>
+            <div><b>PHONE:</b> ${phone}</div>
+          </td>
+          <td style="border:1px solid #000;padding:6px 10px;width:45%;vertical-align:top">
+            <div><b>No&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${dcNo}</div>
+            <div><b>DATE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${dcDate}</div>
+            <div><b>PO . NO&nbsp;&nbsp;&nbsp;:</b> ${poNo}</div>
+            <div><b>DATE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${poDateFmt}</div>
+            <div><b>GST No.&nbsp;&nbsp;:</b> ${DC_COMPANY_GST}</div>
+          </td>
+        </tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#f0f0f0">
+          <th style="border:1px solid #000;padding:6px;width:6%">S.No.</th>
+          <th style="border:1px solid #000;padding:6px">DESCRIPTION</th>
+          <th style="border:1px solid #000;padding:6px;width:16%">MAKE</th>
+          <th style="border:1px solid #000;padding:6px;width:10%">QTY</th>
+          <th style="border:1px solid #000;padding:6px;width:12%">UNITS</th>
+        </tr></thead>
+        <tbody>${itemRows}${padRows}</tbody>
+      </table>
+      <div style="text-align:right;font-weight:700;margin-top:30px;font-size:12.5px">For SAI GANESH ELETRICALS-SSE</div>
+      <div style="display:flex;justify-content:space-between;margin-top:60px;font-size:12px">
+        <div style="border-top:1px solid #000;padding-top:4px;width:220px;text-align:center">RECEIVER'S SIGN WITH SEAL</div>
+        <div style="border-top:1px solid #000;padding-top:4px;width:220px;text-align:center">Authorised Signatory</div>
+      </div>
+    </div>`;
+
+  const holder=window.open("","_blank");
+  if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
+  holder.document.write(`<!DOCTYPE html><html><head><title>${(dcNo||"DeliveryChallan").replace(/[\/:]/g,"-")}</title>
+    <style>@page{ margin:12mm; } body{ font-family:Arial,sans-serif; color:#000; margin:0; padding:0; }</style>
+    </head><body>${html}
+    <script>
+      window.onload=function(){ setTimeout(function(){ window.print(); }, 200); };
+      window.onafterprint=function(){ window.close(); };
+    <\/script>
+    </body></html>`);
+  holder.document.close();
 }
 
 function exportFileName(){
