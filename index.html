@@ -1551,7 +1551,7 @@ function getFinancialYear(dateObj){
 
 /* Starting serial for each document type's numbering. Everything defaults to 1;
    Proforma Invoice is set to start its own series at 100 (100, 101, 102...). */
-const DOC_SERIAL_START = { QTN:1, CB:1, PI:100, DC:1 };
+const DOC_SERIAL_START = { QTN:1, CB:1, PI:100, DC:1058 };
 
 /* Counts existing quotations for THIS customer + doc_type within the financial
    year, so each customer's numbering starts fresh (per DOC_SERIAL_START) and increments on its own. */
@@ -2246,15 +2246,22 @@ function closePriceEditor(){ if(peDirty&&!confirm("Discard unsaved changes?")) r
 function peBuildItemRow(brand, idx){
   const it=peWorkingCopy[brand][idx];
   const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
-  const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:42%"; tdName.textContent=it.name;
-  const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:20%";
+  const tdName=document.createElement("td"); tdName.style.cssText="padding:7px 8px;width:36%"; tdName.textContent=it.name;
+  const tdPrice=document.createElement("td"); tdPrice.style.cssText="padding:7px 8px;width:16%";
   const priceInput=document.createElement("input"); priceInput.type="number"; priceInput.step="0.01"; priceInput.value=it.mrp; priceInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:13px"; priceInput.oninput=()=>{ peWorkingCopy[brand][idx].mrp=parseFloat(priceInput.value)||0; peDirty=true; };
-  const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:18%";
+  const tdHSN=document.createElement("td"); tdHSN.style.cssText="padding:7px 8px;width:16%";
   const hsnInput=document.createElement("input"); hsnInput.type="text"; hsnInput.placeholder="HSN"; hsnInput.value=it.hsn||""; hsnInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; hsnInput.oninput=()=>{ peWorkingCopy[brand][idx].hsn=hsnInput.value.trim(); peDirty=true; };
-  const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:12%;text-align:right";
+  // Optional, purely for reference — your own internal Item Code, separate
+  // from HSN. Price-update Date is NOT per-item — it's set once for the
+  // whole brand/section at a time via the header's date control below,
+  // since one price revision (e.g. "KEI CU ARMD") always updates every
+  // item in that section together, not one at a time.
+  const tdCode=document.createElement("td"); tdCode.style.cssText="padding:7px 8px;width:16%";
+  const codeInput=document.createElement("input"); codeInput.type="text"; codeInput.placeholder="Item Code (optional)"; codeInput.value=it.itemCode||""; codeInput.style.cssText="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px"; codeInput.oninput=()=>{ peWorkingCopy[brand][idx].itemCode=codeInput.value.trim(); peDirty=true; };
+  const tdDel=document.createElement("td"); tdDel.style.cssText="padding:7px 8px;width:10%;text-align:right";
   const delBtn=document.createElement("button"); delBtn.textContent="Remove"; delBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBtn.onclick=()=>{ peWorkingCopy[brand].splice(idx,1); peDirty=true; renderPriceEditorRows(); };
-  tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdDel.appendChild(delBtn);
-  tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdDel);
+  tdPrice.appendChild(priceInput); tdHSN.appendChild(hsnInput); tdCode.appendChild(codeInput); tdDel.appendChild(delBtn);
+  tr.appendChild(tdName); tr.appendChild(tdPrice); tr.appendChild(tdHSN); tr.appendChild(tdCode); tr.appendChild(tdDel);
   return tr;
 }
 
@@ -2272,12 +2279,56 @@ function renderPriceEditorRows(){
     anyRendered=true;
 
     const section=document.createElement("div"); section.style.marginBottom="14px"; section.dataset.pebrand=brand;
-    const header=document.createElement("div"); header.style.cssText="display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0";
+    const header=document.createElement("div"); header.style.cssText="display:flex;justify-content:space-between;align-items:center;background:#f0f4fb;padding:8px 10px;border-radius:6px 6px 0 0;position:sticky;top:0;flex-wrap:wrap;gap:6px";
     const titleSpan=document.createElement("strong"); titleSpan.style.cssText="color:#1a3c6e;font-size:13px";
     titleSpan.innerHTML=`${brand} <span class="pe-item-count" style="color:#888;font-weight:400;font-size:11px">(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})</span>`;
     header.appendChild(titleSpan);
-    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); header.appendChild(delBrandBtn);
+    // Price-update date is set ONCE for the whole brand/section at a time —
+    // one revision (e.g. "KEI CU ARMD" price change) updates every item in
+    // that section together, so this stamps peWorkingCopy[brand][*].priceDate
+    // for all of them in one click, instead of asking per item.
+    // Acts as the Price List's reference identifier — when a supplier issues
+    // a new price list, that list's date IS effectively its ref no (there's
+    // no separate number). Set once per brand/section, applies to every
+    // item in it — one revision always covers the whole section at once.
+    const rightWrap=document.createElement("div"); rightWrap.style.cssText="display:flex;align-items:center;gap:6px;flex-wrap:wrap";
+    const existingDate=(peWorkingCopy[brand].find(it=>it.priceDate)||{}).priceDate||"";
+    const dateNote=document.createElement("span"); dateNote.className="pe-date-note"; dateNote.style.cssText="font-size:10.5px;color:#888";
+    dateNote.textContent=existingDate?`Price List Date: ${new Date(existingDate).toLocaleDateString("en-IN")}`:"";
+    const bulkDateIn=document.createElement("input"); bulkDateIn.type="date"; bulkDateIn.value=existingDate; bulkDateIn.title="Price List Date (reference) for every item in this brand"; bulkDateIn.style.cssText="padding:5px 6px;border:1px solid #c5d3e8;border-radius:4px;font-size:11px";
+    const applyDateBtn=document.createElement("button"); applyDateBtn.type="button"; applyDateBtn.textContent="📅 Set Price List Date"; applyDateBtn.style.cssText="background:#1a3c6e;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:700;white-space:nowrap";
+    applyDateBtn.onclick=()=>{
+      if(!bulkDateIn.value){ alert("Pick a date first."); return; }
+      if(!peWorkingCopy[brand].length){ alert("No items in this brand yet to date-stamp."); return; }
+      peWorkingCopy[brand].forEach(it=>it.priceDate=bulkDateIn.value);
+      peDirty=true;
+      dateNote.textContent=`Price List Date: ${new Date(bulkDateIn.value).toLocaleDateString("en-IN")}`;
+      document.getElementById("peStatus").textContent=`Price List Date set for all ${peWorkingCopy[brand].length} item(s) in ${brand}.`;
+    };
+    rightWrap.appendChild(dateNote); rightWrap.appendChild(bulkDateIn); rightWrap.appendChild(applyDateBtn);
+    // Uploading the actual price list document (PDF/photo/Excel from the
+    // supplier) alongside the date — each upload is kept, never overwritten,
+    // so older price lists stay available as "previous list" history even
+    // after a new one comes in. See peUploadPriceList / peTogglePriceListFiles.
+    const filesToggleBtn=document.createElement("button"); filesToggleBtn.type="button"; filesToggleBtn.textContent="📎 Price List Files"; filesToggleBtn.style.cssText="background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;padding:5px 10px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:700;white-space:nowrap";
+    // Hidden until the "price-lists" Supabase Storage bucket is set up — see
+    // PRICE_LIST_FILES_ENABLED below. Flip that one flag to true once the
+    // bucket exists; everything else is already built and ready to go.
+    if(PRICE_LIST_FILES_ENABLED) rightWrap.appendChild(filesToggleBtn);
+    const delBrandBtn=document.createElement("button"); delBrandBtn.textContent="Delete brand"; delBrandBtn.style.cssText="background:none;border:none;color:#c0392b;font-size:11px;cursor:pointer;text-decoration:underline"; delBrandBtn.onclick=()=>peDeleteBrand(brand); rightWrap.appendChild(delBrandBtn);
+    header.appendChild(rightWrap);
+
+    // Collapsible panel: upload a new price list file + browse every
+    // previously uploaded one for this brand (each dated, oldest to newest).
+    const filesPanel=document.createElement("div");
+    filesPanel.style.cssText="display:none;background:#fbfbfd;border:1px solid #e0e6f0;border-top:none;padding:10px 12px;font-size:11.5px";
+    filesToggleBtn.onclick=()=>{
+      const open=filesPanel.style.display==="none";
+      filesPanel.style.display=open?"":"none";
+      if(open) peRenderPriceListFilesPanel(brand, filesPanel, bulkDateIn);
+    };
     section.appendChild(header);
+    section.appendChild(filesPanel);
 
     const rowsToShow = q ? rows : peWorkingCopy[brand];
     let table=null;
@@ -2297,6 +2348,7 @@ function renderPriceEditorRows(){
     const nameIn=document.createElement("input"); nameIn.type="text"; nameIn.placeholder="New item name…"; nameIn.className="pe-add-name"; nameIn.style.cssText="flex:2;min-width:160px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
     const priceIn=document.createElement("input"); priceIn.type="number"; priceIn.step="0.01"; priceIn.placeholder="Price"; priceIn.style.cssText="flex:1;min-width:80px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
     const hsnIn=document.createElement("input"); hsnIn.type="text"; hsnIn.placeholder="HSN (auto)"; hsnIn.style.cssText="flex:1;min-width:90px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
+    const codeIn=document.createElement("input"); codeIn.type="text"; codeIn.placeholder="Item Code (optional)"; codeIn.style.cssText="flex:1;min-width:90px;padding:7px 8px;border:1px solid #9ccc65;border-radius:5px;font-size:12.5px";
     const addBtn=document.createElement("button"); addBtn.textContent="➕ Add & Next"; addBtn.style.cssText="background:#1b7a4a;color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap";
 
     const doAdd=()=>{
@@ -2304,7 +2356,13 @@ function renderPriceEditorRows(){
       if(!name){ nameIn.focus(); return; }
       const mrpVal=parseFloat(priceIn.value)||0;
       const hsn=hsnIn.value.trim()||getHSN(brand,name);
-      peWorkingCopy[brand].push({name,mrp:mrpVal,hsn});
+      const itemCode=codeIn.value.trim();
+      const newItem={name,mrp:mrpVal,hsn};
+      if(itemCode) newItem.itemCode=itemCode;
+      // Inherits this brand's last bulk-set price date (if any) automatically —
+      // no need to type a date per new item either.
+      if(peWorkingCopy[brand].length && peWorkingCopy[brand][0].priceDate) newItem.priceDate=peWorkingCopy[brand][0].priceDate;
+      peWorkingCopy[brand].push(newItem);
       peDirty=true;
       if(!table){
         table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
@@ -2314,13 +2372,13 @@ function renderPriceEditorRows(){
       const countSpan=titleSpan.querySelector(".pe-item-count");
       if(countSpan) countSpan.textContent=`(${peWorkingCopy[brand].length} item${peWorkingCopy[brand].length===1?"":"s"})`;
       // Clear and keep focus in Name field so the next item can be typed immediately — no re-selecting the brand.
-      nameIn.value=""; priceIn.value=""; hsnIn.value="";
+      nameIn.value=""; priceIn.value=""; hsnIn.value=""; codeIn.value="";
       nameIn.focus();
     };
     addBtn.onclick=doAdd;
-    [nameIn,priceIn,hsnIn].forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doAdd(); } }));
+    [nameIn,priceIn,hsnIn,codeIn].forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doAdd(); } }));
 
-    addRow.appendChild(nameIn); addRow.appendChild(priceIn); addRow.appendChild(hsnIn); addRow.appendChild(addBtn);
+    addRow.appendChild(nameIn); addRow.appendChild(priceIn); addRow.appendChild(hsnIn); addRow.appendChild(codeIn); addRow.appendChild(addBtn);
     section.appendChild(addRow);
 
     list.appendChild(section);
@@ -2335,7 +2393,10 @@ function peAddItemPrompt(){
   const mrpStr=prompt("Price (MRP):","0"); const mrpVal=parseFloat(mrpStr)||0;
   const guessedHSN=getHSN(brand,name.trim());
   const hsnStr=prompt("HSN Code:",guessedHSN); const hsn=(hsnStr||"").trim()||guessedHSN;
-  peWorkingCopy[brand].push({name:name.trim(),mrp:mrpVal,hsn}); peDirty=true;
+  const itemCodeStr=(prompt("Item Code (optional — leave blank to skip):","")||"").trim();
+  const newItem={name:name.trim(),mrp:mrpVal,hsn};
+  if(itemCodeStr) newItem.itemCode=itemCodeStr;
+  peWorkingCopy[brand].push(newItem); peDirty=true;
   document.getElementById("peSearch").value=""; renderPriceEditorRows();
 }
 function peAddBrandPrompt(){
@@ -2351,6 +2412,70 @@ function peAddBrandPrompt(){
   }, 50);
 }
 function peDeleteBrand(brand){ if(!confirm(`Delete "${brand}" and all its items?`)) return; delete peWorkingCopy[brand]; peDirty=true; renderPriceEditorRows(); }
+// ===== PRICE LIST FILE HISTORY (Supabase Storage) =====
+// Fully built, but switched OFF until the "price-lists" Storage bucket is
+// created in Supabase (needs dashboard access, which isn't sorted yet).
+// Flip this to true once that bucket exists — no other code changes needed.
+const PRICE_LIST_FILES_ENABLED = false;
+// Each brand's uploaded price list documents (PDF/photo/Excel from the
+// supplier) live in a Storage bucket, one file per upload, NEVER
+// overwritten — so when a new price list comes in, the old one stays
+// exactly where it was as "previous list" history, dated and viewable.
+// Needs a Storage bucket named "price-lists" to exist in the Supabase
+// project (one-time setup in the dashboard — see the note given alongside
+// this feature; this code cannot create the bucket itself).
+const PRICE_LIST_BUCKET = "price-lists";
+function peSafeBrandFolder(brand){ return brand.replace(/[^a-zA-Z0-9 _-]/g,"_"); }
+
+async function peRenderPriceListFilesPanel(brand, container, dateInputEl){
+  const safeBrand=peSafeBrandFolder(brand);
+  container.innerHTML=`
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <input type="file" id="peFileInput_${safeBrand}" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" style="font-size:11px;flex:1;min-width:160px">
+      <button type="button" id="peUploadBtn_${safeBrand}" style="background:#1b7a4a;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:700;white-space:nowrap">⬆️ Upload as Price List</button>
+    </div>
+    <div style="font-weight:700;color:#1a3c6e;margin-bottom:4px">Previous Price Lists</div>
+    <div id="peFileList_${safeBrand}" style="color:#888">Loading…</div>`;
+  document.getElementById(`peUploadBtn_${safeBrand}`).onclick=async ()=>{
+    const fileInput=document.getElementById(`peFileInput_${safeBrand}`);
+    const file=fileInput.files[0];
+    if(!file){ alert("Choose a file first."); return; }
+    const dateVal=dateInputEl.value;
+    if(!dateVal){ alert("Pick the Price List Date at the top of this section first, then upload."); return; }
+    await peUploadPriceList(brand, file, dateVal);
+    fileInput.value="";
+    peLoadPriceListFileList(brand, document.getElementById(`peFileList_${safeBrand}`));
+  };
+  peLoadPriceListFileList(brand, document.getElementById(`peFileList_${safeBrand}`));
+}
+
+async function peUploadPriceList(brand, file, dateVal){
+  const safeBrand=peSafeBrandFolder(brand);
+  const ext=(file.name.split(".").pop()||"dat").toLowerCase();
+  const path=`${safeBrand}/${dateVal}__${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from(PRICE_LIST_BUCKET).upload(path, file, { upsert:false });
+  if(error){ alert("Upload failed: "+error.message+"\n\nMake sure the 'price-lists' Storage bucket exists in Supabase (one-time setup)."); return; }
+  alert("Price list uploaded ✓ — kept as the dated reference for "+new Date(dateVal).toLocaleDateString("en-IN")+". Earlier uploads for this brand stay available below as previous lists.");
+}
+
+async function peLoadPriceListFileList(brand, listEl){
+  if(!listEl) return;
+  listEl.textContent="Loading…";
+  const safeBrand=peSafeBrandFolder(brand);
+  const { data, error } = await sb.storage.from(PRICE_LIST_BUCKET).list(safeBrand, { sortBy:{ column:"name", order:"desc" } });
+  if(error){ listEl.innerHTML=`<span style="color:#c0392b">Could not load — make sure the 'price-lists' Storage bucket exists in Supabase.</span>`; return; }
+  if(!data || !data.length){ listEl.innerHTML=`<span style="color:#888">No price list files uploaded yet for this brand.</span>`; return; }
+  listEl.innerHTML=data.map(f=>{
+    const dateGuess=(f.name.split("__")[0])||"";
+    const dateFmt=dateGuess?new Date(dateGuess).toLocaleDateString("en-IN"):f.name;
+    const { data: urlData }=sb.storage.from(PRICE_LIST_BUCKET).getPublicUrl(safeBrand+"/"+f.name);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee">
+      <span>${dateFmt}</span>
+      <a href="${urlData.publicUrl}" target="_blank" style="color:#1a3c6e;font-weight:700;text-decoration:none">📄 View</a>
+    </div>`;
+  }).join("");
+}
+
 function peImportCSV(event){
   const file=event.target.files[0]; if(!file) return;
   const reader=new FileReader();
@@ -2359,15 +2484,19 @@ function peImportCSV(event){
       const rows=parseCSVForImport(e.target.result); if(!rows.length) throw new Error("Empty file");
       const header=rows[0].map(h=>h.trim().toLowerCase());
       const bIdx=header.indexOf("brand"),nIdx=header.indexOf("item name"),mIdx=header.indexOf("mrp"),hIdx=header.indexOf("hsn");
+      // Both optional — recognized if present, ignored if not, so existing
+      // CSVs without them keep working exactly as before.
+      const cIdx=header.indexOf("item code"), dIdx=header.indexOf("date");
       if(bIdx===-1||nIdx===-1||mIdx===-1) throw new Error("CSV must have Brand, Item Name, MRP columns");
       let updated=0,added=0;
       for(let i=1;i<rows.length;i++){
         const r=rows[i]; const brand=(r[bIdx]||"").trim(),name=(r[nIdx]||"").trim(),mrpVal=parseFloat((r[mIdx]||"0").replace(/,/g,""))||0,hsn=hIdx!==-1?(r[hIdx]||"").trim():"";
+        const itemCode=cIdx!==-1?(r[cIdx]||"").trim():"", priceDate=dIdx!==-1?(r[dIdx]||"").trim():"";
         if(!brand||!name) continue;
         if(!peWorkingCopy[brand]) peWorkingCopy[brand]=[];
         const existing=peWorkingCopy[brand].find(it=>it.name===name);
-        if(existing){ existing.mrp=mrpVal; if(hsn) existing.hsn=hsn; updated++; }
-        else{ const newItem={name,mrp:mrpVal}; if(hsn) newItem.hsn=hsn; peWorkingCopy[brand].push(newItem); added++; }
+        if(existing){ existing.mrp=mrpVal; if(hsn) existing.hsn=hsn; if(itemCode) existing.itemCode=itemCode; if(priceDate) existing.priceDate=priceDate; updated++; }
+        else{ const newItem={name,mrp:mrpVal}; if(hsn) newItem.hsn=hsn; if(itemCode) newItem.itemCode=itemCode; if(priceDate) newItem.priceDate=priceDate; peWorkingCopy[brand].push(newItem); added++; }
       }
       peDirty=true; renderPriceEditorRows();
       document.getElementById("peStatus").textContent=`CSV import: ${updated} updated, ${added} added`;
