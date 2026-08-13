@@ -426,6 +426,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
   <button class="btn-prices" onclick="refreshPrices(true)">🔄 REFRESH PRICES</button>
   <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
   <button class="btn-prices" onclick="addAllItemsToInventory(this)" style="background:#185FA5;color:#fff">🏭 ADD ITEMS TO INVENTORY</button>
+  <button class="btn-prices" onclick="checkInventoryNow(this)" style="background:#8a5a00;color:#fff">🔍 CHECK INVENTORY</button>
   <button class="btn-prices" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <span id="invStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
@@ -1341,6 +1342,29 @@ function showIndentBanner(result,docNo,addedCount){
 }
 function dismissIndentBanner(){ document.getElementById("indentBanner").style.display="none"; }
 
+// Stand-alone stock check — usable ANY time, including after reopening a
+// quotation from Party History days/weeks later, without needing to hit
+// Save (which would just create a brand-new duplicate document). Always
+// re-fetches live stock first, since it may have moved since this
+// quotation was originally saved.
+async function checkInventoryNow(btn){
+  if(!tbody.rows.length){ alert("No items in the table to check."); return; }
+  const original=btn?btn.textContent:"";
+  if(btn){ btn.disabled=true; btn.textContent="⏳ Checking…"; }
+  try{
+    await loadInventoryStock();
+    const result=computeShortfalls();
+    showIndentBanner(result, qno.value||"", 0);
+    if(!result.shortfalls.length && !result.untracked.length){
+      alert("✓ Stock check complete — every item on this quotation has enough stock right now.");
+    }
+  }catch(e){
+    alert("Could not check inventory: "+e.message);
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=original; }
+  }
+}
+
 /* Sequential indent numbers, e.g. SGE-SSE-IND-001, SGE-SSE-IND-002...
    Counter is kept in this browser's localStorage since the indent itself
    isn't saved to any database — it's just a print-and-send document. */
@@ -1350,44 +1374,53 @@ function getNextIndentNo(){
   return "SGE-SSE-IND-"+String(seq).padStart(3,"0");
 }
 
-// Fixed display order for indent categories — matches guessInventoryCategory()'s
-// category names so grouping stays consistent with what Inventory uses.
-const INDENT_CATEGORY_ORDER=["Wires & Cables","Lights & Fixtures","Conduits & Fittings","MCB & Distribution","Switches & Sockets","Fans & Motors","Other"];
+// Some brand-catalog entries are actually different product LINES from the
+// SAME supplier — e.g. "LEGRAND MCB", "LEGRAND MCCB", "LEGRAND DB" all come
+// from one person, so they should land on ONE indent, not three separate
+// ones. Add more keywords here any time another supplier covers multiple
+// brand-catalog lines the same way. Matching is case-insensitive, substring.
+const INDENT_SUPPLIER_GROUPS=["LEGRAND"];
+function indentSupplierGroupFor(brand){
+  const b=(brand||"").toUpperCase();
+  const hit=INDENT_SUPPLIER_GROUPS.find(k=>b.includes(k));
+  return hit || (brand||"UNSPECIFIED").trim() || "UNSPECIFIED";
+}
 
 function generateIndentPDF(){
   if(!lastShortfalls.length && !lastUntracked.length){ alert("No shortfall or untracked items to raise an indent for."); return; }
   const now=new Date();
 
-  // Different suppliers handle different categories (wires vs pipes/conduits
-  // vs lights, etc.), so each category gets its OWN indent number, its own
-  // Supplier/Approved-By blanks, and its own printed page — instead of one
-  // mixed indent that can't actually be handed to a single supplier.
-  const byCat={};
+  // Grouped by SUPPLIER (usually = brand, except where multiple brand-catalog
+  // lines share one supplier — see INDENT_SUPPLIER_GROUPS above), so each
+  // group gets its OWN indent number, its own Supplier/Approved-By blanks,
+  // and its own printed page — one indent per actual supplier to hand it to.
+  const byBrand={};
   lastShortfalls.forEach(s=>{
-    const cat=guessInventoryCategory(s.desc);
-    (byCat[cat]=byCat[cat]||{shortfalls:[],untracked:[]}).shortfalls.push(s);
+    const grp=indentSupplierGroupFor(s.brand);
+    (byBrand[grp]=byBrand[grp]||{shortfalls:[],untracked:[]}).shortfalls.push(s);
   });
   lastUntracked.forEach(s=>{
-    const cat=guessInventoryCategory(s.desc);
-    (byCat[cat]=byCat[cat]||{shortfalls:[],untracked:[]}).untracked.push(s);
+    const grp=indentSupplierGroupFor(s.brand);
+    (byBrand[grp]=byBrand[grp]||{shortfalls:[],untracked:[]}).untracked.push(s);
   });
-  const presentCats=INDENT_CATEGORY_ORDER.filter(c=>byCat[c]);
-  Object.keys(byCat).forEach(c=>{ if(!presentCats.includes(c)) presentCats.push(c); }); // any category not in the fixed list still gets printed
+  const presentBrands=Object.keys(byBrand).sort();
 
-  const pages=presentCats.map((cat,catIdx)=>{
-    const {shortfalls=[],untracked=[]}=byCat[cat];
+  const pages=presentBrands.map((brand,brandIdx)=>{
+    const {shortfalls=[],untracked=[]}=byBrand[brand];
     const indentNo=getNextIndentNo();
-    // One plain item list per category — no internal tracking/warning notes,
-    // just what needs to be ordered. Shortfall qty and quoted qty (for
-    // untracked items) both go in the same "Qty" column.
+    // One plain item list per supplier group — no internal tracking/warning
+    // notes, just what needs to be ordered. Shortfall qty and quoted qty
+    // (for untracked items) both go in the same "Qty" column. The original
+    // Brand/Line is shown per row since a group can combine several
+    // (e.g. LEGRAND MCB + LEGRAND MCCB + LEGRAND DB together).
     const allItems=[
-      ...shortfalls.map(s=>({brand:s.brand,desc:s.desc,unit:s.unit,qty:s.shortQty})),
-      ...untracked.map(s=>({brand:s.brand,desc:s.desc,unit:s.unit,qty:s.qtyReq}))
+      ...shortfalls.map(s=>({line:s.brand||"-",desc:s.desc,unit:s.unit,qty:s.shortQty})),
+      ...untracked.map(s=>({line:s.brand||"-",desc:s.desc,unit:s.unit,qty:s.qtyReq}))
     ];
     const rows=allItems.map((s,i)=>`
       <tr>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
-        <td style="padding:6px 8px;border:1px solid #ccc">${s.brand||"-"}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc">${s.line}</td>
         <td style="padding:6px 8px;border:1px solid #ccc">${s.desc}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${s.unit||"-"}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>
@@ -1396,21 +1429,21 @@ function generateIndentPDF(){
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr style="background:#f0f4fa">
             <th style="padding:6px 8px;border:1px solid #ccc">#</th>
-            <th style="padding:6px 8px;border:1px solid #ccc">Brand</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Brand / Line</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Item Description</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
-    const isLastPage=catIdx===presentCats.length-1;
+    const isLastPage=brandIdx===presentBrands.length-1;
     return `
       <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px;${isLastPage?"":"page-break-after:always"}">
         <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
           <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
           <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
           <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
-          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${cat}</div>
+          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${brand}</div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
           <tr><td style="padding:3px 0"><b>Indent No:</b> ${indentNo}</td><td style="padding:3px 0"><b>Date:</b> ${now.toLocaleDateString("en-IN")}</td></tr>
