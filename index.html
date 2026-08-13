@@ -1070,16 +1070,18 @@ function computeShortfalls(){
     if(!cells||cells.length<7) return;
     const brand=cells[1].innerText.trim();
     const desc=cells[2].innerText.trim();
+    const colourRaw=cells[3].innerText.trim();
+    const colour=(colourRaw&&colourRaw!=='-'&&colourRaw!=='—')?colourRaw:"";
     const unit=cells[5].innerText.trim();
     const qtyReq=parseFloat(cells[6].innerText)||0;
     if(!qtyReq) return;
     const match=findInventoryMatch(brand,desc);
     if(!match){
-      if(inventoryLoaded) untracked.push({brand,desc,unit,qtyReq});
+      if(inventoryLoaded) untracked.push({brand,desc,colour,unit,qtyReq});
       return;
     }
     if(qtyReq>match.stock+1e-9){
-      shortfalls.push({brand,desc,unit,qtyReq,available:match.stock,shortQty:+(qtyReq-match.stock).toFixed(2)});
+      shortfalls.push({brand,desc,colour,unit,qtyReq,available:match.stock,shortQty:+(qtyReq-match.stock).toFixed(2)});
     }
   });
   return {shortfalls,untracked};
@@ -1422,16 +1424,19 @@ function generateIndentPDF(){
     // notes, just what needs to be ordered. Shortfall qty and quoted qty
     // (for untracked items) both go in the same "Qty" column. The original
     // Brand/Line is shown per row since a group can combine several
-    // (e.g. LEGRAND MCB + LEGRAND MCCB + LEGRAND DB together).
+    // (e.g. LEGRAND MCB + LEGRAND MCCB + LEGRAND DB together). Colour is
+    // critical to include — the supplier needs to know exactly which
+    // colour to send, not just the item and quantity.
     const allItems=[
-      ...shortfalls.map(s=>({line:s.brand||"-",desc:s.desc,unit:s.unit,qty:s.shortQty})),
-      ...untracked.map(s=>({line:s.brand||"-",desc:s.desc,unit:s.unit,qty:s.qtyReq}))
+      ...shortfalls.map(s=>({line:s.brand||"-",desc:s.desc,colour:s.colour||"-",unit:s.unit,qty:s.shortQty})),
+      ...untracked.map(s=>({line:s.brand||"-",desc:s.desc,colour:s.colour||"-",unit:s.unit,qty:s.qtyReq}))
     ];
     const rows=allItems.map((s,i)=>`
       <tr>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
         <td style="padding:6px 8px;border:1px solid #ccc">${s.line}</td>
         <td style="padding:6px 8px;border:1px solid #ccc">${s.desc}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${s.colour}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${s.unit||"-"}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>
       </tr>`).join("");
@@ -1441,6 +1446,7 @@ function generateIndentPDF(){
             <th style="padding:6px 8px;border:1px solid #ccc">#</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Brand / Line</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Item Description</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Colour</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>
           </tr></thead>
