@@ -1374,16 +1374,26 @@ function getNextIndentNo(){
   return "SGE-SSE-IND-"+String(seq).padStart(3,"0");
 }
 
-// Some brand-catalog entries are actually different product LINES from the
-// SAME supplier — e.g. "LEGRAND MCB", "LEGRAND MCCB", "LEGRAND DB" all come
-// from one person, so they should land on ONE indent, not three separate
-// ones. Add more keywords here any time another supplier covers multiple
-// brand-catalog lines the same way. Matching is case-insensitive, substring.
-const INDENT_SUPPLIER_GROUPS=["LEGRAND"];
+// Groups indent items by SUPPLIER, not raw brand-catalog line — almost
+// every brand in the catalog has multiple lines from ONE supplier: e.g.
+// "ANCHOR PENTA"/"ANCHOR ROMA", "KEI - IND COPPER WIRE"/"KEI GREEN PLUS"/
+// "KEI ALU ARMD"/"KEI FLEXIBLE"/"KEI FLEXIBLE FRLS"/"KEI CU ARMD",
+// "POLYCAB - ..." lines, "GREATWHITE" lines, "LEGRAND MCB"/"MCCB"/"DB", etc.
+// The supplier is derived automatically from the ROOT word of the
+// brand-catalog name (the part before " - ", or the first word if there's
+// no dash) — so this keeps working correctly for brands added to the price
+// list later too, without ever needing another code change. If a brand name
+// genuinely doesn't fit that pattern, add it to INDENT_SUPPLIER_OVERRIDES.
+const INDENT_SUPPLIER_OVERRIDES={
+  // "EXACT CATALOG BRAND NAME": "SUPPLIER NAME TO GROUP UNDER"
+};
 function indentSupplierGroupFor(brand){
-  const b=(brand||"").toUpperCase();
-  const hit=INDENT_SUPPLIER_GROUPS.find(k=>b.includes(k));
-  return hit || (brand||"UNSPECIFIED").trim() || "UNSPECIFIED";
+  const raw=(brand||"UNSPECIFIED").trim()||"UNSPECIFIED";
+  const override=INDENT_SUPPLIER_OVERRIDES[raw.toUpperCase()];
+  if(override) return override;
+  const beforeDash=raw.split(/\s+-\s+/)[0].trim();   // "KEI - IND COPPER WIRE" -> "KEI"
+  const rootWord=beforeDash.split(/\s+/)[0];          // "ANCHOR PENTA" -> "ANCHOR"
+  return (rootWord || raw).toUpperCase();
 }
 
 function generateIndentPDF(){
