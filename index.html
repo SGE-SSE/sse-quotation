@@ -201,11 +201,11 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <div><label>Customer GSTIN</label><input type="text" id="custGST" oninput="syncPartyFields('regular')"></div>
     <div><label>Customer Address</label><textarea id="custAddr" oninput="syncPartyFields('regular')"></textarea></div>
     <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
+    <div><label>Customer Phone</label><input type="text" id="custPhone" placeholder="Contact number"></div>
   </div>
   <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
     <div class="customer-grid">
       <div><label>Site</label><input type="text" id="dcSite" placeholder="Site / project name"></div>
-      <div><label>Phone</label><input type="text" id="dcPhone" placeholder="Contact number"></div>
       <div><label>PO No</label><input type="text" id="dcPoNo"></div>
       <div><label>PO Date</label><input type="date" id="dcPoDate"></div>
       <div>
@@ -507,6 +507,24 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <button type="button" onclick="setDcDashFilter('all')" id="dcFilterBtnAll" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:16px;border:1.5px solid #5a6a85;background:#fff;color:#5a6a85;cursor:pointer">All</button>
     </div>
     <div id="dcDashboardList" style="overflow-y:auto;padding:14px 18px;flex:1"></div>
+  </div>
+</div>
+
+<!-- SAVE CHOICE MODAL — asks Replace-existing vs Save-as-new whenever the
+     document currently on screen was reopened from an already-saved record.
+     A brand-new (never-saved) document skips this entirely. -->
+<div id="saveChoiceModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1150;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:460px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
+    <div style="background:linear-gradient(135deg,#1a3c6e,#2a5298);color:#fff;padding:14px 18px">
+      <strong style="font-size:15px">This document is already saved</strong>
+      <div id="saveChoiceDocNo" style="font-size:12.5px;color:#c8d8f5;margin-top:2px"></div>
+    </div>
+    <div style="padding:18px">
+      <p style="font-size:13px;color:#333;margin:0 0 16px">You're editing an existing saved document. What would you like to do with these changes?</p>
+      <button onclick="chooseReplaceExisting()" style="width:100%;background:#1b7a4a;color:#fff;border:none;padding:12px;border-radius:7px;cursor:pointer;font-size:13.5px;font-weight:700;margin-bottom:10px">🔁 Replace Existing Document<br><span style="font-weight:400;font-size:11px;opacity:.9">Same document number — no new serial used</span></button>
+      <button onclick="chooseSaveAsNew()" style="width:100%;background:#185FA5;color:#fff;border:none;padding:12px;border-radius:7px;cursor:pointer;font-size:13.5px;font-weight:700;margin-bottom:10px">🆕 Save as New Document<br><span style="font-weight:400;font-size:11px;opacity:.9">Gets its own fresh serial number</span></button>
+      <button onclick="closeSaveChoiceModal()" style="width:100%;background:none;color:#888;border:none;padding:8px;cursor:pointer;font-size:12.5px">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1644,7 +1662,98 @@ function partyCodeFromName(name){
   return firstWord.toUpperCase().replace(/[^A-Z0-9]/g,"");
 }
 
+// Entry point for the Save button. A brand-new (never-saved) document just
+// saves normally. A REOPENED, already-saved document instead asks whether
+// to replace it in place (same doc_no, no new serial consumed) or save the
+// edits as a separate new document (fresh serial) — never silently does
+// either one.
 async function saveQuotation(){
+  if(!custName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
+  if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
+  if(currentQuotationId){
+    document.getElementById("saveChoiceDocNo").textContent=qno.value||"";
+    document.getElementById("saveChoiceModal").style.display="flex";
+    return;
+  }
+  await performInsertNewQuotation();
+}
+function closeSaveChoiceModal(){ document.getElementById("saveChoiceModal").style.display="none"; }
+function chooseSaveAsNew(){ closeSaveChoiceModal(); performInsertNewQuotation(); }
+function chooseReplaceExisting(){ closeSaveChoiceModal(); performUpdateExistingQuotation(); }
+
+// Updates the SAME saved document in place — doc_no and its assigned serial
+// are never touched, and stock_reduced*/DC billing state are left exactly
+// as they were (only remarks' DC sub-fields are merged, since that column
+// holds several pieces of info as one JSON blob and would otherwise be
+// wiped by a plain overwrite).
+async function performUpdateExistingQuotation(){
+  const btn = document.getElementById("saveQuotationBtn");
+  const status = document.getElementById("saveStatus");
+  try{
+    btn.disabled = true; status.textContent = "Updating…";
+    const partyId = await findOrCreateParty(custName.value, custGST.value, custAddr.value);
+    currentPartyId = partyId;
+    const cashPct = parseFloat(document.getElementById("cashDiscPct")?.value)||0;
+    const cashAmt = sub.innerText ? (+sub.innerText * cashPct/100) : 0;
+
+    let remarksVal;
+    if(currentDocType==="DC"){
+      let preserve={billed:false,billedRefNo:"",billedDate:""};
+      try{
+        const { data: existingRow } = await sb.from("quotations").select("remarks").eq("id", currentQuotationId).single();
+        const existingDc=JSON.parse(existingRow?.remarks||"{}");
+        preserve={billed:existingDc.billed||false, billedRefNo:existingDc.billedRefNo||"", billedDate:existingDc.billedDate||""};
+      }catch(e){ /* couldn't read prior billing state — defaults to not-billed rather than blocking the update */ }
+      remarksVal=JSON.stringify({
+        site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"",
+        poNo:document.getElementById("dcPoNo")?.value||"", poDate:document.getElementById("dcPoDate")?.value||"",
+        reason:document.getElementById("dcReason")?.value||"Direct to Customer",
+        billed:preserve.billed, billedRefNo:preserve.billedRefNo, billedDate:preserve.billedDate
+      });
+    }else{
+      remarksVal=document.getElementById("remarksInput")?.value || "";
+    }
+
+    const corePayload = {
+      party_id: partyId,
+      doc_date: qdate.value || new Date().toISOString().slice(0,10),
+      cust_name: custName.value.trim(), cust_gst: custGST.value.trim(), cust_addr: custAddr.value.trim(),
+      gst_applied: !!gstToggle.checked, cash_disc_pct: cashPct,
+      validity: document.getElementById("validityInput")?.value || "",
+      remarks: remarksVal,
+      items: collectItemsFromTable(),
+      sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
+      taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
+      gst_amt: +(gst.innerText||0), grand_total: +(gt.innerText||0),
+      round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
+      net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
+      // doc_no, party_id's serial, stock_reduced*, and (below) doc_status
+      // are handled separately/conditionally — never blindly overwritten.
+    };
+    let payload = { ...corePayload, doc_status: document.getElementById("docStatus")?.value || "Quoted" };
+    let { error: updErr } = await sb.from("quotations").update(payload).eq("id", currentQuotationId);
+    if(updErr && isMissingColumnError(updErr)){
+      delete payload.doc_status;
+      ({ error: updErr } = await sb.from("quotations").update(payload).eq("id", currentQuotationId));
+    }
+    if(updErr) throw updErr;
+    status.textContent = `Updated ${qno.value} ✓ (same document — no new serial used)`;
+    setTimeout(()=>status.textContent="", 5000);
+    if(currentDocType==="DC") renderDcBillingStatus(currentQuotationId, JSON.parse(remarksVal));
+    try{
+      const final=computeShortfalls();
+      showIndentBanner(final, qno.value, 0);
+    }catch(e){ console.warn("Stock check skipped:",e.message); }
+  }catch(err){
+    console.error(err);
+    alert("Could not update: " + (err.message||err));
+    status.textContent = "";
+  }finally{ btn.disabled = false; }
+}
+
+// Original Save behavior, unchanged — always creates a brand-new document
+// row with its own freshly-assigned serial number.
+async function performInsertNewQuotation(){
   const btn = document.getElementById("saveQuotationBtn");
   const status = document.getElementById("saveStatus");
   try{
@@ -1676,7 +1785,7 @@ async function saveQuotation(){
         // more Supabase schema changes on top of the pending migration.
         remarks: currentDocType==="DC"
           ? JSON.stringify({
-              site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("dcPhone")?.value||"",
+              site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"",
               poNo:document.getElementById("dcPoNo")?.value||"", poDate:document.getElementById("dcPoDate")?.value||"",
               reason:document.getElementById("dcReason")?.value||"Direct to Customer",
               // A fresh Save always creates a brand-new DC document (new doc_no,
@@ -1962,7 +2071,7 @@ async function reopenQuotation(id){
     try{
       const dc=JSON.parse(q.remarks||"{}");
       if(document.getElementById("dcSite")) document.getElementById("dcSite").value=dc.site||"";
-      if(document.getElementById("dcPhone")) document.getElementById("dcPhone").value=dc.phone||"";
+      if(document.getElementById("custPhone")) document.getElementById("custPhone").value=dc.phone||"";
       if(document.getElementById("dcPoNo")) document.getElementById("dcPoNo").value=dc.poNo||"";
       if(document.getElementById("dcPoDate")) document.getElementById("dcPoDate").value=dc.poDate||"";
       if(document.getElementById("dcReason")) document.getElementById("dcReason").value=dc.reason||"Direct to Customer";
@@ -2938,7 +3047,7 @@ function printDeliveryChallan(){
   const rows=[...tbody.rows].map((r,i)=>({
     sno:i+1, desc:r.cells[2].innerText, make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
   }));
-  const site=document.getElementById("dcSite")?.value||"", phone=document.getElementById("dcPhone")?.value||"";
+  const site=document.getElementById("dcSite")?.value||"", phone=document.getElementById("custPhone")?.value||"";
   const poNo=document.getElementById("dcPoNo")?.value||"", poDate=document.getElementById("dcPoDate")?.value||"";
   const dcNo=qno.value||"", dcDate=qdate.value ? new Date(qdate.value).toLocaleDateString("en-IN") : "";
   const poDateFmt=poDate ? new Date(poDate).toLocaleDateString("en-IN") : "";
@@ -2963,7 +3072,7 @@ function printDeliveryChallan(){
       <div style="text-align:center;font-size:17px;font-weight:800;letter-spacing:1px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:4px">DELIVERY CHALLAN</div>
       <div style="text-align:center;font-size:16px;font-weight:800;margin-top:6px">SAI GANESH ELETRICALS-SSE</div>
       <div style="text-align:center;font-size:11px;margin-top:2px">#Plot No. 19, Shop No. 9, Ground Floor, Raghavendra Colony, Suchitra, Quthbullapur Mandal</div>
-      <div style="text-align:center;font-size:11px;margin-bottom:10px">Medchal,Malkajgiri, Hyd. ,Ph:9652498905, E-mail: Krishnadsge@gmail.com</div>
+      <div style="text-align:center;font-size:11px;margin-bottom:10px">Medchal,Malkajgiri, Hyd. ,Ph:9885750057, E-mail: Krishnadsge@gmail.com</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px">
         <tr>
           <td style="border:1px solid #000;padding:6px 10px;width:55%;vertical-align:top">
