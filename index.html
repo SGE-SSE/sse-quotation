@@ -2297,8 +2297,37 @@ async function refreshPrices(manual){
 }
 
 async function savePricesToCloud(){
-  const res=await fetch(JSONBIN_URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(items)});
-  if(!res.ok) throw new Error("HTTP "+res.status);
+  const payload=JSON.stringify(items);
+  const sizeKB=(new Blob([payload]).size/1024).toFixed(1);
+  const attempt=async()=>{
+    // { cache:"no-store" } and an explicit "Connection: close"-style fresh
+    // request matter here: after the page sits idle for several minutes
+    // (phone screen off, tab backgrounded, wifi napping), the browser's
+    // existing connection to the API can go stale — the very next request
+    // on it fails, but a genuinely fresh connection succeeds immediately.
+    // That matches "fails after being idle, works when done quickly".
+    const res=await fetch(JSONBIN_URL,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:payload});
+    if(!res.ok){
+      // Surface JSONBin's actual reason instead of just the status code —
+      // a bare "HTTP 403" hides whether this is a size/plan limit, a rate
+      // limit, or a stale-connection hiccup, which is what's needed to
+      // fix it for good instead of just retrying blindly.
+      let detail="";
+      try{ const body=await res.json(); detail=body?.message||JSON.stringify(body); }catch(e){ try{ detail=await res.text(); }catch(e2){} }
+      const sizeNote = res.status===403 ? ` (price list is currently ~${sizeKB} KB)` : "";
+      throw new Error(`HTTP ${res.status}${detail?": "+detail:""}${sizeNote}`);
+    }
+    return res;
+  };
+  let lastErr=null;
+  // Up to 3 tries total, with an increasing pause — specifically tuned for
+  // "page was idle, first request after that fails, a fresh one succeeds"
+  // rather than a hard/permanent limit (which would fail identically every time).
+  for(let i=0;i<3;i++){
+    try{ await attempt(); lastErr=null; break; }
+    catch(e){ lastErr=e; if(i<2) await new Promise(r=>setTimeout(r, 1500*(i+1))); }
+  }
+  if(lastErr) throw lastErr;
   const now=new Date();
   localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
   setPriceStatus("✓ Saved & synced "+now.toLocaleString(),false);
@@ -2399,8 +2428,34 @@ window.onload=()=>{
 
 /* ===== PRICE EDITOR ===== */
 let peWorkingCopy=null, peDirty=false;
-function openPriceEditor(){ peWorkingCopy=JSON.parse(JSON.stringify(items)); peDirty=false; document.getElementById("peSearch").value=""; document.getElementById("peStatus").textContent=""; document.getElementById("priceEditorOverlay").style.display="flex"; renderPriceEditorRows(); }
-function closePriceEditor(){ if(peDirty&&!confirm("Discard unsaved changes?")) return; document.getElementById("priceEditorOverlay").style.display="none"; peWorkingCopy=null; }
+let peAutoSaveTimer=null;
+function openPriceEditor(){
+  peWorkingCopy=JSON.parse(JSON.stringify(items)); peDirty=false;
+  document.getElementById("peSearch").value=""; document.getElementById("peStatus").textContent="";
+  document.getElementById("priceEditorOverlay").style.display="flex"; renderPriceEditorRows();
+  // Auto-save every 3 minutes while editing, if there's anything unsaved —
+  // so a long editing session (which is exactly when a stale-connection
+  // hiccup is most likely to hit) never risks losing everything to one
+  // final save. Silent on success; only speaks up if something's wrong,
+  // and never interrupts what you're typing.
+  if(peAutoSaveTimer) clearInterval(peAutoSaveTimer);
+  peAutoSaveTimer=setInterval(async()=>{
+    if(!peDirty||!peWorkingCopy) return;
+    try{
+      items=peWorkingCopy; await savePricesToCloud(); peDirty=false;
+      document.getElementById("peStatus").textContent="✓ Auto-saved "+new Date().toLocaleTimeString();
+      document.getElementById("peStatus").style.color="#156038";
+    }catch(e){
+      document.getElementById("peStatus").textContent="⚠ Auto-save failed — will retry, or click Save & Sync: "+e.message;
+      document.getElementById("peStatus").style.color="#c0392b";
+    }
+  }, 180000);
+}
+function closePriceEditor(){
+  if(peDirty&&!confirm("Discard unsaved changes?")) return;
+  if(peAutoSaveTimer){ clearInterval(peAutoSaveTimer); peAutoSaveTimer=null; }
+  document.getElementById("priceEditorOverlay").style.display="none"; peWorkingCopy=null;
+}
 function peBuildItemRow(brand, idx){
   const it=peWorkingCopy[brand][idx];
   const tr=document.createElement("tr"); tr.style.borderBottom="1px solid #eee";
@@ -2694,6 +2749,14 @@ function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes(
    length like "90MTR"/"180MTR" or the word ARMOURED/FLEXIBLE. No brand list to maintain. */
 function isWireOrCableItemName(name){
   const n=(name||"").toUpperCase();
+  // Lugs, ferrules, terminals, connectors, and cable glands are commonly
+  // SIZED using "SQMM" (e.g. "1.5SQMM COPPER RING TYPE LUGS", to show which
+  // wire gauge they crimp onto) but are accessories, not wires/cables
+  // themselves — excluding them stops them being wrongly forced into the
+  // MTRS/COIL unit logic meant only for actual wire/cable items, which was
+  // overriding NOS (or any other unit) the moment "SQMM" appeared anywhere
+  // in the name.
+  if(/\bLUG(S)?\b|\bFERRULE(S)?\b|\bTERMINAL(S)?\b|\bCONNECTOR(S)?\b|\bGLAND(S)?\b|\bLINK\b|\bPIN\b/.test(n)) return false;
   return /SQMM/.test(n) || /\bWIRE\b/.test(n) || /\bCABLE\b/.test(n);
 }
 function isArmouredOrFlexibleItemName(name){
@@ -3146,37 +3209,27 @@ function exportDeliveryChallanPDF(){
   const originalHTML=el.innerHTML;
   const originalStyle=el.getAttribute("style")||"";
   el.innerHTML=buildDeliveryChallanHTML();
-  // #printArea normally has rounded corners + a shadow (the on-screen
-  // "card" look) — flatten just those directly here, rather than using the
-  // app's existing "pdf-export-mode" class, since that class also repaints
-  // every th/td navy-blue for the regular quotation table, which would
-  // wrongly override this table's plain black-and-white styling.
+  // Flatten #printArea's on-screen "card" look (shadow/rounded corners)
+  // directly here rather than via the app's "pdf-export-mode" class, since
+  // that class also repaints every th/td navy-blue for the regular
+  // quotation table — which would wrongly override this table's plain
+  // black-and-white styling.
   el.style.boxShadow="none"; el.style.borderRadius="0"; el.style.background="#fff"; el.style.overflow="visible"; el.style.maxWidth="100%";
-  const filename=exportFileName()+".pdf";
-  const opt={
+  // Deliberately IDENTICAL call pattern to the working exportPDF() above —
+  // same element, same options shape, same plain .save() — since that one
+  // is proven to download correctly. Every earlier attempt to be "clever"
+  // here (Blob construction, alternate output methods) only made things
+  // worse; matching the known-working code exactly is the fix.
+  const opt = {
     margin: 8,
-    filename: filename,
+    filename: exportFileName()+".pdf",
     html2canvas: { scale: 2, useCORS: true, windowWidth: el.scrollWidth, scrollX: 0, scrollY: 0 },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css","legacy"], avoid: ["tr", ".section-panel", ".totals-table", "thead"] }
   };
-  const restore=()=>{ el.innerHTML=originalHTML; el.setAttribute("style", originalStyle); };
-  // .save() leaves the actual download trigger up to the browser's own PDF
-  // handling — some browsers open a preview tab instead of downloading,
-  // which is exactly why the filename (with the DC serial) never came
-  // through when saved manually from there. Building the Blob ourselves and
-  // clicking a real download link guarantees an actual file download with
-  // the exact correct filename, every time, regardless of browser PDF
-  // viewer settings.
-  html2pdf().set(opt).from(el).outputPdf("blob")
-    .then((blob)=>{
-      restore();
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download=filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    })
-    .catch((e)=>{ restore(); alert("Could not generate PDF: "+e.message); });
+  html2pdf().set(opt).from(el).save().then(()=>{
+    el.innerHTML=originalHTML; el.setAttribute("style", originalStyle);
+  });
 }
 
 function exportFileName(){
