@@ -3042,8 +3042,11 @@ function printQuotation(){
 // No box, plain S.No/Description/Make/Qty/Units item table, and the
 // signature footer — plain black & white, no pricing columns at all.
 const DC_COMPANY_GST = "36ALWPD5924D1ZZ";
-function printDeliveryChallan(){
-  if(!tbody.rows.length){ alert("Add at least one item before printing the Delivery Challan."); return; }
+// Builds the exact Delivery Challan HTML — used by BOTH the Print button
+// (opened in a popup for window.print()) and the PDF button (rendered
+// off-screen and captured by html2pdf) so the two can never drift apart
+// again. Whatever changes here automatically applies to both.
+function buildDeliveryChallanHTML(){
   const rows=[...tbody.rows].map((r,i)=>({
     sno:i+1, desc:r.cells[2].innerText, make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
   }));
@@ -3067,29 +3070,28 @@ function printDeliveryChallan(){
   const padRows=Array.from({length:padCount}).map(()=>`
     <tr><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td></tr>`).join("");
 
-  const html=`
-    <div style="font-family:Arial,sans-serif;color:#000;padding:16px">
+  return `
+    <div style="font-family:Arial,sans-serif;color:#000;padding:16px;background:#fff">
       <div style="text-align:center;font-size:17px;font-weight:800;letter-spacing:1px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:4px">DELIVERY CHALLAN</div>
       <div style="text-align:center;font-size:16px;font-weight:800;margin-top:6px">SAI GANESH ELETRICALS-SSE</div>
       <div style="text-align:center;font-size:11px;margin-top:2px">#Plot No. 19, Shop No. 9, Ground Floor, Raghavendra Colony, Suchitra, Quthbullapur Mandal</div>
       <div style="text-align:center;font-size:11px;margin-bottom:10px">Medchal,Malkajgiri, Hyd. ,Ph:9885750057, E-mail: Krishnadsge@gmail.com</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px">
-        <tr>
-          <td style="border:1px solid #000;padding:6px 10px;width:55%;vertical-align:top">
-            <div style="font-weight:700">To</div>
-            <div style="margin-top:4px"><b>SITE:</b> ${site}</div>
-            <div><b>NAME:</b> ${custName.value||""}</div>
-            <div><b>PHONE:</b> ${phone}</div>
-          </td>
-          <td style="border:1px solid #000;padding:6px 10px;width:45%;vertical-align:top">
-            <div><b>No&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${dcNo}</div>
-            <div><b>DATE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${dcDate}</div>
-            <div><b>PO . NO&nbsp;&nbsp;&nbsp;:</b> ${poNo}</div>
-            <div><b>DATE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${poDateFmt}</div>
-            <div><b>GST No.&nbsp;&nbsp;:</b> ${DC_COMPANY_GST}</div>
-          </td>
-        </tr>
-      </table>
+      <div style="width:100%;overflow:hidden;border:1px solid #000;margin-bottom:14px;font-size:12px;box-sizing:border-box">
+        <div style="float:left;width:54%;padding:8px 10px;border-right:1px solid #000;box-sizing:border-box">
+          <div style="font-weight:700">To</div>
+          <div style="margin-top:4px"><b>SITE:</b> ${site}</div>
+          <div><b>NAME:</b> ${custName.value||""}</div>
+          <div><b>PHONE:</b> ${phone}</div>
+        </div>
+        <div style="float:left;width:45%;padding:8px 10px;box-sizing:border-box">
+          <div><span style="display:inline-block;width:70px"><b>No</b></span>: ${dcNo}</div>
+          <div><span style="display:inline-block;width:70px"><b>DATE</b></span>: ${dcDate}</div>
+          <div><span style="display:inline-block;width:70px"><b>PO. NO</b></span>: ${poNo}</div>
+          <div><span style="display:inline-block;width:70px"><b>DATE</b></span>: ${poDateFmt}</div>
+          <div><span style="display:inline-block;width:70px"><b>GST No.</b></span>: ${DC_COMPANY_GST}</div>
+        </div>
+        <div style="clear:both"></div>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#f0f0f0">
           <th style="border:1px solid #000;padding:6px;width:6%">S.No.</th>
@@ -3106,7 +3108,12 @@ function printDeliveryChallan(){
         <div style="border-top:1px solid #000;padding-top:4px;width:220px;text-align:center">Authorised Signatory</div>
       </div>
     </div>`;
+}
 
+function printDeliveryChallan(){
+  if(!tbody.rows.length){ alert("Add at least one item before printing the Delivery Challan."); return; }
+  const dcNo=qno.value||"";
+  const html=buildDeliveryChallanHTML();
   const holder=window.open("","_blank");
   if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
   holder.document.write(`<!DOCTYPE html><html><head><title>${(dcNo||"DeliveryChallan").replace(/[\/:]/g,"-")}</title>
@@ -3118,6 +3125,58 @@ function printDeliveryChallan(){
     <\/script>
     </body></html>`);
   holder.document.close();
+}
+
+// Direct PDF download for Delivery Challan — captures the SAME HTML the
+// Print button uses (via buildDeliveryChallanHTML), rendered off-screen,
+// instead of the regular quotation page. This is what makes the 📄 PDF
+// button produce the exact same layout as 🖨️ PRINT for DC, with no
+// pricing/GST/rate columns ever appearing.
+// The regular exportPDF() below works reliably because it captures
+// #printArea — an element that's ALREADY part of the live, visible page
+// (not something freshly created, moved off-screen, or opened in a new
+// tab). That's the actual reason it never has blank-capture problems.
+// So instead of any workaround, this uses that exact same proven
+// mechanism: temporarily swap #printArea's own content to the Delivery
+// Challan layout, capture it exactly like the regular PDF button does,
+// then put the original content back. No new tab, no off-screen tricks.
+function exportDeliveryChallanPDF(){
+  if(!tbody.rows.length){ alert("Add at least one item before exporting the Delivery Challan."); return; }
+  const el=document.getElementById("printArea");
+  const originalHTML=el.innerHTML;
+  const originalStyle=el.getAttribute("style")||"";
+  el.innerHTML=buildDeliveryChallanHTML();
+  // #printArea normally has rounded corners + a shadow (the on-screen
+  // "card" look) — flatten just those directly here, rather than using the
+  // app's existing "pdf-export-mode" class, since that class also repaints
+  // every th/td navy-blue for the regular quotation table, which would
+  // wrongly override this table's plain black-and-white styling.
+  el.style.boxShadow="none"; el.style.borderRadius="0"; el.style.background="#fff"; el.style.overflow="visible"; el.style.maxWidth="100%";
+  const filename=exportFileName()+".pdf";
+  const opt={
+    margin: 8,
+    filename: filename,
+    html2canvas: { scale: 2, useCORS: true, windowWidth: el.scrollWidth, scrollX: 0, scrollY: 0 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  };
+  const restore=()=>{ el.innerHTML=originalHTML; el.setAttribute("style", originalStyle); };
+  // .save() leaves the actual download trigger up to the browser's own PDF
+  // handling — some browsers open a preview tab instead of downloading,
+  // which is exactly why the filename (with the DC serial) never came
+  // through when saved manually from there. Building the Blob ourselves and
+  // clicking a real download link guarantees an actual file download with
+  // the exact correct filename, every time, regardless of browser PDF
+  // viewer settings.
+  html2pdf().set(opt).from(el).outputPdf("blob")
+    .then((blob)=>{
+      restore();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    })
+    .catch((e)=>{ restore(); alert("Could not generate PDF: "+e.message); });
 }
 
 function exportFileName(){
@@ -3151,6 +3210,7 @@ function exportExcel(){
 }
 
 function exportPDF(){
+  if(currentDocType==="DC"){ exportDeliveryChallanPDF(); return; }
   document.body.classList.add("pdf-export-mode");
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
   const el = document.getElementById("printArea");
