@@ -244,10 +244,13 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
 <div class="entry-grid-mobile">
   <div>
     <label>Unit</label>
-    <select id="unit" onchange="updateQtyLabel()">
+    <select id="unit" onchange="onUnitSelectChange('unit');updateQtyLabel()">
       <option>NOS</option><option>MTRS</option><option>COIL</option>
       <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+      <option>SET</option><option>KGS</option><option>PCS</option>
+      <option value="__other__">➕ Other (type your own)</option>
     </select>
+    <input type="text" id="unitOther" placeholder="Type unit" style="display:none;margin-top:4px;width:100%;padding:7px 8px;border:1.5px solid #c5d3e8;border-radius:5px;font-size:12.5px" onchange="updateQtyLabel()">
   </div>
   <div><label id="qtyLabel">Qty</label><input type="number" id="qty" value="1"></div>
   <div class="dc-hide-price"><label>MRP</label><input type="number" id="mrp" readonly></div>
@@ -540,7 +543,14 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <div><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Description</label><input type="text" id="editDescription" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px"></div>
       <div><label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase">Colour</label><input type="text" id="editColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700"></div>
       <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">HSN Code</label><input type="text" id="editHSN" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
-      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label><select id="editUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"><option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option></select></div>
+      <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label>
+        <select id="editUnit" onchange="onUnitSelectChange('editUnit')" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
+          <option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+          <option>SET</option><option>KGS</option><option>PCS</option>
+          <option value="__other__">➕ Other (type your own)</option>
+        </select>
+        <input type="text" id="editUnitOther" placeholder="Type unit" style="display:none;margin-top:4px;width:100%;padding:7px 8px;border:1.5px solid #c5d3e8;border-radius:5px;font-size:12.5px">
+      </div>
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="editQty" min="0" oninput="recalcEditAmt()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
       <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">MRP</label><input type="number" id="editMRP" min="0" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
       <div><label style="font-size:11px;font-weight:700;color:#c0392b;text-transform:uppercase">🏷️ Discount %</label><input type="number" id="editDisc" min="0" max="100" step="0.01" oninput="recalcEditRate()" style="width:100%;padding:7px 8px;font-size:14px;border:2px solid #e74c3c;border-radius:5px;font-weight:800;color:#c0392b;background:#fff5f5"></div>
@@ -574,7 +584,14 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
         <div style="grid-column:span 2"><label style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase">Description</label><input type="text" id="ecDesc" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #f0c060;border-radius:5px"></div>
         <div><label style="font-size:11px;font-weight:700;color:#6a1b9a;text-transform:uppercase">Colour</label><input type="text" id="ecColour" placeholder="RED / BLUE / —" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #ce93d8;border-radius:5px;font-weight:700"></div>
         <div><label style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase">HSN Code</label><input type="text" id="ecHSN" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px"></div>
-        <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label><select id="ecUnit" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"><option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option></select></div>
+        <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Unit</label>
+          <select id="ecUnit" onchange="onUnitSelectChange('ecUnit')" style="width:100%;padding:7px 8px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700">
+            <option>NOS</option><option>MTRS</option><option>COIL</option><option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+            <option>SET</option><option>KGS</option><option>PCS</option>
+            <option value="__other__">➕ Other (type your own)</option>
+          </select>
+          <input type="text" id="ecUnitOther" placeholder="Type unit" style="display:none;margin-top:4px;width:100%;padding:7px 8px;border:1.5px solid #c5d3e8;border-radius:5px;font-size:12.5px">
+        </div>
         <div><label style="font-size:11px;font-weight:700;color:#1a3c6e;text-transform:uppercase">Qty</label><input type="number" id="ecQty" min="0" style="width:100%;padding:7px 8px;font-size:13px;border:1.5px solid #c5d3e8;border-radius:5px;font-weight:700"></div>
       </div>
 
@@ -691,10 +708,13 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     </div>
     <div><label>HSN Code</label><input type="text" id="cmpItemHSN" placeholder="8544"></div>
     <div><label>Unit</label>
-      <select id="cmpItemUnit">
+      <select id="cmpItemUnit" onchange="onUnitSelectChange('cmpItemUnit')">
         <option>NOS</option><option>MTRS</option><option>COIL</option>
         <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+        <option>SET</option><option>KGS</option><option>PCS</option>
+        <option value="__other__">➕ Other (type your own)</option>
       </select>
+      <input type="text" id="cmpItemUnitOther" placeholder="Type unit" style="display:none;margin-top:4px">
     </div>
     <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
   </div>
@@ -712,10 +732,13 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <div class="entry-grid-mobile">
       <div>
         <label>Unit</label>
-        <select id="cmpNUnit">
+        <select id="cmpNUnit" onchange="onUnitSelectChange('cmpNUnit')">
           <option>NOS</option><option>MTRS</option><option>COIL</option>
           <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+          <option>SET</option><option>KGS</option><option>PCS</option>
+          <option value="__other__">➕ Other (type your own)</option>
         </select>
+        <input type="text" id="cmpNUnitOther" placeholder="Type unit" style="display:none;margin-top:4px">
       </div>
       <div><label>Qty</label><input type="number" id="cmpNQty" value="1"></div>
       <div><label>MRP</label><input type="number" id="cmpNMRP" readonly></div>
@@ -2384,6 +2407,7 @@ brandSel.onchange=()=>{
   const hasPerMtrItem=brandItems.some(i=>isWireOrCableItemName(i.name)&&!getCoilLength(i.name));
   if(hasCoilItem) unit.value="COIL";
   else if(hasPerMtrItem) unit.value="MTRS";
+  const unitOtherEl=document.getElementById("unitOther"); if(unitOtherEl) unitOtherEl.style.display="none";
   updateQtyLabel();
   updateStockBadge();
 };
@@ -2747,16 +2771,50 @@ function getCoilLength(itemName){ const n=itemName.toUpperCase(); if(n.includes(
    automatically get the coil/colour/FR wire treatment as long as its item names follow
    the normal convention: contain "SQMM" / "WIRE" / "CABLE", optionally with a coil
    length like "90MTR"/"180MTR" or the word ARMOURED/FLEXIBLE. No brand list to maintain. */
+// Shared helpers for every Unit field (Add Item, Edit popup, Custom Item,
+// both Comparison Quote fields) — each is a normal, always-reliable native
+// dropdown (works identically on desktop and mobile), with an "Other" entry
+// that reveals a plain text box only when something not on the list is
+// needed. getUnitVal reads the EFFECTIVE value (the typed text when "Other"
+// is chosen, otherwise the dropdown's own value) — always use this instead
+// of reading the select's .value directly. setUnitVal restores a saved
+// value correctly either way, even one that was custom-typed previously.
+function onUnitSelectChange(id){
+  const sel=document.getElementById(id), other=document.getElementById(id+"Other");
+  if(!sel||!other) return;
+  if(sel.value==="__other__"){ other.style.display=""; other.focus(); }
+  else{ other.style.display="none"; }
+}
+function getUnitVal(id){
+  const sel=document.getElementById(id);
+  if(!sel) return "";
+  if(sel.value==="__other__"){
+    const other=document.getElementById(id+"Other");
+    return (other?.value||"").trim().toUpperCase() || "NOS";
+  }
+  return sel.value;
+}
+function setUnitVal(id, value){
+  const sel=document.getElementById(id), other=document.getElementById(id+"Other");
+  if(!sel) return;
+  const known=[...sel.options].some(o=>o.value===value);
+  if(known){ sel.value=value; if(other) other.style.display="none"; }
+  else{
+    sel.value="__other__";
+    if(other){ other.style.display=""; other.value=value||""; }
+  }
+}
+
 function isWireOrCableItemName(name){
   const n=(name||"").toUpperCase();
-  // Lugs, ferrules, terminals, connectors, and cable glands are commonly
-  // SIZED using "SQMM" (e.g. "1.5SQMM COPPER RING TYPE LUGS", to show which
-  // wire gauge they crimp onto) but are accessories, not wires/cables
-  // themselves — excluding them stops them being wrongly forced into the
-  // MTRS/COIL unit logic meant only for actual wire/cable items, which was
-  // overriding NOS (or any other unit) the moment "SQMM" appeared anywhere
-  // in the name.
-  if(/\bLUG(S)?\b|\bFERRULE(S)?\b|\bTERMINAL(S)?\b|\bCONNECTOR(S)?\b|\bGLAND(S)?\b|\bLINK\b|\bPIN\b/.test(n)) return false;
+  // Lugs, ferrules, terminals, connectors, cable glands, and cable TIES are
+  // all accessories that mention "SQMM"/"CABLE"/a plain "MM" size (e.g.
+  // "1.5SQMM COPPER RING TYPE LUGS", "150MM CABLE TIES") but aren't
+  // wires/cables themselves — excluding them stops them being wrongly
+  // forced into the MTRS/COIL unit logic meant only for actual wire/cable
+  // items, which was overriding NOS (or any other unit) the moment one of
+  // those size/name patterns appeared anywhere in the name.
+  if(/\bLUG(S)?\b|\bFERRULE(S)?\b|\bTERMINAL(S)?\b|\bCONNECTOR(S)?\b|\bGLAND(S)?\b|\bLINK\b|\bPIN\b|\bTIE(S)?\b|\bCLIP(S)?\b|\bCLAMP(S)?\b/.test(n)) return false;
   return /SQMM/.test(n) || /\bWIRE\b/.test(n) || /\bCABLE\b/.test(n);
 }
 function isArmouredOrFlexibleItemName(name){
@@ -2789,8 +2847,8 @@ function updateQtyLabel(){
   const qtyLabel=document.getElementById("qtyLabel");
   const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
   const isWire=isWireOrCableItemName(itemName)&&!!getCoilLength(itemName);
-  if(isWire&&unit.value==="MTRS") qtyLabel.innerText="Qty (Metres)";
-  else if(isWire&&unit.value==="COIL") qtyLabel.innerText="Qty (No. of Coils)";
+  if(isWire&&getUnitVal("unit")==="MTRS") qtyLabel.innerText="Qty (Metres)";
+  else if(isWire&&getUnitVal("unit")==="COIL") qtyLabel.innerText="Qty (No. of Coils)";
   else qtyLabel.innerText="Qty";
 }
 
@@ -2841,14 +2899,14 @@ function addItem(){
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate=(coilRate/len).toFixed(2);
     description=buildSuffix(itemName);
-    if(unit.value==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
+    if(getUnitVal("unit")==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
     else{ displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;finalRate=coilRate; }
   }else if(isArmFlx){
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);finalRate=coilRate;
   }else{
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit=unit.value;displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
+    perMtrRate="-";displayUnit=getUnitVal("unit");displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
   }
   const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
   const colourStyle=colourVal?getColourStyle(colourVal):"";
@@ -2894,7 +2952,7 @@ function editRow(btn){
   const colRaw=cells[3].innerText.trim();
   document.getElementById("editColour").value=(colRaw==='-'||colRaw==='—')?'':colRaw;
   document.getElementById("editHSN").value=(cells[4].innerText==='-')?'':cells[4].innerText;
-  document.getElementById("editUnit").value=cells[5].innerText;
+  setUnitVal("editUnit", cells[5].innerText);
   document.getElementById("editQty").value=cells[6].innerText;
   const mrpRawVal=(r.dataset.mrpRaw!==undefined)?r.dataset.mrpRaw:cells[7].innerText;
   const discRawVal=(r.dataset.discRaw!==undefined)?r.dataset.discRaw:cells[8].innerText;
@@ -2948,7 +3006,7 @@ function saveEditRow(){
   cells[2].innerText=document.getElementById("editDescription").value.trim()||cells[2].innerText;
   cells[3].innerText=colourVal||'-'; cells[3].style.cssText=colourStyle;
   cells[4].innerText=document.getElementById("editHSN").value.trim()||'-';
-  cells[5].innerText=document.getElementById("editUnit").value;
+  cells[5].innerText=getUnitVal("editUnit");
   cells[6].innerText=qty;
   r.dataset.brand=cells[1].innerText;
   if(netMode){
@@ -3395,7 +3453,7 @@ function addCmpNormalItem(){
   let rateVal=parseFloat(document.getElementById("cmpNRate").value);
   if(isNaN(rateVal)||!rateVal){ rateVal=discVal?mrpVal-(mrpVal*discVal/100):mrpVal; }
   const qty=parseFloat(document.getElementById("cmpNQty").value)||1;
-  const unit=document.getElementById("cmpNUnit").value;
+  const unit=getUnitVal("cmpNUnit");
   const itemName=opt.text;
   const hsn=opt.dataset.hsn||getHSN(brand,itemName);
 
@@ -3600,7 +3658,7 @@ function clearCmpEntry(){
 function addCmpRow(){
   let desc=(document.getElementById("cmpItemDesc").value||"").trim();
   const hsn=(document.getElementById("cmpItemHSN").value||"").trim();
-  const unit=document.getElementById("cmpItemUnit").value;
+  const unit=getUnitVal("cmpItemUnit");
   const qty=parseFloat(document.getElementById("cmpItemQty").value)||1;
   const frType=document.getElementById("cmpFrType").value||"";
   const colourVal=cmpGetSelectedColour();
@@ -3658,7 +3716,7 @@ function editCmpRow(idx){
   document.getElementById("ecDesc").value=row.desc||"";
   document.getElementById("ecColour").value=row.colour||"";
   document.getElementById("ecHSN").value=row.hsn||"";
-  document.getElementById("ecUnit").value=row.unit||"NOS";
+  setUnitVal("ecUnit", row.unit||"NOS");
   document.getElementById("ecQty").value=row.qty||1;
   document.getElementById("ecIsCommon").checked=!!row.isCommon;
 
@@ -3713,7 +3771,7 @@ function saveEditCmpRow(){
   row.desc=(document.getElementById("ecDesc").value||"").trim()||row.desc;
   row.colour=(document.getElementById("ecColour").value||"").trim().toUpperCase();
   row.hsn=(document.getElementById("ecHSN").value||"").trim();
-  row.unit=document.getElementById("ecUnit").value;
+  row.unit=getUnitVal("ecUnit");
   row.qty=parseFloat(document.getElementById("ecQty").value)||1;
   row.isCommon=document.getElementById("ecIsCommon").checked;
   if(!row.isCommon) row.commonBrand=null;
