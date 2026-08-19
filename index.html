@@ -469,6 +469,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <button onclick="peAddBrandPrompt()" style="background:#1a3c6e;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Brand</button>
       <button onclick="document.getElementById('peCsvInput').click()" style="background:#6a1b9a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">📥 Import CSV</button>
       <input type="file" id="peCsvInput" accept=".csv" style="display:none" onchange="peImportCSV(event)">
+      <button onclick="startPerBrandMigration()" title="One-time: moves the price list to one storage file per brand, so the 100KB free-plan limit never blocks new items again" style="background:#b8790a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">🗂️ Fix 100KB Limit (one-time)</button>
     </div>
     <div id="peList" style="overflow-y:auto;flex:1;padding:0 18px"></div>
     <div style="padding:12px 18px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -494,6 +495,20 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <div id="historyPartySuggestions" style="display:none;position:absolute;z-index:50;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;width:100%"></div>
     </div>
     <div id="historyList" style="font-size:13px;color:#888;text-align:center;padding:30px 10px">Select a party to see their past quotations.</div>
+  </div>
+</div>
+
+<!-- ONE-TIME PER-BRAND STORAGE MIGRATION MODAL -->
+<div id="migrationModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.6);z-index:1300;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:520px;max-height:85vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#b8790a,#8a5a00);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">🗂️ Splitting Price List by Brand</strong>
+      <button onclick="closeMigrationModal()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 18px;overflow-y:auto;flex:1">
+      <div id="migrationLog" style="margin-bottom:12px"></div>
+      <div id="migrationResult"></div>
+    </div>
   </div>
 </div>
 
@@ -2318,6 +2333,71 @@ async function refreshPrices(manual){
     if(manual) alert("Could not refresh prices.\n\n"+e.message);
   }
 }
+
+// ===== ONE-TIME MIGRATION: split the single price-list bin into one bin
+// per brand, to permanently get past JSONBin's free-plan 100KB-per-record
+// limit. Purely ADDITIVE and non-destructive — it only ever CREATES new
+// bins from a copy of the currently-loaded `items` data; it never touches,
+// modifies, or deletes the existing bin the app is still using right now.
+// Nothing about how the app loads/saves prices changes until a second step
+// (using the Registry Bin ID this produces) is done to switch it over.
+async function jsonbinCreateBin(payload, name){
+  const res=await fetch("https://api.jsonbin.io/v3/b", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "X-Master-Key":JSONBIN_MASTER_KEY, "X-Bin-Name":(name||"untitled").slice(0,100), "X-Bin-Private":"true" },
+    body:JSON.stringify(payload)
+  });
+  if(!res.ok){
+    let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
+    throw new Error(`HTTP ${res.status}${detail?": "+detail:""}`);
+  }
+  const data=await res.json();
+  const id=data?.metadata?.id || data?.id;
+  if(!id) throw new Error("Bin created but no ID found in response: "+JSON.stringify(data));
+  return id;
+}
+async function startPerBrandMigration(){
+  if(!confirm("This creates NEW separate storage for each brand. It does NOT touch, change, or delete your current price list — everything keeps working exactly as it does now during and after this. It can take a minute or two for a large catalog. Continue?")) return;
+  document.getElementById("migrationModal").style.display="flex";
+  const log=document.getElementById("migrationLog"), result=document.getElementById("migrationResult");
+  log.innerHTML=""; result.innerHTML="";
+  const brands=Object.keys(items);
+  const registry={}; const failed=[];
+  for(const brand of brands){
+    const row=document.createElement("div");
+    row.textContent=`${brand} — saving…`;
+    row.style.cssText="padding:4px 0;font-size:12.5px;color:#888";
+    log.appendChild(row);
+    try{
+      const binId=await jsonbinCreateBin(items[brand], brand);
+      registry[brand]=binId;
+      row.textContent=`✅ ${brand}`; row.style.color="#1b7a4a";
+    }catch(e){
+      row.textContent=`❌ ${brand} — ${e.message}`; row.style.color="#c0392b";
+      failed.push(brand);
+    }
+  }
+  if(failed.length){
+    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${failed.length} of ${brands.length} brand(s) failed to save. Nothing was finalized — your current price list is completely untouched and still works normally.</div>
+      <div style="font-size:12px;margin-top:6px">Send me this exact list of failures and I'll help fix it, then you can try again (already-succeeded brands will just get re-created, no harm).</div>`;
+    return;
+  }
+  try{
+    const registryBinId=await jsonbinCreateBin(registry, "PRICE_LIST_REGISTRY");
+    result.innerHTML=`
+      <div style="color:#1b7a4a;font-weight:700;margin-bottom:8px">✅ All ${brands.length} brands split successfully!</div>
+      <div style="font-size:12.5px;margin-bottom:6px">Send me this Registry ID so I can finish switching the app over to it:</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="registryIdBox" readonly value="${registryBinId}" style="flex:1;padding:8px;border:1.5px solid #1b7a4a;border-radius:5px;font-family:monospace;font-size:13px">
+        <button onclick="navigator.clipboard.writeText(document.getElementById('registryIdBox').value);this.textContent='Copied!'" style="background:#1b7a4a;color:#fff;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;font-size:12px">Copy</button>
+      </div>
+      <div style="font-size:11.5px;color:#888;margin-top:8px">Your price list is still using the OLD storage exactly as before, fully working, right now. Nothing changes for you until you send me this ID and I switch it over.</div>`;
+  }catch(e){
+    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ All brand bins were created, but the final registry step failed: ${e.message}.</div>
+      <div style="font-size:12px;margin-top:6px">Your current price list is completely untouched. Send me this exact error and I'll help finish it — the brand bins already created aren't wasted, we can reuse them.</div>`;
+  }
+}
+function closeMigrationModal(){ document.getElementById("migrationModal").style.display="none"; }
 
 async function savePricesToCloud(){
   const payload=JSON.stringify(items);
