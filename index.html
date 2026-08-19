@@ -2357,29 +2357,43 @@ async function jsonbinCreateBin(payload, name){
   return id;
 }
 async function startPerBrandMigration(){
-  if(!confirm("This creates NEW separate storage for each brand. It does NOT touch, change, or delete your current price list — everything keeps working exactly as it does now during and after this. It can take a minute or two for a large catalog. Continue?")) return;
+  if(!confirm("This creates NEW separate storage for each brand. It does NOT touch, change, or delete your current price list — everything keeps working exactly as it does now during and after this. With retries and pacing this can take a few minutes for a large catalog. Continue?")) return;
   document.getElementById("migrationModal").style.display="flex";
   const log=document.getElementById("migrationLog"), result=document.getElementById("migrationResult");
   log.innerHTML=""; result.innerHTML="";
   const brands=Object.keys(items);
   const registry={}; const failed=[];
-  for(const brand of brands){
+  for(let i=0;i<brands.length;i++){
+    const brand=brands[i];
     const row=document.createElement("div");
     row.textContent=`${brand} — saving…`;
     row.style.cssText="padding:4px 0;font-size:12.5px;color:#888";
     log.appendChild(row);
-    try{
-      const binId=await jsonbinCreateBin(items[brand], brand);
+    // Firing all requests back-to-back triggered JSONBin's rate limiting
+    // last time ("Failed to fetch" scattered throughout, not a clean cutoff
+    // point) — pacing each request out, and retrying a failed one a couple
+    // of times with a short pause, gets past that reliably.
+    let binId=null, lastErr=null;
+    for(let attempt=1; attempt<=3 && !binId; attempt++){
+      try{
+        binId=await jsonbinCreateBin(items[brand], brand);
+      }catch(e){
+        lastErr=e;
+        if(attempt<3){ row.textContent=`${brand} — retry ${attempt}/2…`; await new Promise(r=>setTimeout(r, 1200*attempt)); }
+      }
+    }
+    if(binId){
       registry[brand]=binId;
       row.textContent=`✅ ${brand}`; row.style.color="#1b7a4a";
-    }catch(e){
-      row.textContent=`❌ ${brand} — ${e.message}`; row.style.color="#c0392b";
+    }else{
+      row.textContent=`❌ ${brand} — ${lastErr?.message||"failed"}`; row.style.color="#c0392b";
       failed.push(brand);
     }
+    if(i<brands.length-1) await new Promise(r=>setTimeout(r, 600)); // pace requests out
   }
   if(failed.length){
-    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${failed.length} of ${brands.length} brand(s) failed to save. Nothing was finalized — your current price list is completely untouched and still works normally.</div>
-      <div style="font-size:12px;margin-top:6px">Send me this exact list of failures and I'll help fix it, then you can try again (already-succeeded brands will just get re-created, no harm).</div>`;
+    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${failed.length} of ${brands.length} brand(s) failed to save (even after retries). Nothing was finalized — your current price list is completely untouched and still works normally.</div>
+      <div style="font-size:12px;margin-top:6px">Send me this exact list of failures and I'll help fix it, then you can try again (already-succeeded brands just get re-created, no harm).</div>`;
     return;
   }
   try{
