@@ -2341,20 +2341,35 @@ async function loadPricesFromRegistry(){
   if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
 
   const brandNames=Object.keys(registry);
-  const results=await Promise.allSettled(brandNames.map(async brand=>{
+  const fetched={};
+  async function fetchOneBrand(brand){
     const res=await fetch("https://api.jsonbin.io/v3/b/"+registry[brand]+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
     if(!res.ok) throw new Error("HTTP "+res.status);
     const data=await res.json();
-    return {brand, list:data.record};
-  }));
+    return data.record;
+  }
+  // Firing all ~80 brand fetches at once tripped JSONBin's rate limiting —
+  // same lesson as the write-side migration. Two passes: a quick batched
+  // pass over everything (a handful at a time, not all at once), then a
+  // slower, gentler retry pass for just whatever still failed. This scales
+  // fine as more brands get added later — it just takes proportionally
+  // longer, reliability doesn't degrade.
+  let pending=brandNames.slice();
+  for(let pass=0; pass<2 && pending.length; pass++){
+    const stillFailed=[];
+    const size=pass===0?8:3, gap=pass===0?400:800;
+    for(let i=0;i<pending.length;i+=size){
+      const batch=pending.slice(i,i+size);
+      const results=await Promise.allSettled(batch.map(fetchOneBrand));
+      results.forEach((r,j)=>{ if(r.status==="fulfilled") fetched[batch[j]]=r.value; else stillFailed.push(batch[j]); });
+      if(i+size<pending.length) await new Promise(r=>setTimeout(r, gap));
+    }
+    pending=stillFailed;
+    if(pending.length && pass===0) await new Promise(r=>setTimeout(r, 1000));
+  }
 
-  const fetched={}; const failedBrands=[];
-  results.forEach((r,i)=>{
-    if(r.status==="fulfilled") fetched[r.value.brand]=r.value.list;
-    else failedBrands.push(brandNames[i]);
-  });
   if(!Object.keys(fetched).length) throw new Error("No brands loaded successfully");
-  return {fetched, registry, failedBrands};
+  return {fetched, registry, failedBrands:pending};
 }
 
 async function refreshPrices(manual){
