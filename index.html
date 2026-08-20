@@ -469,6 +469,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <button onclick="peAddBrandPrompt()" style="background:#1a3c6e;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">+ Add Brand</button>
       <button onclick="document.getElementById('peCsvInput').click()" style="background:#6a1b9a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">📥 Import CSV</button>
       <input type="file" id="peCsvInput" accept=".csv" style="display:none" onchange="peImportCSV(event)">
+      <button onclick="refreshPricesInEditor()" style="background:#0a6e8a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">🔄 Refresh</button>
       <!-- Migration button removed — the one-time split to per-brand storage is
            already done and live (registry 6a853f2bda38895dfef5a80e). Leaving this
            visible only invited accidentally re-running it. Function still exists
@@ -2479,14 +2480,44 @@ async function jsonbinSaveBrandBin(brand, payload, existingId){
 // Each changed brand updates its OWN bin (or gets a new one if it's a
 // brand-new brand), then the registry itself is updated only if a brand
 // was added or removed.
+// Fetches just the brand->binId registry (not all 79 brands' data) — used
+// to silently recover priceRegistry inside Save itself when needed,
+// without touching `items` at all (so it can never overwrite in-progress
+// edits, unlike a full refresh which would).
+// Backup button inside the Price Editor itself (in case the automatic
+// recovery in savePricesToCloud() ever can't reach the registry either) —
+// a lightweight registry-only refresh shown right in the editor's own
+// status line, so there's never a need to close/discard edits just to
+// reach the main page's Refresh button.
+async function refreshPricesInEditor(){
+  const status=document.getElementById("peStatus");
+  if(status){ status.textContent="Refreshing…"; status.style.color="#888"; }
+  try{
+    priceRegistry=await loadRegistryOnly();
+    if(status){ status.textContent="✓ Refreshed — ready to save"; status.style.color="#156038"; }
+  }catch(e){
+    if(status){ status.textContent="⚠ Refresh failed: "+e.message; status.style.color="#c0392b"; }
+  }
+}
+
+async function loadRegistryOnly(){
+  const res=await fetch(PRICE_REGISTRY_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
+  if(!res.ok) throw new Error("Registry HTTP "+res.status);
+  const data=await res.json();
+  const registry=data.record;
+  if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
+  return registry;
+}
+
 async function savePricesToCloud(){
-  // Safety guard: if the registry hasn't loaded yet (e.g. saving right as
-  // the page opens, before the network fetch finishes), every brand would
-  // look "unknown" and this would wastefully create duplicate new bins
-  // instead of updating the real ones. Refuse and ask for a refresh first
-  // rather than risk that.
+  // If the registry hasn't loaded yet (e.g. saving right as the page
+  // opens, before the automatic refresh finishes), fetch just the registry
+  // silently here rather than blocking the user and sending them to a
+  // button buried behind this same modal — this never touches `items`, so
+  // it can't clobber whatever's currently being edited.
   if(!Object.keys(priceRegistry).length){
-    throw new Error("Prices haven't finished loading yet — click 🔄 REFRESH PRICES first, then try saving again.");
+    try{ priceRegistry=await loadRegistryOnly(); }
+    catch(e){ throw new Error("Could not load the price registry needed to save: "+e.message+". Please try Save & Sync again in a moment."); }
   }
   const snapshot=peOriginalSnapshot||{};
   const dirtyBrands=Object.keys(items).filter(b=>JSON.stringify(items[b])!==JSON.stringify(snapshot[b]));
