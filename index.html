@@ -2306,26 +2306,67 @@ const JSONBIN_ID = "6a3637b1f5f4af5e29132730";
 const JSONBIN_MASTER_KEY = "$2a$10$MpuJTq8HXuguilKQPgM3Tu60666pOEexgLKy0In631iih1mkYOqkW";
 const JSONBIN_URL = "https://api.jsonbin.io/v3/b/" + JSONBIN_ID;
 const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V1";
+// The price list now lives as ONE JSONBin bin PER BRAND instead of a single
+// shared bin — this is what actually fixes the 100KB free-plan limit, since
+// one brand's own price list will almost never approach that on its own.
+// PRICE_REGISTRY_BIN_ID points to a small bin holding {brand: binId, ...},
+// used to find each brand's own bin. The old single JSONBIN_URL/JSONBIN_ID
+// above is kept only as a last-resort fallback if the registry can't be
+// reached at all — everyday loads/saves go through the registry now.
+const PRICE_REGISTRY_BIN_ID = "6a853f2bda38895dfef5a80e";
+const PRICE_REGISTRY_URL = "https://api.jsonbin.io/v3/b/" + PRICE_REGISTRY_BIN_ID;
+let priceRegistry = {}; // brand -> its own bin ID, populated on load
+let peOriginalSnapshot = null; // items exactly as last loaded/saved — used to detect which brands actually changed, so Save only touches those, not all ~80 brands every time
 
 let items = JSON.parse(JSON.stringify(FALLBACK_ITEMS));
 try{ const cached=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(cached&&cached.items) items=cached.items; }catch(e){}
+peOriginalSnapshot=JSON.parse(JSON.stringify(items)); // safe default baseline in case the network refresh below never succeeds (offline first load, etc.)
 
 function setPriceStatus(msg,isError){ const el=document.getElementById("priceStatus"); if(el){ el.textContent=msg; el.style.color=isError?"#c0392b":"var(--muted)"; } }
+
+// Fetches the brand->binId registry, then every brand's own bin in
+// parallel. If some brands' bins fail to load this round, they're simply
+// left out of the returned set (the caller merges onto whatever was
+// already loaded, so a brand never just vanishes from the app because of
+// one flaky fetch).
+async function loadPricesFromRegistry(){
+  const regRes=await fetch(PRICE_REGISTRY_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
+  if(!regRes.ok) throw new Error("Registry HTTP "+regRes.status);
+  const regData=await regRes.json();
+  const registry=regData.record;
+  if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
+
+  const brandNames=Object.keys(registry);
+  const results=await Promise.allSettled(brandNames.map(async brand=>{
+    const res=await fetch("https://api.jsonbin.io/v3/b/"+registry[brand]+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    return {brand, list:data.record};
+  }));
+
+  const fetched={}; const failedBrands=[];
+  results.forEach((r,i)=>{
+    if(r.status==="fulfilled") fetched[r.value.brand]=r.value.list;
+    else failedBrands.push(brandNames[i]);
+  });
+  if(!Object.keys(fetched).length) throw new Error("No brands loaded successfully");
+  return {fetched, registry, failedBrands};
+}
 
 async function refreshPrices(manual){
   setPriceStatus("Refreshing prices…",false);
   try{
-    const res=await fetch(JSONBIN_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const data=await res.json();
-    const fetched=data.record;
-    if(!fetched||typeof fetched!=="object"||!Object.keys(fetched).length) throw new Error("No data");
-    items=fetched;
+    const {fetched, registry, failedBrands}=await loadPricesFromRegistry();
+    items={...items, ...fetched}; // merge so a brand that failed THIS round keeps its last-known data instead of disappearing
+    priceRegistry=registry;
+    peOriginalSnapshot=JSON.parse(JSON.stringify(items));
     const now=new Date();
     localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
     refreshBrandDropdown();
     populateCmpBrandLists();
-    setPriceStatus("✓ Prices updated "+now.toLocaleString(),false);
+    let msg="✓ Prices updated "+now.toLocaleString();
+    if(failedBrands.length) msg+=` (⚠ ${failedBrands.length} brand(s) couldn't load this time — kept last-known data for those, will retry next refresh)`;
+    setPriceStatus(msg, failedBrands.length>0);
   }catch(e){
     let ca="";
     try{ const c=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(c&&c.fetchedAt) ca=" (cached "+new Date(c.fetchedAt).toLocaleString()+")"; }catch(e2){}
@@ -2413,38 +2454,84 @@ async function startPerBrandMigration(){
 }
 function closeMigrationModal(){ document.getElementById("migrationModal").style.display="none"; }
 
-async function savePricesToCloud(){
-  const payload=JSON.stringify(items);
-  const sizeKB=(new Blob([payload]).size/1024).toFixed(1);
-  const attempt=async()=>{
-    // { cache:"no-store" } and an explicit "Connection: close"-style fresh
-    // request matter here: after the page sits idle for several minutes
-    // (phone screen off, tab backgrounded, wifi napping), the browser's
-    // existing connection to the API can go stale — the very next request
-    // on it fails, but a genuinely fresh connection succeeds immediately.
-    // That matches "fails after being idle, works when done quickly".
-    const res=await fetch(JSONBIN_URL,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:payload});
+// Fetches/updates a single bin. `existingId` present = PUT (update that
+// bin); absent = POST (create a new one, e.g. for a brand-new brand added
+// in the editor) and returns its new ID.
+async function jsonbinSaveBrandBin(brand, payload, existingId){
+  if(existingId){
+    const res=await fetch("https://api.jsonbin.io/v3/b/"+existingId,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(payload)});
     if(!res.ok){
-      // Surface JSONBin's actual reason instead of just the status code —
-      // a bare "HTTP 403" hides whether this is a size/plan limit, a rate
-      // limit, or a stale-connection hiccup, which is what's needed to
-      // fix it for good instead of just retrying blindly.
-      let detail="";
-      try{ const body=await res.json(); detail=body?.message||JSON.stringify(body); }catch(e){ try{ detail=await res.text(); }catch(e2){} }
-      const sizeNote = res.status===403 ? ` (price list is currently ~${sizeKB} KB)` : "";
-      throw new Error(`HTTP ${res.status}${detail?": "+detail:""}${sizeNote}`);
+      let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
+      throw new Error(`HTTP ${res.status}${detail?": "+detail:""}`);
     }
-    return res;
-  };
-  let lastErr=null;
-  // Up to 3 tries total, with an increasing pause — specifically tuned for
-  // "page was idle, first request after that fails, a fresh one succeeds"
-  // rather than a hard/permanent limit (which would fail identically every time).
-  for(let i=0;i<3;i++){
-    try{ await attempt(); lastErr=null; break; }
-    catch(e){ lastErr=e; if(i<2) await new Promise(r=>setTimeout(r, 1500*(i+1))); }
+    return existingId;
   }
-  if(lastErr) throw lastErr;
+  return await jsonbinCreateBin(payload, brand);
+}
+
+// Saves ONLY the brands that actually changed since the last successful
+// load/save (diffed against peOriginalSnapshot) — touching all ~80 brands
+// on every single edit would make Save take several minutes for no reason.
+// Each changed brand updates its OWN bin (or gets a new one if it's a
+// brand-new brand), then the registry itself is updated only if a brand
+// was added or removed.
+async function savePricesToCloud(){
+  // Safety guard: if the registry hasn't loaded yet (e.g. saving right as
+  // the page opens, before the network fetch finishes), every brand would
+  // look "unknown" and this would wastefully create duplicate new bins
+  // instead of updating the real ones. Refuse and ask for a refresh first
+  // rather than risk that.
+  if(!Object.keys(priceRegistry).length){
+    throw new Error("Prices haven't finished loading yet — click 🔄 REFRESH PRICES first, then try saving again.");
+  }
+  const snapshot=peOriginalSnapshot||{};
+  const dirtyBrands=Object.keys(items).filter(b=>JSON.stringify(items[b])!==JSON.stringify(snapshot[b]));
+  const removedBrands=Object.keys(snapshot).filter(b=>!(b in items));
+
+  if(!dirtyBrands.length && !removedBrands.length){
+    const now=new Date();
+    setPriceStatus("✓ Nothing to save — no changes since last save ("+now.toLocaleTimeString()+")",false);
+    return;
+  }
+
+  let registryChanged=false;
+  const failedBrands=[];
+  for(let i=0;i<dirtyBrands.length;i++){
+    const brand=dirtyBrands[i];
+    let success=false, lastErr=null;
+    // Same pacing/retry approach that got the original migration past
+    // JSONBin's rate limiting — matters here too whenever several brands
+    // are edited in one sitting.
+    for(let attempt=1; attempt<=3 && !success; attempt++){
+      try{
+        const idBefore=priceRegistry[brand];
+        const savedId=await jsonbinSaveBrandBin(brand, items[brand], idBefore);
+        if(!idBefore){ priceRegistry[brand]=savedId; registryChanged=true; }
+        success=true;
+      }catch(e){
+        lastErr=e;
+        if(attempt<3) await new Promise(r=>setTimeout(r, 1200*attempt));
+      }
+    }
+    if(!success) failedBrands.push(brand+": "+(lastErr?.message||"failed"));
+    if(i<dirtyBrands.length-1) await new Promise(r=>setTimeout(r, 500));
+  }
+
+  removedBrands.forEach(b=>{ if(priceRegistry[b]){ delete priceRegistry[b]; registryChanged=true; } });
+
+  if(failedBrands.length){
+    throw new Error(`${failedBrands.length} brand(s) failed to save: ${failedBrands.join("; ")}. Any other changed brands were saved successfully — click Save & Sync again to retry just the failed one(s).`);
+  }
+
+  if(registryChanged){
+    const res=await fetch(PRICE_REGISTRY_URL,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(priceRegistry)});
+    if(!res.ok){
+      let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
+      throw new Error(`All brand price data was saved, but the registry update (needed to find newly-added brands next time) failed: HTTP ${res.status}${detail?": "+detail:""}. Click Save & Sync again to retry just this step.`);
+    }
+  }
+
+  peOriginalSnapshot=JSON.parse(JSON.stringify(items));
   const now=new Date();
   localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
   setPriceStatus("✓ Saved & synced "+now.toLocaleString(),false);
