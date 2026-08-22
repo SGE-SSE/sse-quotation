@@ -190,6 +190,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+      <button type="button" onclick="runTestMigration()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🧪 Migration Test (Step 2)</button>
     </span>
   </div>
   <div class="customer-grid">
@@ -509,6 +510,20 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <div style="padding:16px 18px;overflow-y:auto;flex:1">
       <div id="migrationLog" style="margin-bottom:12px"></div>
       <div id="migrationResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPABASE QUOTATIONS DB MIGRATION — TEST MODAL (Step 2) -->
+<div id="sbMigrationModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.6);z-index:1300;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:640px;max-height:88vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#6a1b9a,#4a1270);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">🧪 Migration Test — 5 Sample Quotations</strong>
+      <button onclick="document.getElementById('sbMigrationModal').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 18px;overflow-y:auto;flex:1">
+      <div id="sbMigrationLog" style="margin-bottom:12px"></div>
+      <div id="sbMigrationResult"></div>
     </div>
   </div>
 </div>
@@ -973,6 +988,101 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
 const SUPABASE_URL = "https://psfqruuzjwpvllahlkla.supabase.co";
 const SUPABASE_KEY = "sb_publishable_9jcUcWEowbzGG3QgEA943g_VS0BJQWl";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== NEW SUPABASE PROJECT (migration target) — TEMPORARY, for the
+// step-by-step Quotations DB migration only. "sb" above (the OLD database)
+// stays the one actually powering the app until the full migration is
+// verified and explicitly switched over. This second client is only used
+// by the migration test tools below — nothing else in the app touches it.
+const NEW_SUPABASE_URL = "https://qszzrdxwydlbdmfuddbr.supabase.co";
+const NEW_SUPABASE_KEY = "sb_publishable_jSlyI3A_7UwdXcCrEhZ4cA_p65zSgVW";
+const newSb = window.supabase.createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY);
+
+// Copies the fields of one row from the OLD quotations table into the
+// shape the NEW table expects (party_id gets REMAPPED to the new party's
+// id — internal database ids are never expected to match between two
+// separate databases, only the business-facing doc_no serial number is
+// preserved exactly, which it is here, verbatim).
+function mapQuotationRow(q, newPartyId){
+  return {
+    party_id: newPartyId, doc_type: q.doc_type, doc_no: q.doc_no, doc_date: q.doc_date,
+    cust_name: q.cust_name, cust_gst: q.cust_gst, cust_addr: q.cust_addr,
+    gst_applied: q.gst_applied, cash_disc_pct: q.cash_disc_pct,
+    validity: q.validity, remarks: q.remarks, items: q.items,
+    sub_total: q.sub_total, cash_disc_amt: q.cash_disc_amt, taxable: q.taxable,
+    gst_amt: q.gst_amt, grand_total: q.grand_total, round_off: q.round_off, net_payable: q.net_payable,
+    doc_status: q.doc_status||"Quoted", stock_reduced: q.stock_reduced||false,
+    stock_reduced_at: q.stock_reduced_at||null, stock_reduced_location: q.stock_reduced_location||null
+  };
+}
+
+// STEP 2 — test migration: copies just 5 real quotations (and whichever
+// customers they belong to) into the NEW database, so they can be checked
+// by hand before anything bigger happens. Purely additive — only ever
+// READS from the old database, only ever WRITES to the new one. The old
+// database is never modified, and the app keeps using it throughout.
+async function runTestMigration(){
+  if(!confirm("This copies just 5 real quotations (and their customers) into the NEW database, as a test. It does NOT touch, change, or delete anything in your current database. Continue?")) return;
+  const modal=document.getElementById("sbMigrationModal");
+  const log=document.getElementById("sbMigrationLog"), result=document.getElementById("sbMigrationResult");
+  modal.style.display="flex"; log.innerHTML="Fetching 5 sample quotations from your current database…"; result.innerHTML="";
+  try{
+    const { data: sampleQuotes, error: qErr } = await sb.from("quotations").select("*").order("created_at",{ascending:false}).limit(5);
+    if(qErr) throw new Error("Could not read from current database: "+qErr.message);
+    if(!sampleQuotes || !sampleQuotes.length){ log.innerHTML="No quotations found in the current database to test with."; return; }
+
+    log.innerHTML="";
+    const partyIdMap={};
+    const rows=[];
+    for(const q of sampleQuotes){
+      const row=document.createElement("div");
+      row.textContent=`${q.doc_no} — copying…`;
+      row.style.cssText="padding:4px 0;font-size:12.5px;color:#888";
+      log.appendChild(row);
+      try{
+        let newPartyId=null;
+        if(q.party_id){
+          if(partyIdMap[q.party_id]){
+            newPartyId=partyIdMap[q.party_id];
+          }else{
+            const { data: oldParty, error: pErr } = await sb.from("parties").select("*").eq("id", q.party_id).single();
+            if(pErr) throw new Error("Could not read customer record: "+pErr.message);
+            const { data: newParty, error: npErr } = await newSb.from("parties").insert({ name: oldParty.name, gstin: oldParty.gstin, address: oldParty.address }).select("id").single();
+            if(npErr) throw new Error("Could not create customer in new database: "+npErr.message);
+            newPartyId=newParty.id;
+            partyIdMap[q.party_id]=newPartyId;
+          }
+        }
+        const { data: newQuote, error: nqErr } = await newSb.from("quotations").insert(mapQuotationRow(q, newPartyId)).select("id,doc_no").single();
+        if(nqErr) throw new Error("Could not write quotation to new database: "+nqErr.message);
+        row.textContent=`✅ ${q.doc_no}`; row.style.color="#1b7a4a";
+        rows.push({docNo:q.doc_no, custName:q.cust_name, netPayable:q.net_payable, ok:true});
+      }catch(e){
+        row.textContent=`❌ ${q.doc_no} — ${e.message}`; row.style.color="#c0392b";
+        rows.push({docNo:q.doc_no, ok:false, error:e.message});
+      }
+    }
+
+    const failCount=rows.filter(r=>!r.ok).length;
+    const tableRows=rows.map(r=>r.ok
+      ? `<tr><td style="padding:5px 8px;border:1px solid #ddd">${r.docNo}</td><td style="padding:5px 8px;border:1px solid #ddd">${r.custName||""}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">₹${(+r.netPayable||0).toLocaleString("en-IN")}</td><td style="padding:5px 8px;border:1px solid #ddd;color:#1b7a4a;font-weight:700">✅ Copied</td></tr>`
+      : `<tr><td style="padding:5px 8px;border:1px solid #ddd">${r.docNo}</td><td colspan="2" style="padding:5px 8px;border:1px solid #ddd;color:#c0392b">${r.error}</td><td style="padding:5px 8px;border:1px solid #ddd;color:#c0392b;font-weight:700">❌ Failed</td></tr>`
+    ).join("");
+
+    result.innerHTML=`
+      <div style="font-weight:700;margin-bottom:8px;color:${failCount?'#c0392b':'#1b7a4a'}">${failCount? `⚠ ${failCount} of ${rows.length} failed` : `✅ All ${rows.length} test records copied successfully`}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+        <thead><tr style="background:#f0f0f0"><th style="padding:5px 8px;border:1px solid #ddd">Doc No</th><th style="padding:5px 8px;border:1px solid #ddd">Customer</th><th style="padding:5px 8px;border:1px solid #ddd">Net Payable</th><th style="padding:5px 8px;border:1px solid #ddd">Status</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div style="font-size:12.5px;background:#f1f8e9;border:1px solid #c5e1a5;border-radius:6px;padding:10px">
+        <b>Please now check these yourself:</b> open your NEW Supabase project → Table Editor → <code>quotations</code> table, and compare these ${rows.length} rows against the real ones in your app's Party History. Confirm the Doc No, customer name, items, and totals all match exactly.
+      </div>
+      <div style="font-size:11.5px;color:#888;margin-top:8px">Your current database is completely unaffected by this — it's still the one running your app. Nothing else has changed.</div>`;
+  }catch(e){
+    log.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${e.message}</div><div style="font-size:12px;margin-top:6px">Nothing was changed in your current database. Send me this exact error and we'll fix it before trying again.</div>`;
+  }
+}
 
 /* ===== INVENTORY LINK (SGE-SSE Inventory System — read-only) =====
    Second, independent Supabase project that holds live stock levels.
@@ -2337,12 +2447,12 @@ async function loadPricesFromRegistry(){
   const registry=regData.record; // brand -> groupBinId (several brands share the same groupBinId)
   if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
 
-  // Only ~8 GROUP bins now instead of ~80 per-brand bins — each group bin
-  // holds several brands' data together. Loading fetches each unique group
-  // bin once (not once per brand), which is why this rarely if ever needs
-  // more than a single small batch — the original rate-limiting problem
-  // came from firing dozens of requests at once; with ~8 there's essentially
-  // nothing left to rate-limit.
+  // With only ~8 GROUP bins, this should barely ever need retrying — but
+  // firing even 8 at once still tripped failures in practice, so this is
+  // deliberately cautious: small batches (3 at a time, not 8), a real pause
+  // between batches, and up to 3 passes retrying only whatever still failed
+  // each time. With just 8 groups total the extra caution costs at most a
+  // few seconds — worth it for reliability every device can count on.
   const uniqueBinIds=[...new Set(Object.values(registry))];
   async function fetchOneGroup(binId){
     const res=await fetch("https://api.jsonbin.io/v3/b/"+binId+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
@@ -2352,9 +2462,10 @@ async function loadPricesFromRegistry(){
   }
   const fetched={};
   let pending=uniqueBinIds.slice();
-  for(let pass=0; pass<2 && pending.length; pass++){
+  const passSizes=[3,2,1], passGaps=[500,900,1400];
+  for(let pass=0; pass<passSizes.length && pending.length; pass++){
     const stillFailed=[];
-    const size=pass===0?8:3, gap=pass===0?400:800;
+    const size=passSizes[pass], gap=passGaps[pass];
     for(let i=0;i<pending.length;i+=size){
       const batch=pending.slice(i,i+size);
       const results=await Promise.allSettled(batch.map(fetchOneGroup));
@@ -2362,7 +2473,7 @@ async function loadPricesFromRegistry(){
       if(i+size<pending.length) await new Promise(r=>setTimeout(r, gap));
     }
     pending=stillFailed;
-    if(pending.length && pass===0) await new Promise(r=>setTimeout(r, 1000));
+    if(pending.length && pass<passSizes.length-1) await new Promise(r=>setTimeout(r, 1200));
   }
   const failedBrands=Object.keys(registry).filter(b=>pending.includes(registry[b]));
 
