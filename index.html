@@ -190,7 +190,8 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
-      <!-- Step 2/3 migration tools removed — migration to this database is
+      <button type="button" onclick="runPriceMigrationTest()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🧪 Price Migration Test (Step 2)</button>
+      <!-- Quotations DB Step 2/3 migration tools removed — that migration is
            complete and verified (139 customers, 522 documents, exact match,
            switched over 2026-08-21). Old project kept untouched as backup. -->
     </span>
@@ -516,7 +517,21 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
   </div>
 </div>
 
-<!-- Supabase migration modal removed — migration complete, see comment above. -->
+<!-- Quotations DB migration modal removed — that migration is complete. -->
+
+<!-- PRICE LIST → SUPABASE MIGRATION MODAL -->
+<div id="priceMigrationModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.6);z-index:1300;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:640px;max-height:88vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#6a1b9a,#4a1270);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong id="priceMigrationTitle" style="font-size:15px">Price List Migration</strong>
+      <button onclick="document.getElementById('priceMigrationModal').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 18px;overflow-y:auto;flex:1">
+      <div id="priceMigrationLog" style="margin-bottom:12px"></div>
+      <div id="priceMigrationResult"></div>
+    </div>
+  </div>
+</div>
 
 <!-- DC BILLING DASHBOARD MODAL -->
 <div id="dcDashboardModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:12px">
@@ -2339,6 +2354,49 @@ function setPriceStatus(msg,isError){ const el=document.getElementById("priceSta
 // left out of the returned set (the caller merges onto whatever was
 // already loaded, so a brand never just vanishes from the app because of
 // one flaky fetch).
+// STEP 2 — price list test migration: copies a small sample (2 brands'
+// worth of items) from the currently-loaded price list into the new
+// price_items table, so it can be checked by hand before anything bigger
+// happens. Purely additive — only ever READS the in-memory `items` (which
+// itself came from JSONBin), only ever WRITES to the new Supabase table.
+// JSONBin is never touched, and stays exactly what the app actually uses
+// for prices until the full migration is verified and switched over.
+async function runPriceMigrationTest(){
+  if(!confirm("This copies a small sample (2 brands' worth of items) into a new price_items table in Supabase, as a test. It does NOT touch, change, or delete your current price list on JSONBin — everything keeps working exactly as it does now. Continue?")) return;
+  const modal=document.getElementById("priceMigrationModal");
+  const log=document.getElementById("priceMigrationLog"), result=document.getElementById("priceMigrationResult");
+  document.getElementById("priceMigrationTitle").textContent="🧪 Price Migration Test — Sample Items";
+  modal.style.display="flex"; log.innerHTML="Preparing sample…"; result.innerHTML="";
+  try{
+    const brandNames=Object.keys(items).slice(0,2);
+    if(!brandNames.length){ log.innerHTML="No price list loaded to test with — click 🔄 REFRESH PRICES first."; return; }
+    const rows=[];
+    brandNames.forEach(brand=>{
+      (items[brand]||[]).forEach(it=>{
+        rows.push({ brand, name: it.name, mrp: it.mrp||0, hsn: it.hsn||null, item_code: it.itemCode||null, price_date: it.priceDate||null });
+      });
+    });
+    log.innerHTML=`Copying ${rows.length} item(s) from ${brandNames.join(" & ")}…`;
+
+    const { data: inserted, error: insErr } = await sb.from("price_items").insert(rows).select("id,brand,name,mrp");
+    if(insErr) throw new Error(insErr.message);
+
+    const tableRows=(inserted||[]).map(r=>`<tr><td style="padding:5px 8px;border:1px solid #ddd">${r.brand}</td><td style="padding:5px 8px;border:1px solid #ddd">${r.name}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">₹${(+r.mrp||0).toLocaleString("en-IN")}</td><td style="padding:5px 8px;border:1px solid #ddd;color:#1b7a4a;font-weight:700">✅ Copied</td></tr>`).join("");
+    result.innerHTML=`
+      <div style="font-weight:700;margin-bottom:8px;color:#1b7a4a">✅ ${inserted.length} test item(s) copied successfully</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+        <thead><tr style="background:#f0f0f0"><th style="padding:5px 8px;border:1px solid #ddd">Brand</th><th style="padding:5px 8px;border:1px solid #ddd">Item</th><th style="padding:5px 8px;border:1px solid #ddd">MRP</th><th style="padding:5px 8px;border:1px solid #ddd">Status</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div style="font-size:12.5px;background:#f1f8e9;border:1px solid #c5e1a5;border-radius:6px;padding:10px">
+        <b>Please now check these yourself:</b> Supabase → Table Editor → <code>price_items</code>, and compare against your current Edit Prices panel for ${brandNames.join(" & ")}. Confirm brand, item name, MRP, HSN all match.
+      </div>
+      <div style="font-size:11.5px;color:#888;margin-top:8px">Your current price list (JSONBin) is completely unaffected — it's still what the app actually uses. Nothing else has changed.</div>`;
+  }catch(e){
+    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${e.message}</div><div style="font-size:12px;margin-top:6px">Nothing was changed in your current price list. Send me this exact error and we'll fix it before trying again.</div>`;
+  }
+}
+
 async function loadPricesFromRegistry(){
   const regRes=await fetch(PRICE_REGISTRY_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
   if(!regRes.ok) throw new Error("Registry HTTP "+regRes.status);
