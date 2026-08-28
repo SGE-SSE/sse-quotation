@@ -987,6 +987,9 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    Second, independent Supabase project that holds live stock levels.
    Used only to CHECK availability while building a quotation — never
    written to from here, so it can never affect stock records. */
+const INV_SUPABASE_URL = "https://ibawonlchzxmocoxkirz.supabase.co";
+const INV_SUPABASE_KEY = "sb_publishable_j3BvHCejXy9hOnlB0EpcSw_6nJM5N-l";
+const invSb = window.supabase.createClient(INV_SUPABASE_URL, INV_SUPABASE_KEY);
 
 let inventoryMap = {};       // normKey(brand,name) -> {stock, unit, byLoc:{GODOWN:x,OFFICE:y}}
 let inventoryLoaded = false;
@@ -1093,7 +1096,7 @@ async function loadInventoryStock(){
   }catch(e){
     inventoryLoaded=false;
     console.warn("Inventory stock load failed:",e.message);
-    if(badge) badge.textContent="⚠ Stock check unavailable (offline?)";
+    if(badge) badge.textContent="⚠ Stock check unavailable — "+(e.message||"unknown error");
   }
   updateStockBadge();
 }
