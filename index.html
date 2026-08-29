@@ -2373,7 +2373,11 @@ async function runPriceMigrationTest(){
     const rows=[];
     brandNames.forEach(brand=>{
       (items[brand]||[]).forEach(it=>{
-        rows.push({ brand, name: it.name, mrp: it.mrp||0, hsn: it.hsn||null, item_code: it.itemCode||null, price_date: it.priceDate||null });
+        // Use the stored HSN if the item has one; otherwise fall back to
+        // the same auto-guess the app already shows on screen (getHSN),
+        // so the copied data matches what you actually see, not just what
+        // happened to be saved as a literal field.
+        rows.push({ brand, name: it.name, mrp: it.mrp||0, hsn: it.hsn||getHSN(brand, it.name), item_code: it.itemCode||null, price_date: it.priceDate||null });
       });
     });
     log.innerHTML=`Copying ${rows.length} item(s) from ${brandNames.join(" & ")}…`;
