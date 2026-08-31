@@ -190,11 +190,9 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
-      <button type="button" onclick="runPriceMigrationTest()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🧪 Price Migration Test (Step 2)</button>
-      <button type="button" onclick="runFullPriceMigration()" style="font-size:11px;padding:4px 10px;background:#a83232;color:#fff;border:none;border-radius:4px;cursor:pointer">📦 Full Price Migration (Step 3)</button>
-      <!-- Quotations DB Step 2/3 migration tools removed — that migration is
-           complete and verified (139 customers, 522 documents, exact match,
-           switched over 2026-08-21). Old project kept untouched as backup. -->
+      <!-- Quotations DB and Price List migrations are both complete —
+           see comments near each's storage code. Test/migration buttons
+           removed now that both are live and verified. -->
     </span>
   </div>
   <div class="customer-grid">
@@ -475,7 +473,6 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
       <button onclick="document.getElementById('peCsvInput').click()" style="background:#6a1b9a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">📥 Import CSV</button>
       <input type="file" id="peCsvInput" accept=".csv" style="display:none" onchange="peImportCSV(event)">
       <button onclick="refreshPricesInEditor()" style="background:#0a6e8a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">🔄 Refresh</button>
-      <button onclick="startGroupConsolidationMigration()" title="One-time: groups ~79 individual brand files into ~8 larger files, fixing the loading-reliability issue" style="background:#b8790a;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px">🗂️ Fix Loading Reliability (one-time)</button>
     </div>
     <div id="peList" style="overflow-y:auto;flex:1;padding:0 18px"></div>
     <div style="padding:12px 18px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -504,35 +501,8 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
   </div>
 </div>
 
-<!-- ONE-TIME PER-BRAND STORAGE MIGRATION MODAL -->
-<div id="migrationModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.6);z-index:1300;align-items:center;justify-content:center;padding:12px">
-  <div style="background:#fff;width:100%;max-width:520px;max-height:85vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
-    <div style="background:linear-gradient(135deg,#b8790a,#8a5a00);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:15px">🗂️ Splitting Price List by Brand</strong>
-      <button onclick="closeMigrationModal()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
-    </div>
-    <div style="padding:16px 18px;overflow-y:auto;flex:1">
-      <div id="migrationLog" style="margin-bottom:12px"></div>
-      <div id="migrationResult"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Quotations DB migration modal removed — that migration is complete. -->
-
-<!-- PRICE LIST → SUPABASE MIGRATION MODAL -->
-<div id="priceMigrationModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.6);z-index:1300;align-items:center;justify-content:center;padding:12px">
-  <div style="background:#fff;width:100%;max-width:640px;max-height:88vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
-    <div style="background:linear-gradient(135deg,#6a1b9a,#4a1270);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
-      <strong id="priceMigrationTitle" style="font-size:15px">Price List Migration</strong>
-      <button onclick="document.getElementById('priceMigrationModal').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
-    </div>
-    <div style="padding:16px 18px;overflow-y:auto;flex:1">
-      <div id="priceMigrationLog" style="margin-bottom:12px"></div>
-      <div id="priceMigrationResult"></div>
-    </div>
-  </div>
-</div>
+<!-- Both migration modals removed — Quotations DB and Price List migrations
+     are complete and verified. See comments near each's storage code below. -->
 
 <!-- DC BILLING DASHBOARD MODAL -->
 <div id="dcDashboardModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:12px">
@@ -2328,21 +2298,15 @@ const FALLBACK_ITEMS={
   ]
 };
 
-const JSONBIN_ID = "6a3637b1f5f4af5e29132730";
-const JSONBIN_MASTER_KEY = "$2a$10$MpuJTq8HXuguilKQPgM3Tu60666pOEexgLKy0In631iih1mkYOqkW";
-const JSONBIN_URL = "https://api.jsonbin.io/v3/b/" + JSONBIN_ID;
-const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V1";
-// The price list now lives as ONE JSONBin bin PER BRAND instead of a single
-// shared bin — this is what actually fixes the 100KB free-plan limit, since
-// one brand's own price list will almost never approach that on its own.
-// PRICE_REGISTRY_BIN_ID points to a small bin holding {brand: binId, ...},
-// used to find each brand's own bin. The old single JSONBIN_URL/JSONBIN_ID
-// above is kept only as a last-resort fallback if the registry can't be
-// reached at all — everyday loads/saves go through the registry now.
-const PRICE_REGISTRY_BIN_ID = "6a853f2bda38895dfef5a80e";
-const PRICE_REGISTRY_URL = "https://api.jsonbin.io/v3/b/" + PRICE_REGISTRY_BIN_ID;
-let priceRegistry = {}; // brand -> its own bin ID, populated on load
-let peOriginalSnapshot = null; // items exactly as last loaded/saved — used to detect which brands actually changed, so Save only touches those, not all ~80 brands every time
+// ===== PRICE LIST — now stored in Supabase (table: price_items), one row
+// per item, in the SAME account already used for Quotations. Replaces
+// JSONBin entirely — no more size limits, no more rate limits, ever.
+// Each in-memory item carries a hidden _id (its Supabase row id) once
+// loaded; a brand-new item (added in the editor, never saved yet) simply
+// has no _id, which is exactly how Save tells "update this" apart from
+// "insert this" below.
+const PRICE_CACHE_KEY = "SSE_PRICE_CACHE_V2_SUPABASE";
+let peOriginalSnapshot = null; // items exactly as last loaded/saved — used to detect exactly which items changed, so Save only touches those
 
 let items = JSON.parse(JSON.stringify(FALLBACK_ITEMS));
 try{ const cached=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(cached&&cached.items) items=cached.items; }catch(e){}
@@ -2350,177 +2314,34 @@ peOriginalSnapshot=JSON.parse(JSON.stringify(items)); // safe default baseline i
 
 function setPriceStatus(msg,isError){ const el=document.getElementById("priceStatus"); if(el){ el.textContent=msg; el.style.color=isError?"#c0392b":"var(--muted)"; } }
 
-// Fetches the brand->binId registry, then every brand's own bin in
-// parallel. If some brands' bins fail to load this round, they're simply
-// left out of the returned set (the caller merges onto whatever was
-// already loaded, so a brand never just vanishes from the app because of
-// one flaky fetch).
-// STEP 2 — price list test migration: copies a small sample (2 brands'
-// worth of items) from the currently-loaded price list into the new
-// price_items table, so it can be checked by hand before anything bigger
-// happens. Purely additive — only ever READS the in-memory `items` (which
-// itself came from JSONBin), only ever WRITES to the new Supabase table.
-// JSONBin is never touched, and stays exactly what the app actually uses
-// for prices until the full migration is verified and switched over.
-async function runPriceMigrationTest(){
-  if(!confirm("This copies a small sample (2 brands' worth of items) into a new price_items table in Supabase, as a test. It does NOT touch, change, or delete your current price list on JSONBin — everything keeps working exactly as it does now. Continue?")) return;
-  const modal=document.getElementById("priceMigrationModal");
-  const log=document.getElementById("priceMigrationLog"), result=document.getElementById("priceMigrationResult");
-  document.getElementById("priceMigrationTitle").textContent="🧪 Price Migration Test — Sample Items";
-  modal.style.display="flex"; log.innerHTML="Preparing sample…"; result.innerHTML="";
-  try{
-    const brandNames=Object.keys(items).slice(0,2);
-    if(!brandNames.length){ log.innerHTML="No price list loaded to test with — click 🔄 REFRESH PRICES first."; return; }
-    const rows=[];
-    brandNames.forEach(brand=>{
-      (items[brand]||[]).forEach(it=>{
-        // Use the stored HSN if the item has one; otherwise fall back to
-        // the same auto-guess the app already shows on screen (getHSN),
-        // so the copied data matches what you actually see, not just what
-        // happened to be saved as a literal field.
-        rows.push({ brand, name: it.name, mrp: it.mrp||0, hsn: it.hsn||getHSN(brand, it.name), item_code: it.itemCode||null, price_date: it.priceDate||null });
-      });
-    });
-    log.innerHTML=`Copying ${rows.length} item(s) from ${brandNames.join(" & ")}…`;
-
-    const { data: inserted, error: insErr } = await sb.from("price_items").insert(rows).select("id,brand,name,mrp");
-    if(insErr) throw new Error(insErr.message);
-
-    const tableRows=(inserted||[]).map(r=>`<tr><td style="padding:5px 8px;border:1px solid #ddd">${r.brand}</td><td style="padding:5px 8px;border:1px solid #ddd">${r.name}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">₹${(+r.mrp||0).toLocaleString("en-IN")}</td><td style="padding:5px 8px;border:1px solid #ddd;color:#1b7a4a;font-weight:700">✅ Copied</td></tr>`).join("");
-    result.innerHTML=`
-      <div style="font-weight:700;margin-bottom:8px;color:#1b7a4a">✅ ${inserted.length} test item(s) copied successfully</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
-        <thead><tr style="background:#f0f0f0"><th style="padding:5px 8px;border:1px solid #ddd">Brand</th><th style="padding:5px 8px;border:1px solid #ddd">Item</th><th style="padding:5px 8px;border:1px solid #ddd">MRP</th><th style="padding:5px 8px;border:1px solid #ddd">Status</th></tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-      <div style="font-size:12.5px;background:#f1f8e9;border:1px solid #c5e1a5;border-radius:6px;padding:10px">
-        <b>Please now check these yourself:</b> Supabase → Table Editor → <code>price_items</code>, and compare against your current Edit Prices panel for ${brandNames.join(" & ")}. Confirm brand, item name, MRP, HSN all match.
-      </div>
-      <div style="font-size:11.5px;color:#888;margin-top:8px">Your current price list (JSONBin) is completely unaffected — it's still what the app actually uses. Nothing else has changed.</div>`;
-  }catch(e){
-    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${e.message}</div><div style="font-size:12px;margin-top:6px">Nothing was changed in your current price list. Send me this exact error and we'll fix it before trying again.</div>`;
-  }
-}
-
-// STEP 3 — full price list migration: copies EVERY brand/item from the
-// currently-loaded price list (JSONBin) into price_items. Safe to re-run:
-// checks which (brand, item name) pairs already exist in the new table
-// first and only inserts what's genuinely missing — so the 2 test brands
-// from Step 2 are detected and never duplicated.
-async function runFullPriceMigration(){
-  if(!confirm("This copies your ENTIRE price list into the new Supabase table. Your current price list on JSONBin is only ever READ — nothing in it is changed or deleted. Already-copied test items won't be duplicated. Continue?")) return;
-  const modal=document.getElementById("priceMigrationModal");
-  const log=document.getElementById("priceMigrationLog"), result=document.getElementById("priceMigrationResult");
-  document.getElementById("priceMigrationTitle").textContent="📦 Full Price Migration — Everything";
-  modal.style.display="flex"; log.innerHTML="Reading your full price list…"; result.innerHTML="";
-  try{
-    const allRows=[];
-    Object.keys(items).forEach(brand=>{
-      (items[brand]||[]).forEach(it=>{
-        allRows.push({ brand, name: it.name, mrp: it.mrp||0, hsn: it.hsn||getHSN(brand, it.name), item_code: it.itemCode||null, price_date: it.priceDate||null });
-      });
-    });
-    if(!allRows.length){ log.innerHTML="No price list loaded to migrate — click 🔄 REFRESH PRICES first."; return; }
-
-    log.innerHTML=`Found ${allRows.length} item(s) across ${Object.keys(items).length} brand(s).<br>Checking what's already copied…`;
-    const { data: existing, error: exErr } = await sb.from("price_items").select("brand,name");
-    if(exErr) throw new Error("Could not check existing Supabase data: "+exErr.message);
-    const existingKeys=new Set((existing||[]).map(r=>(r.brand+"|||"+r.name).toLowerCase()));
-
-    const rowsToInsert=allRows.filter(r=>!existingKeys.has((r.brand+"|||"+r.name).toLowerCase()));
-    log.innerHTML=`Copying ${rowsToInsert.length} item(s) (${allRows.length-rowsToInsert.length} already present, skipped)…`;
-
-    let copiedCount=0; const failedItems=[];
-    const BATCH=300;
-    for(let i=0;i<rowsToInsert.length;i+=BATCH){
-      const batch=rowsToInsert.slice(i,i+BATCH);
-      const { error: insErr } = await sb.from("price_items").insert(batch);
-      if(insErr){
-        for(const row of batch){
-          try{ const { error: singleErr } = await sb.from("price_items").insert(row); if(singleErr) throw singleErr; copiedCount++; }
-          catch(e){ failedItems.push(row.brand+" — "+row.name+": "+e.message); }
-        }
-      }else{
-        copiedCount+=batch.length;
-      }
-      log.innerHTML=`Copying items… ${Math.min(i+BATCH,rowsToInsert.length)}/${rowsToInsert.length}`;
-      if(i+BATCH<rowsToInsert.length) await new Promise(r=>setTimeout(r,300));
-    }
-
-    const { count: finalCount } = await sb.from("price_items").select("*",{count:"exact",head:true});
-    const allGood = finalCount===allRows.length && !failedItems.length;
-
-    result.innerHTML=`
-      <div style="font-weight:700;margin-bottom:8px;color:${allGood?'#1b7a4a':'#c0392b'}">${allGood? '✅ Full price list migration complete and verified!' : '⚠ Migration finished with some issues — see below'}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px">
-        <tr><td style="padding:5px 8px;border:1px solid #ddd"><b>Items — current price list (JSONBin)</b></td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right"><b>${allRows.length}</b></td></tr>
-        <tr><td style="padding:5px 8px;border:1px solid #ddd"><b>Items — new Supabase table (now)</b></td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right"><b>${finalCount}</b></td></tr>
-      </table>
-      ${failedItems.length? `<div style="color:#c0392b;font-size:12px;margin-bottom:8px"><b>${failedItems.length} item(s) failed to copy:</b><br>${failedItems.join("<br>")}<br><br>Nothing else was affected — send me this exact list and we'll retry just these.</div>` : ""}
-      <div style="font-size:12.5px;background:#f1f8e9;border:1px solid #c5e1a5;border-radius:6px;padding:10px">
-        <b>Please verify before anything is switched over:</b> open Table Editor → <code>price_items</code> and spot-check several brands — especially any you edit often. Confirm item names, MRP, HSN, and item codes all match your current Edit Prices panel.
-      </div>
-      <div style="font-size:11.5px;color:#888;margin-top:8px">Your current price list (JSONBin) is still what the app actually uses right now — nothing has been switched over yet. That only happens after you tell me this all looks correct.</div>`;
-  }catch(e){
-    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${e.message}</div><div style="font-size:12px;margin-top:6px">Your current price list is completely unaffected. Nothing already copied is lost — send me this exact error and, once fixed, re-running will just pick up where this left off.</div>`;
-  }
-}
-
-async function loadPricesFromRegistry(){
-  const regRes=await fetch(PRICE_REGISTRY_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
-  if(!regRes.ok) throw new Error("Registry HTTP "+regRes.status);
-  const regData=await regRes.json();
-  const registry=regData.record; // brand -> groupBinId (several brands share the same groupBinId)
-  if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
-
-  // With only ~8 GROUP bins, this should barely ever need retrying — but
-  // firing even 8 at once still tripped failures in practice, so this is
-  // deliberately cautious: small batches (3 at a time, not 8), a real pause
-  // between batches, and up to 3 passes retrying only whatever still failed
-  // each time. With just 8 groups total the extra caution costs at most a
-  // few seconds — worth it for reliability every device can count on.
-  const uniqueBinIds=[...new Set(Object.values(registry))];
-  async function fetchOneGroup(binId){
-    const res=await fetch("https://api.jsonbin.io/v3/b/"+binId+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const data=await res.json();
-    return data.record; // {brand1:[...], brand2:[...], ...} — a whole group's worth of brands
-  }
-  const fetched={};
-  let pending=uniqueBinIds.slice();
-  const passSizes=[3,2,1], passGaps=[500,900,1400];
-  for(let pass=0; pass<passSizes.length && pending.length; pass++){
-    const stillFailed=[];
-    const size=passSizes[pass], gap=passGaps[pass];
-    for(let i=0;i<pending.length;i+=size){
-      const batch=pending.slice(i,i+size);
-      const results=await Promise.allSettled(batch.map(fetchOneGroup));
-      results.forEach((r,j)=>{ if(r.status==="fulfilled") Object.assign(fetched, r.value); else stillFailed.push(batch[j]); });
-      if(i+size<pending.length) await new Promise(r=>setTimeout(r, gap));
-    }
-    pending=stillFailed;
-    if(pending.length && pass<passSizes.length-1) await new Promise(r=>setTimeout(r, 1200));
-  }
-  const failedBrands=Object.keys(registry).filter(b=>pending.includes(registry[b]));
-
-  if(!Object.keys(fetched).length) throw new Error("No brands loaded successfully");
-  return {fetched, registry, failedBrands};
+// Rebuilds the {brand:[items...]} shape every other part of the app
+// already expects, from the flat price_items table.
+async function loadPricesFromSupabase(){
+  const { data, error } = await sb.from("price_items").select("*").order("brand").order("name");
+  if(error) throw new Error(error.message);
+  const rebuilt={};
+  (data||[]).forEach(row=>{
+    if(!rebuilt[row.brand]) rebuilt[row.brand]=[];
+    const item={ name:row.name, mrp:row.mrp, hsn:row.hsn, _id:row.id };
+    if(row.item_code) item.itemCode=row.item_code;
+    if(row.price_date) item.priceDate=row.price_date;
+    rebuilt[row.brand].push(item);
+  });
+  return rebuilt;
 }
 
 async function refreshPrices(manual){
   setPriceStatus("Refreshing prices…",false);
   try{
-    const {fetched, registry, failedBrands}=await loadPricesFromRegistry();
-    items={...items, ...fetched}; // merge so a brand that failed THIS round keeps its last-known data instead of disappearing
-    priceRegistry=registry;
+    const fetched=await loadPricesFromSupabase();
+    if(!Object.keys(fetched).length) throw new Error("No price data found");
+    items=fetched;
     peOriginalSnapshot=JSON.parse(JSON.stringify(items));
     const now=new Date();
     localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({items,fetchedAt:now.toISOString()}));
     refreshBrandDropdown();
     populateCmpBrandLists();
-    let msg="✓ Prices updated "+now.toLocaleString();
-    if(failedBrands.length) msg+=` (⚠ ${failedBrands.length} brand(s) couldn't load this time — kept last-known data for those, will retry next refresh)`;
-    setPriceStatus(msg, failedBrands.length>0);
+    setPriceStatus("✓ Prices updated "+now.toLocaleString(),false);
   }catch(e){
     let ca="";
     try{ const c=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||"null"); if(c&&c.fetchedAt) ca=" (cached "+new Date(c.fetchedAt).toLocaleString()+")"; }catch(e2){}
@@ -2529,183 +2350,68 @@ async function refreshPrices(manual){
   }
 }
 
-// ===== ONE-TIME MIGRATION: consolidate the ~79 per-brand bins into ~8
-// GROUP bins. The per-brand split fixed the 100KB size limit, but created
-// a new problem: loading/saving had to touch ~80 separate bins, which
-// tripped JSONBin's rate limiting. Grouping several brands into each of a
-// handful of bins keeps every bin comfortably small (well under 100KB)
-// while cutting the number of requests down to ~8 — the best of both.
-// Self-contained: reuses the SAME registry bin already in place (its
-// content just changes shape from brand->uniqueBinId to brand->groupBinId,
-// where several brands now share one groupBinId) — no new ID to copy/send.
-const PRICE_GROUP_COUNT=8;
-async function jsonbinCreateBin(payload, name){
-  const res=await fetch("https://api.jsonbin.io/v3/b", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json", "X-Master-Key":JSONBIN_MASTER_KEY, "X-Bin-Name":(name||"untitled").slice(0,100), "X-Bin-Private":"true" },
-    body:JSON.stringify(payload)
-  });
-  if(!res.ok){
-    let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
-    throw new Error(`HTTP ${res.status}${detail?": "+detail:""}`);
-  }
-  const data=await res.json();
-  const id=data?.metadata?.id || data?.id;
-  if(!id) throw new Error("Bin created but no ID found in response: "+JSON.stringify(data));
-  return id;
-}
-async function startGroupConsolidationMigration(){
-  if(!confirm("This groups your price list into about 8 storage files instead of 79, to fix the loading reliability issue. It does NOT touch, change, or delete your current price data — everything keeps working exactly as it does now during and after this. Continue?")) return;
-  document.getElementById("migrationModal").style.display="flex";
-  const log=document.getElementById("migrationLog"), result=document.getElementById("migrationResult");
-  log.innerHTML=""; result.innerHTML="";
-
-  const brands=Object.keys(items).sort();
-  const groups=Array.from({length:PRICE_GROUP_COUNT},()=>({}));
-  brands.forEach((b,i)=>{ groups[i%PRICE_GROUP_COUNT][b]=items[b]; }); // simple even round-robin — current catalog is small/uniform enough that this keeps every group well under 100KB
-
-  const newRegistry={}; const failedGroups=[];
-  for(let g=0; g<groups.length; g++){
-    const groupBrands=Object.keys(groups[g]);
-    const row=document.createElement("div");
-    row.textContent=`Group ${g+1}/${groups.length} (${groupBrands.length} brands) — saving…`;
-    row.style.cssText="padding:4px 0;font-size:12.5px;color:#888";
-    log.appendChild(row);
-    let binId=null, lastErr=null;
-    for(let attempt=1; attempt<=3 && !binId; attempt++){
-      try{ binId=await jsonbinCreateBin(groups[g], "PRICE_GROUP_"+(g+1)); }
-      catch(e){ lastErr=e; if(attempt<3){ row.textContent=`Group ${g+1}/${groups.length} — retry ${attempt}/2…`; await new Promise(r=>setTimeout(r, 1200*attempt)); } }
-    }
-    if(binId){
-      groupBrands.forEach(b=>{ newRegistry[b]=binId; });
-      row.textContent=`✅ Group ${g+1}/${groups.length} (${groupBrands.length} brands)`; row.style.color="#1b7a4a";
-    }else{
-      row.textContent=`❌ Group ${g+1}/${groups.length} — ${lastErr?.message||"failed"}`; row.style.color="#c0392b";
-      failedGroups.push(g+1);
-    }
-    if(g<groups.length-1) await new Promise(r=>setTimeout(r, 600));
-  }
-
-  if(failedGroups.length){
-    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ ${failedGroups.length} of ${groups.length} group(s) failed to save. Nothing was finalized — your current price list is completely untouched and still works normally.</div>
-      <div style="font-size:12px;margin-top:6px">Tell me which group number(s) failed and the error shown, then you can try again (already-succeeded groups just get re-created, no harm).</div>`;
-    return;
-  }
-  try{
-    const res=await fetch(PRICE_REGISTRY_URL,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(newRegistry)});
-    if(!res.ok){
-      let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
-      throw new Error(`HTTP ${res.status}${detail?": "+detail:""}`);
-    }
-    priceRegistry=newRegistry;
-    peOriginalSnapshot=JSON.parse(JSON.stringify(items));
-    result.innerHTML=`
-      <div style="color:#1b7a4a;font-weight:700;margin-bottom:8px">✅ Consolidated into ${groups.length} groups successfully — already switched over, nothing else to do!</div>
-      <div style="font-size:12px;color:#888">Loading/saving prices now touches ~${groups.length} files instead of ~${brands.length} — should be far more reliable from here on.</div>
-      <button onclick="closeMigrationModal()" style="width:100%;margin-top:14px;background:#1a3c6e;color:#fff;border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px">✅ Done — Close This</button>`;
-  }catch(e){
-    result.innerHTML=`<div style="color:#c0392b;font-weight:700">⚠ All ${groups.length} groups were created, but updating the registry to point at them failed: ${e.message}.</div>
-      <div style="font-size:12px;margin-top:6px">Your current price list is completely untouched and still working on the old per-brand storage. Send me this exact error and I'll help finish switching it over — the groups already created aren't wasted.</div>`;
-  }
-}
-function closeMigrationModal(){ document.getElementById("migrationModal").style.display="none"; }
-
-// Backup button inside the Price Editor itself (in case the automatic
-// recovery in savePricesToCloud() ever can't reach the registry either) —
-// a lightweight registry-only refresh shown right in the editor's own
-// status line, so there's never a need to close/discard edits just to
-// reach the main page's Refresh button.
+// Same button/status line inside the Price Editor as before — now just
+// calls the same full refresh, since a single Supabase query is fast and
+// has none of JSONBin's size/rate limits to work around.
 async function refreshPricesInEditor(){
   const status=document.getElementById("peStatus");
   if(status){ status.textContent="Refreshing…"; status.style.color="#888"; }
   try{
-    priceRegistry=await loadRegistryOnly();
-    if(status){ status.textContent="✓ Refreshed — ready to save"; status.style.color="#156038"; }
+    await refreshPrices(false);
+    if(status){ status.textContent="✓ Refreshed"; status.style.color="#156038"; }
   }catch(e){
     if(status){ status.textContent="⚠ Refresh failed: "+e.message; status.style.color="#c0392b"; }
   }
 }
 
-async function loadRegistryOnly(){
-  const res=await fetch(PRICE_REGISTRY_URL+"/latest",{headers:{"X-Master-Key":JSONBIN_MASTER_KEY},cache:"no-store"});
-  if(!res.ok) throw new Error("Registry HTTP "+res.status);
-  const data=await res.json();
-  const registry=data.record;
-  if(!registry||typeof registry!=="object"||!Object.keys(registry).length) throw new Error("Registry empty/invalid");
-  return registry;
-}
-
-// Saves ONLY the GROUPS containing brands that actually changed since the
-// last successful load/save (diffed against peOriginalSnapshot) — a group
-// bin holds several brands together, so saving one means re-sending that
-// whole group's current data (every brand in it, not just the edited one),
-// gathered fresh from `items` each time.
+// Saves only what actually changed since the last load/save — diffed
+// item-by-item (not brand-by-brand, now that each item is its own row):
+// items with no _id are new (INSERT), items whose _id already existed but
+// whose fields changed are UPDATEd, and items that existed before but are
+// no longer present get DELETEd. Everything else is left alone.
 async function savePricesToCloud(){
-  if(!Object.keys(priceRegistry).length){
-    try{ priceRegistry=await loadRegistryOnly(); }
-    catch(e){ throw new Error("Could not load the price registry needed to save: "+e.message+". Please try Save & Sync again in a moment."); }
-  }
-  const snapshot=peOriginalSnapshot||{};
-  const dirtyBrands=Object.keys(items).filter(b=>JSON.stringify(items[b])!==JSON.stringify(snapshot[b]));
-  const removedBrands=Object.keys(snapshot).filter(b=>!(b in items));
+  const oldById={};
+  Object.keys(peOriginalSnapshot||{}).forEach(brand=>{
+    (peOriginalSnapshot[brand]||[]).forEach(it=>{ if(it._id) oldById[it._id]={brand,name:it.name,mrp:it.mrp,hsn:it.hsn,itemCode:it.itemCode,priceDate:it.priceDate}; });
+  });
 
-  if(!dirtyBrands.length && !removedBrands.length){
-    const now=new Date();
-    setPriceStatus("✓ Nothing to save — no changes since last save ("+now.toLocaleTimeString()+")",false);
+  const newById={};
+  const toInsert=[];
+  Object.keys(items).forEach(brand=>{
+    (items[brand]||[]).forEach(it=>{
+      if(it._id) newById[it._id]={brand,name:it.name,mrp:it.mrp,hsn:it.hsn,itemCode:it.itemCode,priceDate:it.priceDate,_ref:it};
+      else toInsert.push({brand,item:it});
+    });
+  });
+
+  const toDeleteIds=Object.keys(oldById).filter(id=>!newById[id]).map(Number);
+  const toUpdateIds=Object.keys(newById).filter(id=>{
+    const a=oldById[id]; if(!a) return false;
+    const b=newById[id];
+    return JSON.stringify(a)!==JSON.stringify({brand:b.brand,name:b.name,mrp:b.mrp,hsn:b.hsn,itemCode:b.itemCode,priceDate:b.priceDate});
+  });
+
+  if(!toInsert.length && !toUpdateIds.length && !toDeleteIds.length){
+    setPriceStatus("✓ Nothing to save — no changes since last save ("+new Date().toLocaleTimeString()+")",false);
     return;
   }
 
-  const allGroupIds=[...new Set(Object.values(priceRegistry))];
-  if(!allGroupIds.length) throw new Error("No existing price groups found in the registry — cannot determine where to save. Try 🔄 Refresh in this panel first.");
-
-  const affectedGroupIds=new Set();
-  dirtyBrands.forEach(b=>{ if(priceRegistry[b]) affectedGroupIds.add(priceRegistry[b]); });
-  removedBrands.forEach(b=>{ if(priceRegistry[b]) affectedGroupIds.add(priceRegistry[b]); });
-
-  // Brand-new brands (never in the registry) get assigned to an existing
-  // group round-robin, rather than creating yet another bin — keeps the
-  // total group count fixed at ~8 forever, however many brands get added.
-  let rrIndex=0; let registryChanged=false;
-  dirtyBrands.forEach(b=>{
-    if(!priceRegistry[b]){
-      const groupId=allGroupIds[rrIndex%allGroupIds.length]; rrIndex++;
-      priceRegistry[b]=groupId; affectedGroupIds.add(groupId); registryChanged=true;
-    }
-  });
-  removedBrands.forEach(b=>{ if(priceRegistry[b]){ delete priceRegistry[b]; registryChanged=true; } });
-
-  const failedGroups=[];
-  const groupIdList=[...affectedGroupIds];
-  for(let i=0;i<groupIdList.length;i++){
-    const groupId=groupIdList[i];
-    const brandsInGroup=Object.keys(priceRegistry).filter(b=>priceRegistry[b]===groupId);
-    const payload={};
-    brandsInGroup.forEach(b=>{ if(items[b]) payload[b]=items[b]; });
-    let success=false, lastErr=null;
-    for(let attempt=1; attempt<=3 && !success; attempt++){
-      try{
-        const res=await fetch("https://api.jsonbin.io/v3/b/"+groupId,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(payload)});
-        if(!res.ok){
-          let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
-          throw new Error(`HTTP ${res.status}${detail?": "+detail:""}`);
-        }
-        success=true;
-      }catch(e){ lastErr=e; if(attempt<3) await new Promise(r=>setTimeout(r, 1200*attempt)); }
-    }
-    if(!success) failedGroups.push("Group with "+brandsInGroup[0]+": "+(lastErr?.message||"failed"));
-    if(i<groupIdList.length-1) await new Promise(r=>setTimeout(r, 500));
+  if(toInsert.length){
+    const payload=toInsert.map(({brand,item})=>({ brand, name:item.name, mrp:item.mrp||0, hsn:item.hsn||null, item_code:item.itemCode||null, price_date:item.priceDate||null }));
+    const { data: insertedRows, error: insErr } = await sb.from("price_items").insert(payload).select("id");
+    if(insErr) throw new Error("Could not save new item(s): "+insErr.message);
+    insertedRows.forEach((row,i)=>{ toInsert[i].item._id=row.id; });
   }
 
-  if(failedGroups.length){
-    throw new Error(`${failedGroups.length} group(s) failed to save: ${failedGroups.join("; ")}. Other groups saved successfully — click Save & Sync again to retry.`);
+  for(const id of toUpdateIds){
+    const b=newById[id];
+    const { error: updErr } = await sb.from("price_items").update({ brand:b.brand, name:b.name, mrp:b.mrp||0, hsn:b.hsn||null, item_code:b.itemCode||null, price_date:b.priceDate||null }).eq("id", id);
+    if(updErr) throw new Error("Could not update an item (id "+id+"): "+updErr.message);
   }
 
-  if(registryChanged){
-    const res=await fetch(PRICE_REGISTRY_URL,{method:"PUT",cache:"no-store",headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_MASTER_KEY},body:JSON.stringify(priceRegistry)});
-    if(!res.ok){
-      let detail=""; try{ const b=await res.json(); detail=b?.message||JSON.stringify(b); }catch(e){}
-      throw new Error(`All price data was saved, but the registry update (needed to find new/removed brands next time) failed: HTTP ${res.status}${detail?": "+detail:""}. Click Save & Sync again to retry just this step.`);
-    }
+  if(toDeleteIds.length){
+    const { error: delErr } = await sb.from("price_items").delete().in("id", toDeleteIds);
+    if(delErr) throw new Error("Could not remove deleted item(s): "+delErr.message);
   }
 
   peOriginalSnapshot=JSON.parse(JSON.stringify(items));
