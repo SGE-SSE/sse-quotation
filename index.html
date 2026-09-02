@@ -95,6 +95,11 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
   .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
   .table-wrapper{margin:0 14px!important;overflow:visible!important}
+  /* Force Customer Details side-by-side even on a narrow print/export
+     width — otherwise the mobile 1-column rule below (max-width:768px)
+     kicks in during PDF export and stacks every field into its own
+     full-width row, bloating the section into an extra page. */
+  .customer-grid{grid-template-columns:1fr 1fr 1fr!important}
 }
 /* Mirrors @media print above, toggled via JS on body before html2canvas capture
    so the direct-download PDF renders identically to the browser print output. */
@@ -117,6 +122,7 @@ body.pdf-export-mode #cmpTable td.brand-col-3{background:#f3e5f5!important}
 body.pdf-export-mode .totals-table .grandtotal-row td{background:#1a3c6e!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
 body.pdf-export-mode .totals-table .netpay-row td{background:#1b7a4a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
 body.pdf-export-mode .table-wrapper{margin:0 14px!important;overflow:visible!important}
+body.pdf-export-mode .customer-grid{grid-template-columns:1fr 1fr 1fr!important}
 @media (max-width:768px){
   body{padding:6px}
   .header-grid,.customer-grid{grid-template-columns:1fr}
@@ -204,6 +210,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     </div>
     <div><label>Customer GSTIN</label><input type="text" id="custGST" oninput="syncPartyFields('regular')"></div>
     <div><label>Customer Address</label><textarea id="custAddr" oninput="syncPartyFields('regular')"></textarea></div>
+    <div><label>Vehicle Number</label><input type="text" id="custVehicle" placeholder="e.g. TS09AB1234" style="text-transform:uppercase"></div>
     <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
     <div><label>Customer Phone</label><input type="text" id="custPhone" placeholder="Contact number"></div>
   </div>
