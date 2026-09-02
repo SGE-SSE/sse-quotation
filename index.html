@@ -2705,6 +2705,26 @@ function peBuildItemRow(brand, idx){
   return tr;
 }
 
+function peNaturalCompare(a,b){
+  // Splits each name into number/text chunks and compares number chunks as
+  // real numbers (so "10SQMM" < "16SQMM" < "120SQMM") and text chunks as
+  // text. Plain localeCompare({numeric:true}) looks similar but breaks on
+  // decimals — it splits "3.5" at the ".", so "25X3.5CORE" ends up sorted
+  // before "25X3CORE" (comparing "." vs "C" once "3"="3" matches). This
+  // keeps "\d+\.\d+" together as one token so 2 < 3 < 3.5 < 4 sorts right.
+  const re=/(\d+\.\d+|\d+)|(\D+)/g;
+  const ta=String(a).match(re)||[], tb=String(b).match(re)||[];
+  const len=Math.max(ta.length,tb.length);
+  for(let i=0;i<len;i++){
+    const x=ta[i], y=tb[i];
+    if(x===undefined) return -1;
+    if(y===undefined) return 1;
+    const xIsNum=/^[\d.]+$/.test(x), yIsNum=/^[\d.]+$/.test(y);
+    if(xIsNum&&yIsNum){ const d=parseFloat(x)-parseFloat(y); if(d!==0) return d; }
+    else{ const c=x.localeCompare(y,undefined,{sensitivity:"base"}); if(c!==0) return c; }
+  }
+  return 0;
+}
 function renderPriceEditorRows(){
   const q=document.getElementById("peSearch").value.trim().toLowerCase();
   const list=document.getElementById("peList"); list.innerHTML="";
@@ -2770,7 +2790,10 @@ function renderPriceEditorRows(){
     section.appendChild(header);
     section.appendChild(filesPanel);
 
-    const rowsToShow = q ? rows : peWorkingCopy[brand];
+    // Natural sort ascending by item name — see peNaturalCompare above for
+    // why it can't just be localeCompare({numeric:true}). Object references
+    // are preserved, so the indexOf(it) lookup below still resolves correctly.
+    const rowsToShow = (q ? rows : peWorkingCopy[brand].slice()).sort((a,b)=>peNaturalCompare(a.name,b.name));
     let table=null;
     if(rowsToShow.length){
       table=document.createElement("table"); table.style.cssText="width:100%;border-collapse:collapse;font-size:13px";
