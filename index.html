@@ -274,7 +274,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
   <span id="cableBoxTitle" style="font-weight:bold;font-size:12px;color:#e65100">📦 POLYCAB CABLE INFO</span>
   <div class="cable-info-grid">
     <div id="coilInfoRow" style="display:contents">
-      <div><label>Coil Length (Mtr)</label><input type="number" id="coilLen" readonly style="background:#fff9c4;font-weight:bold"></div>
+      <div><label>Coil Length (Mtr)</label><input type="number" id="coilLen" style="background:#fff9c4;font-weight:bold" oninput="updateNetPerMtr()"></div>
       <div><label>MRP per Mtr</label><input type="number" id="mrpPerMtr" readonly style="background:#e8f5e9;font-weight:bold"></div>
       <div><label>Net Rate/Mtr</label><input type="number" id="netPerMtr" readonly style="background:#e3f2fd;font-weight:bold"></div>
     </div>
@@ -308,7 +308,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
 </div>
 
 <div class="dc-hide-price" style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-  <label><input type="checkbox" id="showMRP" checked onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
+  <label><input type="checkbox" id="showMRP" onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
   <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
   <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP &amp; Discount Settings</button>
 </div>
@@ -3065,14 +3065,23 @@ function updateIndCopperBox(){
   document.getElementById("frToggleBox").style.display="block";
   const coilInfoRow=document.getElementById("coilInfoRow");
   if(len&&coilMRP){ document.getElementById("coilLen").value=len; document.getElementById("mrpPerMtr").value=+(coilMRP/len).toFixed(2); updateNetPerMtr(); if(coilInfoRow) coilInfoRow.style.display=""; }
-  else{ if(coilInfoRow) coilInfoRow.style.display="none"; }
+  else{
+    // No length pattern detected in the item name (e.g. Finolex speaker
+    // wire) — still show the box so the coil length can be typed in by
+    // hand, instead of silently forcing MTRS. Left blank for the user to
+    // fill in; if they leave it blank, COIL is still honoured, just
+    // without a per-metre conversion shown.
+    document.getElementById("coilLen").value="";
+    document.getElementById("mrpPerMtr").value="";
+    if(coilInfoRow) coilInfoRow.style.display="";
+  }
   indBox.style.display="block";
 }
 function updateNetPerMtr(){ const coilMRP=+mrp.value,len=+document.getElementById("coilLen").value; if(!len||!coilMRP) return; let netCoil=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP); document.getElementById("netPerMtr").value=(netCoil/len).toFixed(2); }
 function updateQtyLabel(){
   const qtyLabel=document.getElementById("qtyLabel");
   const itemName=itemSel.options[itemSel.selectedIndex]?.text||"";
-  const isWire=isWireOrCableItemName(itemName)&&!!getCoilLength(itemName);
+  const isWire=isWireOrCableItemName(itemName);
   if(isWire&&getUnitVal("unit")==="MTRS") qtyLabel.innerText="Qty (Metres)";
   else if(isWire&&getUnitVal("unit")==="COIL") qtyLabel.innerText="Qty (No. of Coils)";
   else qtyLabel.innerText="Qty";
@@ -3116,31 +3125,37 @@ function addItem(){
   // Brand-agnostic: detected purely from the ITEM NAME, so any future brand works automatically
   const coilLenDetected=getCoilLength(itemName);
   const isWireItem=isWireOrCableItemName(itemName);
-  const isIndCopper=isWireItem&&!!coilLenDetected;   // has an explicit coil length -> coil-priced (MRP ÷ length)
-  const isArmFlx=isWireItem&&!coilLenDetected;        // wire/cable item without a coil length -> priced per metre already
+  // Length used for COIL <-> MTRS conversion: auto-detected from the item
+  // name if possible (e.g. "90MTR"), else whatever was typed into the Coil
+  // Length box by hand. Either way, the UNIT the user actually picked in
+  // the dropdown is always respected below — it is never silently
+  // overridden based on whether a length could be detected.
+  const len=+document.getElementById("coilLen").value||coilLenDetected||0;
   const buildSuffix=base=>frType?`${base} ${frType}`:base;
   let coilRate;
-  if(isIndCopper){
-    const len=+document.getElementById("coilLen").value||coilLenDetected||1;
+  if(isWireItem){
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate=(coilRate/len).toFixed(2);
     description=buildSuffix(itemName);
-    if(getUnitVal("unit")==="MTRS"){ displayUnit="MTRS";displayMRP=(coilMRP/len).toFixed(2);showPerMtr=false;finalRate=+perMtrRate; }
-    else{ displayUnit="COIL";displayMRP=coilMRP;showPerMtr=true;finalRate=coilRate; }
-  }else if(isArmFlx){
-    coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
-    perMtrRate="-";displayUnit="MTRS";displayMRP=coilMRP;showPerMtr=false;description=buildSuffix(itemName);finalRate=coilRate;
+    if(getUnitVal("unit")==="MTRS"){
+      const effLen=len||1;
+      perMtrRate=(coilRate/effLen).toFixed(2);
+      displayUnit="MTRS";displayMRP=(coilMRP/effLen).toFixed(2);showPerMtr=false;finalRate=+perMtrRate;
+    }else{
+      displayUnit="COIL";displayMRP=coilMRP;finalRate=coilRate;
+      if(len>0){ perMtrRate=(coilRate/len).toFixed(2); showPerMtr=true; }
+      else{ perMtrRate="-"; showPerMtr=false; }
+    }
   }else{
     coilRate=net.value?+net.value:(disc.value?coilMRP-(coilMRP*(+disc.value)/100):coilMRP);
     perMtrRate="-";displayUnit=getUnitVal("unit");displayMRP=coilMRP;showPerMtr=false;description=itemName;finalRate=coilRate;
   }
-  const colourCell=(isIndCopper||isArmFlx)?(colourVal||"—"):"-";
+  const colourCell=isWireItem?(colourVal||"—"):"-";
   const colourStyle=colourVal?getColourStyle(colourVal):"";
   const selectedItemObj=(items[brand]||[]).find(i=>i.name===itemName);
   const hsn=(selectedItemObj&&selectedItemObj.hsn)?selectedItemObj.hsn:getHSN(brand,itemName);
   const amt=finalRate*finalQty;
   const r=tbody.insertRow();
-  r.dataset.coilLen=isIndCopper?(+document.getElementById("coilLen").value||coilLenDetected||1):'';
+  r.dataset.coilLen=(isWireItem&&len>0)?len:'';
   // Track HOW the price was entered: if Net Rate was typed directly (Discount%
   // left blank), the OFFICE ONLY summary should show that exact Net Rate —
   // not a back-calculated discount percentage, since no discount% was ever
