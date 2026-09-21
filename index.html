@@ -212,7 +212,7 @@ body.dc-mode #qt th:nth-child(12), body.dc-mode #qt td:nth-child(12){ display:no
     <div><label>Customer Address</label><textarea id="custAddr" oninput="syncPartyFields('regular')"></textarea></div>
     <div><label>Vehicle Number</label><input type="text" id="custVehicle" placeholder="e.g. TS09AB1234" style="text-transform:uppercase"></div>
     <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
-    <div><label>Customer Phone</label><input type="text" id="custPhone" placeholder="Contact number"></div>
+    <div><label id="custPhoneLabel">Customer Phone</label><input type="text" id="custPhone" placeholder="Contact number"></div>
   </div>
   <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
     <div class="customer-grid">
@@ -1729,6 +1729,11 @@ function partyCodeFromName(name){
 // either one.
 async function saveQuotation(){
   if(!custName.value.trim()){ alert("Please enter a Customer Name before saving."); return; }
+  if(currentDocType==="CB" && !document.getElementById("custPhone")?.value.trim()){
+    alert("Please enter the Customer Phone Number before saving a Cash Bill.");
+    document.getElementById("custPhone")?.focus();
+    return;
+  }
   if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
   if(currentQuotationId){
     document.getElementById("saveChoiceDocNo").textContent=qno.value||"";
@@ -2588,6 +2593,8 @@ function switchDocType(type){
   const dcBox=document.getElementById("dcExtraBox");
   if(dcBox) dcBox.style.display=(type==="DC")?"":"none";
   document.body.classList.toggle("dc-mode", type==="DC");
+  const phoneLbl=document.getElementById("custPhoneLabel");
+  if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
 }
 function generateQuotationNo(){
   return "(assigned on Save)";
