@@ -2255,7 +2255,7 @@ async function reopenQuotation(id){
     if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
     r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount; r.dataset.discMode=it.discMode||'pct';
     const discCellInit=(it.discMode==='net')?'-':it.discount;
-    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td>${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+    r.innerHTML=`<td></td><td>${it.brand}</td><td>${it.description}</td><td style="${(it.colour&&it.colour!=='-'&&it.colour!=='—')?getColourStyle(it.colour):''}">${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   });
   renumber(); calc();
   closePartyHistory();
@@ -3122,7 +3122,7 @@ let selectedColour="";
 function selectColour(colour){ if(selectedColour===colour&&colour!=='CUSTOM'){clearColour();return;} selectedColour=colour; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("clr-"+colour).classList.add("active"); const ci=document.getElementById("customColourInput"); if(colour==='CUSTOM'){ci.style.display="inline-block";ci.focus();selectedColour=ci.value.toUpperCase()||"";}else{ci.style.display="none";document.getElementById("selectedColourDisplay").innerText=colour;} }
 function clearColour(){ selectedColour=""; document.querySelectorAll(".clr-btn").forEach(b=>b.classList.remove("active")); document.getElementById("customColourInput").style.display="none"; document.getElementById("customColourInput").value=""; document.getElementById("selectedColourDisplay").innerText="—"; }
 function getSelectedColour(){ if(document.getElementById("clr-CUSTOM").classList.contains("active")) return document.getElementById("customColourInput").value.trim().toUpperCase()||""; return selectedColour; }
-function getColourStyle(colour){ const map={'RED':'background:#fff0f0;color:#c62828;font-weight:700','YELLOW':'background:#fffde7;color:#f57f17;font-weight:700','BLUE':'background:#e3f2fd;color:#1565c0;font-weight:700','BLACK':'background:#f5f5f5;color:#212121;font-weight:700','GREEN':'background:#e8f5e9;color:#2e7d32;font-weight:700'}; return map[colour.toUpperCase()]||'background:#f3e5f5;color:#6a1b9a;font-weight:700'; }
+function getColourStyle(colour){ const map={'RED':'background:#ffcdd2 !important;color:#b71c1c !important;font-weight:700','YELLOW':'background:#fff59d !important;color:#e65100 !important;font-weight:700','BLUE':'background:#bbdefb !important;color:#0d47a1 !important;font-weight:700','BLACK':'background:#cfcfcf !important;color:#000000 !important;font-weight:700','GREEN':'background:#c8e6c9 !important;color:#1b5e20 !important;font-weight:700'}; return map[colour.toUpperCase()]||'background:#e1bee7 !important;color:#4a148c !important;font-weight:700'; }
 
 function addItem(){
   if(!itemSel.value||!brandSel.value) return;
@@ -3417,7 +3417,7 @@ const DC_COMPANY_GST = "36ALWPD5924D1ZZ";
 // again. Whatever changes here automatically applies to both.
 function buildDeliveryChallanHTML(){
   const rows=[...tbody.rows].map((r,i)=>({
-    sno:i+1, desc:r.cells[2].innerText, make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
+    sno:i+1, desc:r.cells[2].innerText, colour:(r.cells[3].innerText||"").trim(), hsn:(r.cells[4].innerText||"").trim(), make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
   }));
   const site=document.getElementById("dcSite")?.value||"", phone=document.getElementById("custPhone")?.value||"";
   const poNo=document.getElementById("dcPoNo")?.value||"", poDate=document.getElementById("dcPoDate")?.value||"";
@@ -3429,6 +3429,8 @@ function buildDeliveryChallanHTML(){
       <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.sno}</td>
       <td style="border:1px solid #000;padding:5px 6px">${r.desc}</td>
       <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.make}</td>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;${(r.colour&&r.colour!=='-'&&r.colour!=='—')?getColourStyle(r.colour):''}">${(r.colour&&r.colour!=='—')?r.colour:'-'}</td>
+      <td style="border:1px solid #000;padding:5px 6px;text-align:center">${(r.hsn&&r.hsn!=='—')?r.hsn:'-'}</td>
       <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.qty}</td>
       <td style="border:1px solid #000;padding:5px 6px;text-align:center">${r.unit}</td>
     </tr>`).join("");
@@ -3437,7 +3439,7 @@ function buildDeliveryChallanHTML(){
   // since this is a generated document, not a blank carbon-copy pad.
   const padCount=Math.max(0, Math.min(8, 12-rows.length));
   const padRows=Array.from({length:padCount}).map(()=>`
-    <tr><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td></tr>`).join("");
+    <tr><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td><td style="border:1px solid #000;padding:5px 6px">&nbsp;</td></tr>`).join("");
 
   return `
     <div style="font-family:Arial,sans-serif;color:#000;padding:16px;background:#fff">
@@ -3463,11 +3465,13 @@ function buildDeliveryChallanHTML(){
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#f0f0f0">
-          <th style="border:1px solid #000;padding:6px;width:6%">S.No.</th>
+          <th style="border:1px solid #000;padding:6px;width:5%">S.No.</th>
           <th style="border:1px solid #000;padding:6px">DESCRIPTION</th>
-          <th style="border:1px solid #000;padding:6px;width:16%">MAKE</th>
-          <th style="border:1px solid #000;padding:6px;width:10%">QTY</th>
-          <th style="border:1px solid #000;padding:6px;width:12%">UNITS</th>
+          <th style="border:1px solid #000;padding:6px;width:13%">MAKE</th>
+          <th style="border:1px solid #000;padding:6px;width:11%">COLOUR</th>
+          <th style="border:1px solid #000;padding:6px;width:11%">HSN CODE</th>
+          <th style="border:1px solid #000;padding:6px;width:8%">QTY</th>
+          <th style="border:1px solid #000;padding:6px;width:9%">UNITS</th>
         </tr></thead>
         <tbody>${itemRows}${padRows}</tbody>
       </table>
@@ -3486,7 +3490,7 @@ function printDeliveryChallan(){
   const holder=window.open("","_blank");
   if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
   holder.document.write(`<!DOCTYPE html><html><head><title>${(dcNo||"DeliveryChallan").replace(/[\/:]/g,"-")}</title>
-    <style>@page{ margin:12mm; } body{ font-family:Arial,sans-serif; color:#000; margin:0; padding:0; }</style>
+    <style>@page{ margin:12mm; } *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } body{ font-family:Arial,sans-serif; color:#000; margin:0; padding:0; }</style>
     </head><body>${html}
     <script>
       window.onload=function(){ setTimeout(function(){ window.print(); }, 200); };
