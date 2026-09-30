@@ -1770,7 +1770,7 @@ async function performUpdateExistingQuotation(){
         preserve={billed:existingDc.billed||false, billedRefNo:existingDc.billedRefNo||"", billedDate:existingDc.billedDate||""};
       }catch(e){ /* couldn't read prior billing state — defaults to not-billed rather than blocking the update */ }
       remarksVal=JSON.stringify({
-        site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"",
+        site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"", attn:document.getElementById("custAttn")?.value||"",
         poNo:document.getElementById("dcPoNo")?.value||"", poDate:document.getElementById("dcPoDate")?.value||"",
         reason:document.getElementById("dcReason")?.value||"Direct to Customer",
         billed:preserve.billed, billedRefNo:preserve.billedRefNo, billedDate:preserve.billedDate
@@ -1850,7 +1850,7 @@ async function performInsertNewQuotation(){
         // more Supabase schema changes on top of the pending migration.
         remarks: currentDocType==="DC"
           ? JSON.stringify({
-              site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"",
+              site:document.getElementById("dcSite")?.value||"", phone:document.getElementById("custPhone")?.value||"", attn:document.getElementById("custAttn")?.value||"",
               poNo:document.getElementById("dcPoNo")?.value||"", poDate:document.getElementById("dcPoDate")?.value||"",
               reason:document.getElementById("dcReason")?.value||"Direct to Customer",
               // A fresh Save always creates a brand-new DC document (new doc_no,
@@ -2239,6 +2239,7 @@ async function reopenQuotation(id){
       const dc=JSON.parse(q.remarks||"{}");
       if(document.getElementById("dcSite")) document.getElementById("dcSite").value=dc.site||"";
       if(document.getElementById("custPhone")) document.getElementById("custPhone").value=dc.phone||"";
+      if(document.getElementById("custAttn")) document.getElementById("custAttn").value=dc.attn||"";
       if(document.getElementById("dcPoNo")) document.getElementById("dcPoNo").value=dc.poNo||"";
       if(document.getElementById("dcPoDate")) document.getElementById("dcPoDate").value=dc.poDate||"";
       if(document.getElementById("dcReason")) document.getElementById("dcReason").value=dc.reason||"Direct to Customer";
@@ -3415,11 +3416,29 @@ const DC_COMPANY_GST = "36ALWPD5924D1ZZ";
 // (opened in a popup for window.print()) and the PDF button (rendered
 // off-screen and captured by html2pdf) so the two can never drift apart
 // again. Whatever changes here automatically applies to both.
+// Auto-fit for the "To" box rows (SITE / NAME / CONTACT PERSON / PHONE):
+// labels sit in one aligned column, and the value's font shrinks step by
+// step as the text gets longer so it stays on ONE line inside the box.
+// Only when it would be unreadably small (below 8px) does it wrap instead.
+function dcFitRow(label, value){
+  value=(value||"").toString().trim();
+  const base=12, minSize=8, fitChars=34;               // ~34 chars fit at 12px in the value column
+  const weight=value.length + (value.match(/[A-Z]/g)||[]).length*0.35;  // capitals are wider
+  let size=weight>fitChars ? base*fitChars/weight : base;
+  size=Math.max(minSize, Math.min(base, size));
+  const wraps=(base*fitChars/Math.max(weight,1))<minSize;
+  return `<div style="display:flex;align-items:baseline;margin-top:3px">
+    <span style="flex:none;width:112px;font-weight:700;font-size:12px">${label}</span>
+    <span style="flex:none;width:8px;font-weight:700">:</span>
+    <span style="flex:1;min-width:0;font-size:${size.toFixed(1)}px;${wraps?'word-break:break-word;':'white-space:nowrap;'}">${value||"&nbsp;"}</span>
+  </div>`;
+}
 function buildDeliveryChallanHTML(){
   const rows=[...tbody.rows].map((r,i)=>({
     sno:i+1, desc:r.cells[2].innerText, colour:(r.cells[3].innerText||"").trim(), hsn:(r.cells[4].innerText||"").trim(), make:r.cells[1].innerText, qty:r.cells[6].innerText, unit:r.cells[5].innerText
   }));
   const site=document.getElementById("dcSite")?.value||"", phone=document.getElementById("custPhone")?.value||"";
+  const attn=(document.getElementById("custAttn")?.value||"").trim();
   const poNo=document.getElementById("dcPoNo")?.value||"", poDate=document.getElementById("dcPoDate")?.value||"";
   const dcNo=qno.value||"", dcDate=qdate.value ? new Date(qdate.value).toLocaleDateString("en-IN") : "";
   const poDateFmt=poDate ? new Date(poDate).toLocaleDateString("en-IN") : "";
@@ -3450,9 +3469,10 @@ function buildDeliveryChallanHTML(){
       <div style="width:100%;overflow:hidden;border:1px solid #000;margin-bottom:14px;font-size:12px;box-sizing:border-box">
         <div style="float:left;width:54%;padding:8px 10px;border-right:1px solid #000;box-sizing:border-box">
           <div style="font-weight:700">To</div>
-          <div style="margin-top:4px"><b>SITE:</b> ${site}</div>
-          <div><b>NAME:</b> ${custName.value||""}</div>
-          <div><b>PHONE:</b> ${phone}</div>
+          ${dcFitRow("SITE",site)}
+          ${dcFitRow("NAME",custName.value)}
+          ${dcFitRow("CONTACT PERSON",attn)}
+          ${dcFitRow("PHONE",phone)}
         </div>
         <div style="float:left;width:45%;padding:8px 10px;box-sizing:border-box">
           <div><span style="display:inline-block;width:70px"><b>No</b></span>: ${dcNo}</div>
