@@ -988,6 +988,22 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <span id="saveStatusCmp" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
 </div>
 
+<!-- Convert confirmed brand to Regular Quotation / Cash Bill -->
+<div class="no-print" id="cmpConvertPanel" style="margin:0 14px 14px;padding:10px 12px;background:#eaf6f0;border:1px solid #1b7a4a;border-radius:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <strong style="font-size:12.5px;color:#156038">✅ Client confirmed a brand?</strong>
+  <label style="font-size:12px;font-weight:600">Brand:
+    <select id="cmpConvertBrand" style="font-weight:700;font-size:12px;padding:4px 6px"></select>
+  </label>
+  <label style="font-size:12px;font-weight:600">Convert to:
+    <select id="cmpConvertType" style="font-weight:700;font-size:12px;padding:4px 6px">
+      <option value="QTN">📄 Regular Quotation</option>
+      <option value="CB">💵 Cash Bill</option>
+    </select>
+  </label>
+  <button type="button" onclick="convertCmpToRegular()" style="background:#156038;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">🔄 CONVERT</button>
+  <span style="font-size:10.5px;color:#156038;font-style:italic">Loads only the chosen brand's rates into the Regular tab as a new document.</span>
+</div>
+
 </div><!-- end #compareSection -->
 
 </div><!-- end .card -->
@@ -2274,6 +2290,83 @@ async function reopenQuotation(id){
   const stockNote=currentStockReduced?` — stock already reduced${currentStockReducedAt?" on "+new Date(currentStockReducedAt).toLocaleDateString("en-IN"):""}${currentStockReducedLocation?" at "+currentStockReducedLocation:""}.`:"";
   document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.${stockNote}`;
   window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ===== CONVERT a Price Comparison into a Regular Quotation / Cash Bill =====
+   Once the client confirms ONE brand, this copies just that brand's column
+   (rate, MRP, disc%, code, per-mtr) into the Regular tab as a brand-new,
+   unsaved document. The comparison itself is left untouched. */
+function refreshCmpConvertBrands(){
+  const sel=document.getElementById("cmpConvertBrand"); if(!sel) return;
+  const prev=sel.value;
+  const names=getCmpBrandNames();
+  const hasB3=(document.getElementById("cmpBrand3").value||"").trim().length>0;
+  sel.innerHTML="";
+  names.forEach((nm,i)=>{
+    if(/^BRAND \d$/.test(nm)) return;          // brand not filled in
+    if(i===2&&!hasB3) return;
+    const o=document.createElement("option"); o.value=String(i); o.textContent=nm; sel.appendChild(o);
+  });
+  if([...sel.options].some(o=>o.value===prev)) sel.value=prev;
+}
+function convertCmpToRegular(){
+  refreshCmpConvertBrands();
+  const selB=document.getElementById("cmpConvertBrand");
+  if(!selB.value){ alert("Please select the confirmed brand first."); return; }
+  if(!cmpRows.length){ alert("There are no items in the comparison to convert."); return; }
+  const i=parseInt(selB.value,10);
+  const docType=document.getElementById("cmpConvertType").value;
+  const brandName=getCmpBrandNames()[i];
+  const docLabel=DOC_TYPES[docType].label;
+
+  const out=[]; let skipped=0;
+  cmpRows.forEach(row=>{
+    const rate=parseFloat(row.rate&&row.rate[row.isCommon?0:i])||0;
+    if(!(rate>0)){ skipped++; return; }
+    out.push({row, rate});
+  });
+  if(!out.length){ alert("No items have a rate under "+brandName+"."); return; }
+
+  let msg=`Convert ${out.length} item(s) of ${brandName} into a ${docLabel}?`;
+  if(skipped) msg+=`\n\n${skipped} item(s) have no rate for ${brandName} and will be skipped.`;
+  if(tbody.rows.length) msg+=`\n\nThe Regular tab already has ${tbody.rows.length} item(s) — they will be REPLACED.`;
+  if(!confirm(msg)) return;
+
+  switchMode('regular');
+  switchDocType(docType);                 // also resets the number to "(assigned on Save)"
+  syncPartyFields('compare');             // customer name / GST / address / attn -> Regular
+  // brand-new document: never overwrite the comparison or any earlier saved record
+  currentQuotationId=null; currentStockReduced=false; currentStockReducedAt=null; currentStockReducedLocation=null;
+  const d=new Date(); qdate.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  gstToggle.checked=!!document.getElementById("cmpShowGST").checked;
+  if(document.getElementById("docStatus")) document.getElementById("docStatus").value="Confirmed";
+  if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value="";
+  if(document.getElementById("validityInput")) document.getElementById("validityInput").value=document.getElementById("validityInputCmp")?.value||"7 DAYS";
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=document.getElementById("remarksInputCmp")?.value||"";
+  if(typeof updateTCDisplay==="function") updateTCDisplay();
+
+  tbody.innerHTML="";
+  out.forEach(({row,rate})=>{
+    const k=row.isCommon?0:i;
+    const brand=row.isCommon?(row.commonBrand||brandName):brandName;
+    let desc=row.desc||"";
+    if(row.isCommon&&row.commonBrand){ const suf=` (${row.commonBrand})`; if(desc.endsWith(suf)) desc=desc.slice(0,-suf.length); }
+    const qtyN=parseFloat(row.qty)||1;
+    const mrpN=parseFloat(row.mrp&&row.mrp[k])||0, discN=parseFloat(row.disc&&row.disc[k])||0;
+    const mrpRaw=mrpN>0?mrpN:'-', discRaw=mrpN>0?discN:'-';
+    const coilN=parseFloat(row.coil&&row.coil[k])||0, pmN=parseFloat(row.perMtr&&row.perMtr[k])||0;
+    const code=escItemCode((row.code&&row.code[k])||"")||"-";
+    const colour=row.colour||"-";
+    const r=tbody.insertRow();
+    if(coilN>0) r.dataset.coilLen=coilN; else if(pmN>0) r.dataset.coilLen=(rate/pmN).toFixed(2);
+    r.dataset.brand=brand; r.dataset.mrpRaw=mrpRaw; r.dataset.discRaw=discRaw; r.dataset.discMode='pct';
+    r.innerHTML=`<td></td><td>${brand}</td><td class="icode">${code}</td><td>${desc}</td><td style="${(colour!=='-')?getColourStyle(colour):''}">${colour}</td><td>${row.hsn||"-"}</td><td>${row.unit}</td><td>${qtyN}</td><td class="mrpCol">${mrpRaw}</td><td class="mrpCol">${discRaw}</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="${pmN>0?'':'display:none'}">${pmN>0?pmN.toFixed(2):'-'}</td><td>${(rate*qtyN).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+  });
+  renumber(); calc();
+  const st=document.getElementById("saveStatus");
+  if(st) st.textContent=`Converted from comparison (${brandName}) — review${docType==="CB"?", enter Customer Phone,":","} then Save ${docLabel}.`;
+  if(docType==="CB" && !(document.getElementById("custPhone")?.value||"").trim()){ document.getElementById("custPhone")?.focus(); }
+  else window.scrollTo({top:0,behavior:"smooth"});
 }
 
 /* Reopens a saved Price Comparison quotation for editing. Comparison quotations
@@ -4181,6 +4274,7 @@ function renderCmpTable(){
   }
 
   tbody.innerHTML=bodyHTML;
+  if(typeof refreshCmpConvertBrands==="function") refreshCmpConvertBrands();
 }
 
 function calcCmpTotals(){
