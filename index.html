@@ -159,6 +159,43 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 </div>
 <div id="docTypeBanner" style="display:none;text-align:center;padding:6px;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #1a3c6e;color:#1a3c6e;background:#f0f4fb"></div>
 
+<!-- ===== DELETE REASON + DELETED QUOTATIONS MODALS ===== -->
+<div id="delReasonModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:3000;align-items:center;justify-content:center;padding:14px">
+  <div style="background:#fff;border-radius:12px;max-width:440px;width:100%;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.35)">
+    <div style="font-size:15px;font-weight:800;color:#c0392b;margin-bottom:4px">🗑️ Delete Quotation</div>
+    <div id="delReasonDocNo" style="font-size:12.5px;font-weight:700;color:#1a3c6e;margin-bottom:10px;word-break:break-all"></div>
+    <label style="font-size:12px;font-weight:700;color:#333">Why is this being deleted? <span style="color:#c0392b">*</span></label>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin:6px 0">
+      <button type="button" class="del-chip" onclick="delReasonChip('Wrong customer selected')">Wrong customer</button>
+      <button type="button" class="del-chip" onclick="delReasonChip('Duplicate quotation')">Duplicate</button>
+      <button type="button" class="del-chip" onclick="delReasonChip('Wrong items / rates entered')">Wrong items / rates</button>
+      <button type="button" class="del-chip" onclick="delReasonChip('Client cancelled / not interested')">Client cancelled</button>
+      <button type="button" class="del-chip" onclick="delReasonChip('Test entry')">Test entry</button>
+    </div>
+    <textarea id="delReasonText" rows="3" placeholder="Type the reason / note…" style="width:100%;box-sizing:border-box;font-size:13px;padding:8px;border:1px solid #c5d3e8;border-radius:6px"></textarea>
+    <div style="font-size:11px;color:#5a6a85;margin-top:6px">The quotation is removed from the customer's history, but a full copy with this reason is kept under <b>Deleted Quotations</b>.</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button type="button" onclick="closeDelReason()" style="flex:1;background:#eee;color:#333;border:none;border-radius:6px;padding:9px 0;font-weight:700;cursor:pointer">Cancel</button>
+      <button type="button" id="delReasonConfirmBtn" onclick="confirmDeleteQuotation()" style="flex:1;background:#c0392b;color:#fff;border:none;border-radius:6px;padding:9px 0;font-weight:700;cursor:pointer">🗑️ Delete &amp; Save Reason</button>
+    </div>
+  </div>
+</div>
+<style>.del-chip{font-size:10.5px;padding:3px 8px;background:#fdeaea;color:#c0392b;border:1px solid #f0b5b0;border-radius:12px;cursor:pointer;font-weight:600}</style>
+
+<div id="deletedQModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:2500;align-items:center;justify-content:center;padding:14px" onclick="if(event.target===this)closeDeletedQuotations()">
+  <div style="background:#fff;border-radius:12px;max-width:760px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.35)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:2px solid #c0392b">
+      <strong style="font-size:15px;color:#c0392b">🗑️ Deleted Quotations</strong>
+      <button type="button" onclick="closeDeletedQuotations()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#555">✕</button>
+    </div>
+    <div style="padding:10px 18px 0">
+      <input type="text" id="deletedQSearch" placeholder="Search by number, customer or reason…" oninput="renderDeletedQuotations()" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 10px;border:1px solid #c5d3e8;border-radius:6px">
+      <div id="deletedQMeta" style="font-size:11px;color:#5a6a85;margin:6px 0 2px"></div>
+    </div>
+    <div id="deletedQList" style="padding:6px 18px 16px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- ===== MODE TABS ===== -->
 <div class="no-print" id="modeTabs" style="display:flex;border-bottom:3px solid #1a3c6e;background:#f0f4fb">
   <button id="tabRegular" onclick="switchMode('regular')" style="flex:1;padding:11px 0;font-size:13px;font-weight:800;border:none;border-radius:0;background:#1a3c6e;color:#fff;cursor:pointer;letter-spacing:.5px">📄 REGULAR QUOTATION</button>
@@ -197,6 +234,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+      <button type="button" onclick="openDeletedQuotations()" style="font-size:11px;padding:4px 10px;background:#c0392b;color:#fff;border:none;border-radius:4px;cursor:pointer">🗑️ Deleted Quotations</button>
       <button type="button" onclick="openItemSearch()" style="font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🔍 Item Search</button>
       <!-- Quotations DB and Price List migrations are both complete —
            see comments near each's storage code. Test/migration buttons
@@ -669,7 +707,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <div class="section-panel">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
     <span>⚖️ Price Comparison Quotation</span>
-    <button type="button" class="no-print" onclick="openPartyHistory('compare')" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
+    <span class="no-print" style="display:flex;gap:8px"><button type="button" class="no-print" onclick="openPartyHistory('compare')" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button><button type="button" onclick="openDeletedQuotations()" style="font-size:11px;padding:4px 10px;background:#c0392b;color:#fff;border:none;border-radius:4px;cursor:pointer">🗑️ Deleted Quotations</button></span>
   </div>
   <div class="header-grid">
     <div><label>Quotation No</label><input type="text" id="cmpQno"></div>
@@ -2232,14 +2270,123 @@ async function loadPartyQuotations(partyId, partyName){
     </div>`).join("") + `</div>`;
 }
 
-/* Deletes a wrongly saved quotation permanently from Supabase, with a confirmation prompt. */
-async function deleteQuotation(id, docNo, partyId, partyName){
-  if(!confirm(`Delete quotation "${docNo}"?\n\nThis cannot be undone.`)) return;
-  const row=document.getElementById(`hist-row-${id}`);
-  if(row) row.style.opacity="0.5";
-  const { error } = await sb.from("quotations").delete().eq("id", id);
-  if(error){ alert("Could not delete: " + (error.message||error)); if(row) row.style.opacity="1"; return; }
-  loadPartyQuotations(partyId, partyName);
+/* ===== DELETE a quotation — now asks WHY, keeps a full copy + the reason, then deletes =====
+   Reasons are stored in a Supabase table "deleted_quotations". If that table doesn't exist yet,
+   the entry is kept on THIS device (localStorage) so nothing is lost. SQL to create the table:
+
+   create table if not exists deleted_quotations (
+     id bigserial primary key,
+     orig_id text, doc_type text, doc_no text, doc_date text,
+     party_id text, cust_name text, net_payable numeric, doc_status text,
+     reason text not null, snapshot jsonb,
+     deleted_at timestamptz default now()
+   );
+   alter table deleted_quotations enable row level security;
+   create policy "allow all" on deleted_quotations for all using (true) with check (true);
+*/
+let _delCtx=null;
+function deleteQuotation(id, docNo, partyId, partyName){
+  _delCtx={id,docNo,partyId,partyName};
+  document.getElementById("delReasonDocNo").textContent=docNo||"";
+  document.getElementById("delReasonText").value="";
+  document.getElementById("delReasonModal").style.display="flex";
+  setTimeout(()=>document.getElementById("delReasonText").focus(),50);
+}
+function closeDelReason(){ document.getElementById("delReasonModal").style.display="none"; _delCtx=null; }
+function delReasonChip(t){ const el=document.getElementById("delReasonText"); el.value=t; el.focus(); }
+function _delLocalGet(){ try{ return JSON.parse(localStorage.getItem("SSE_DELETED_LOG")||"[]"); }catch(e){ return []; } }
+function _delLocalAdd(entry){ try{ const a=_delLocalGet(); a.unshift({...entry,_local:true}); localStorage.setItem("SSE_DELETED_LOG",JSON.stringify(a.slice(0,300))); }catch(e){} }
+async function confirmDeleteQuotation(){
+  if(!_delCtx) return;
+  const reason=(document.getElementById("delReasonText").value||"").trim();
+  if(reason.length<3){ alert("Please type the reason for deleting this quotation."); document.getElementById("delReasonText").focus(); return; }
+  const {id,docNo,partyId,partyName}=_delCtx;
+  const btn=document.getElementById("delReasonConfirmBtn"); btn.disabled=true; btn.textContent="Deleting…";
+  const row=document.getElementById(`hist-row-${id}`); if(row) row.style.opacity="0.5";
+  try{
+    const { data:q, error:e1 } = await sb.from("quotations").select("*").eq("id", id).single();
+    if(e1) throw e1;
+    const entry={
+      orig_id:String(id), doc_type:q.doc_type, doc_no:q.doc_no, doc_date:q.doc_date,
+      party_id:(q.party_id==null?null:String(q.party_id)), cust_name:q.cust_name||partyName||"",
+      net_payable:q.net_payable||0, doc_status:q.doc_status||"Quoted", reason, snapshot:q,
+      deleted_at:new Date().toISOString()
+    };
+    let loggedRemote=true;
+    const { error:e2 } = await sb.from("deleted_quotations").insert(entry);
+    if(e2){ loggedRemote=false; console.warn("deleted_quotations insert failed — kept on this device only:", e2); _delLocalAdd(entry); }
+    const { error:e3 } = await sb.from("quotations").delete().eq("id", id);
+    if(e3){
+      if(loggedRemote){ try{ await sb.from("deleted_quotations").delete().eq("orig_id",String(id)).eq("reason",reason); }catch(_){} }
+      throw e3;
+    }
+    closeDelReason();
+    loadPartyQuotations(partyId, partyName);
+    if(!loggedRemote) alert("Deleted. The reason was saved on THIS device only, because the 'deleted_quotations' table isn't created in Supabase yet (run the SQL given in the code comment to share it across devices).");
+  }catch(err){
+    alert("Could not delete: "+(err.message||err));
+    if(row) row.style.opacity="1";
+  }finally{ btn.disabled=false; btn.textContent="🗑️ Delete & Save Reason"; }
+}
+
+/* ===== DELETED QUOTATIONS viewer ===== */
+let _deletedRows=[];
+function _esc(v){ return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+async function openDeletedQuotations(){
+  document.getElementById("deletedQModal").style.display="flex";
+  document.getElementById("deletedQSearch").value="";
+  document.getElementById("deletedQList").innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
+  let remote=[];
+  try{
+    const { data, error } = await sb.from("deleted_quotations").select("*").order("deleted_at",{ascending:false}).limit(500);
+    if(error) throw error;
+    remote=data||[];
+  }catch(e){ console.warn("Could not read deleted_quotations:", e); }
+  _deletedRows=[...remote, ..._delLocalGet()].sort((a,b)=>String(b.deleted_at||"").localeCompare(String(a.deleted_at||"")));
+  renderDeletedQuotations();
+}
+function closeDeletedQuotations(){ document.getElementById("deletedQModal").style.display="none"; }
+function _delDetailsHTML(e){
+  const q=e.snapshot||{};
+  const it=q.items;
+  let itemsHTML="";
+  if(Array.isArray(it)&&it.length){
+    itemsHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px"><tr style="background:#f0f4fb"><th style="text-align:left;padding:4px;border:1px solid #dde5f2">#</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Brand</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Item</th><th style="padding:4px;border:1px solid #dde5f2">Qty</th><th style="padding:4px;border:1px solid #dde5f2">Rate</th><th style="padding:4px;border:1px solid #dde5f2">Amount</th></tr>`+
+      it.map((x,i)=>`<tr><td style="padding:4px;border:1px solid #dde5f2">${i+1}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(x.brand)}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(x.description)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:center">${_esc(x.qty)} ${_esc(x.unit)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:right">${_esc(x.rate)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:right">${_esc(x.amount)}</td></tr>`).join("")+`</table>`;
+  }else if(it&&it.type==="comparison"&&Array.isArray(it.rows)){
+    const br=(it.brands||[]).filter(b=>b&&!/^BRAND \d$/.test(b));
+    itemsHTML=`<div style="font-size:11px;color:#6a1b9a;font-weight:700;margin-top:6px">Brands compared: ${_esc(br.join(" · ")||"—")}</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px"><tr style="background:#f0f4fb"><th style="text-align:left;padding:4px;border:1px solid #dde5f2">#</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Item</th><th style="padding:4px;border:1px solid #dde5f2">Qty</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Rates</th></tr>`+
+      it.rows.map((r,i)=>`<tr><td style="padding:4px;border:1px solid #dde5f2">${i+1}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(r.desc)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:center">${_esc(r.qty)} ${_esc(r.unit)}</td><td style="padding:4px;border:1px solid #dde5f2">${(r.rate||[]).map((v,k)=>(v>0&&(br[k]||it.brands?.[k]))?`${_esc(it.brands[k])}: ₹${(+v).toFixed(2)}`:"").filter(Boolean).join(" &nbsp;|&nbsp; ")}</td></tr>`).join("")+`</table>`;
+  }
+  const remarks=(q.doc_type==="DC")?"":(q.remarks||"");
+  const kv=(k,v)=>v?`<div><span style="color:#5a6a85">${k}:</span> <b>${_esc(v)}</b></div>`:"";
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:11.5px;margin-top:8px">
+      ${kv("Document date",q.doc_date||e.doc_date)}${kv("Status was",e.doc_status)}
+      ${kv("Customer GSTIN",q.cust_gst)}${kv("GST applied",q.gst_applied===undefined?"":(q.gst_applied?"Yes (18%)":"No"))}
+      ${kv("Sub total",q.sub_total?("₹ "+q.sub_total):"")}${kv("Net payable",e.net_payable?("₹ "+(+e.net_payable).toLocaleString("en-IN")):"")}
+      ${kv("Validity",q.validity)}${kv("Remarks",remarks)}
+      ${kv("Address",q.cust_addr)}${kv("Stock reduced",q.stock_reduced?"Yes":"")}
+    </div>${itemsHTML}`;
+}
+function renderDeletedQuotations(){
+  const box=document.getElementById("deletedQList");
+  const f=(document.getElementById("deletedQSearch").value||"").trim().toLowerCase();
+  const rows=_deletedRows.filter(e=>!f||[e.doc_no,e.cust_name,e.reason,e.doc_type].some(v=>String(v||"").toLowerCase().includes(f)));
+  document.getElementById("deletedQMeta").textContent=`${rows.length} deleted document(s)`+(_deletedRows.some(e=>e._local)?" — includes entries saved on this device only":"");
+  if(!rows.length){ box.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">No deleted quotations${f?" match your search":" yet"}.</div>`; return; }
+  box.innerHTML=rows.map((e,i)=>{
+    const isCmp=/-CMP-/i.test(e.doc_no||"");
+    const dt=e.deleted_at?new Date(e.deleted_at).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+    return `<div style="border:1px solid #f0b5b0;border-radius:9px;padding:10px 12px;background:#fffafa;margin-top:9px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:800;color:#1a3c6e;word-break:break-all">${_esc(e.doc_no)}${isCmp?' <span style="font-size:10px;color:#6a1b9a">(Comparison)</span>':''}</span>
+        <span style="font-size:11px;color:#5a6a85">Deleted: ${_esc(dt)}${e._local?' · <i>this device only</i>':''}</span>
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:#1a1a2e;margin:2px 0">${_esc(e.cust_name||"—")} <span style="font-weight:600;color:#5a6a85">· ${_esc(e.doc_type||"")} · ₹ ${(+e.net_payable||0).toLocaleString("en-IN")}</span></div>
+      <div style="background:#fdeaea;border-radius:6px;padding:6px 9px;font-size:12px;color:#8a2a20;margin-top:5px"><b>Reason:</b> ${_esc(e.reason)}</div>
+      <details style="margin-top:6px"><summary style="cursor:pointer;font-size:11.5px;font-weight:700;color:#1a3c6e">View details</summary>${_delDetailsHTML(e)}</details>
+    </div>`;
+  }).join("");
 }
 
 async function reopenQuotation(id){
