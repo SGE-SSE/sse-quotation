@@ -737,22 +737,12 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <!-- Add Item Row -->
 <div class="entry-panel no-print">
   <div class="section-title">➕ Add Item to Compare</div>
-  <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end">
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;align-items:end">
     <div><label>Description / Item Name</label><input type="text" id="cmpItemDesc" list="cmpItemDescList" placeholder="e.g. 1.5 Sq.mm FR Wire" oninput="cmpDescPicked()">
       <datalist id="cmpItemDescList"></datalist>
       <div class="no-print" style="font-size:10px;color:#5a6a85;font-style:italic;margin-top:2px">Pick a matching item here or in any brand column below — it auto-fills the same item across all brands (only MRP / Disc% / Net Rate differ).</div>
     </div>
     <div><label>HSN Code</label><input type="text" id="cmpItemHSN" placeholder="8544"></div>
-    <div><label>Unit</label>
-      <select id="cmpItemUnit" onchange="onUnitSelectChange('cmpItemUnit')">
-        <option>NOS</option><option>MTRS</option><option>COIL</option>
-        <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
-        <option>SET</option><option>KGS</option><option>PCS</option>
-        <option value="__other__">➕ Other (type your own)</option>
-      </select>
-      <input type="text" id="cmpItemUnitOther" placeholder="Type unit" style="display:none;margin-top:4px">
-    </div>
-    <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1"></div>
   </div>
 
   <!-- Common Items — EXACT same flow as Regular Quotation: Brand > Item dropdowns, plus manual Custom Item -->
@@ -805,7 +795,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <!-- Wire colour / FR type (shared across brands for this row) -->
   <div id="cmpWireInfoBox" style="margin-top:10px;padding:8px;background:#fffde7;border:1px solid #f9a825;border-radius:4px">
     <span style="font-weight:bold;font-size:12px;color:#e65100">📦 WIRE / CABLE INFO (applies to this row across all brands)</span>
-    <div class="cable-info-grid" style="grid-template-columns:1fr 1fr">
+    <div class="cable-info-grid" style="grid-template-columns:1fr 1fr 1fr">
       <div>
         <label>Wire Type</label>
         <select id="cmpFrType" style="font-weight:bold;background:#fce4ec">
@@ -816,7 +806,16 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
           <option value="ZHFR">ZHFR</option>
         </select>
       </div>
-      <div></div>
+      <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1" style="font-weight:bold"></div>
+      <div><label>Unit</label>
+        <select id="cmpItemUnit" onchange="onUnitSelectChange('cmpItemUnit')" style="font-weight:bold">
+          <option>NOS</option><option>MTRS</option><option>COIL</option>
+          <option>BOX</option><option>PKT</option><option>DRUM</option><option>BUNDLE</option>
+          <option>SET</option><option>KGS</option><option>PCS</option>
+          <option value="__other__">➕ Other (type your own)</option>
+        </select>
+        <input type="text" id="cmpItemUnitOther" placeholder="Type unit" style="display:none;margin-top:4px">
+      </div>
     </div>
     <div style="margin-top:8px">
       <label style="font-size:11px;font-weight:700;color:#6a1b9a;display:block;margin-bottom:5px">🎨 Wire / Cable Colour</label>
@@ -2291,6 +2290,58 @@ async function reopenQuotation(id){
   document.getElementById("saveStatus").textContent=`Loaded ${q.doc_no} — review, then Print to re-export.${stockNote}`;
   window.scrollTo({top:0,behavior:"smooth"});
 }
+
+/* ===== BRAND NAME SUGGESTIONS (Brand 1 / 2 / 3) — shows matching brands as you type =====
+   Replaces the browser's unreliable datalist popup with an always-visible dropdown that
+   matches ANYWHERE in the name (typing "poly" finds POLYCAB…) and is rebuilt from the live
+   brand list on every keystroke, so it also works if brands finished loading late. */
+(function(){
+  let box=null, curN=0;
+  function ensureBox(){
+    if(box) return box;
+    box=document.createElement("div");
+    box.id="cmpBrandSuggest";
+    box.className="no-print";
+    box.style.cssText="display:none;position:fixed;z-index:99999;background:#fff;border:1px solid #1a3c6e;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.22);max-height:240px;overflow-y:auto;font-size:12.5px;font-weight:600;color:#1a1a2e";
+    document.body.appendChild(box);
+    return box;
+  }
+  function hide(){ if(box) box.style.display="none"; }
+  function show(n){
+    const inp=document.getElementById("cmpBrand"+n); if(!inp) return;
+    curN=n;
+    const q=(inp.value||"").trim().toUpperCase();
+    const list=Object.keys(items||{}).filter(k=>!q||k.toUpperCase().includes(q)).slice(0,40);
+    if(!list.length||(list.length===1&&list[0].toUpperCase()===q)){ hide(); return; }
+    const b=ensureBox();
+    b.innerHTML=list.map(k=>`<div data-k="${k.replace(/"/g,"&quot;")}" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #eef1f6">${k}</div>`).join("");
+    [...b.children].forEach(el=>{
+      el.onmouseover=()=>el.style.background="#f0f4fb";
+      el.onmouseout=()=>el.style.background="#fff";
+      el.onpointerdown=(ev)=>{
+        ev.preventDefault();
+        inp.value=el.getAttribute("data-k");
+        hide();
+        if(typeof refreshCmpHeaders==="function") refreshCmpHeaders();
+      };
+    });
+    const r=inp.getBoundingClientRect();
+    b.style.left=r.left+"px"; b.style.top=(r.bottom+2)+"px"; b.style.width=Math.max(r.width,200)+"px";
+    b.style.display="block";
+  }
+  [1,2,3].forEach(n=>{
+    const inp=document.getElementById("cmpBrand"+n); if(!inp) return;
+    inp.removeAttribute("list");            // stop the native datalist popup from doubling up
+    inp.setAttribute("autocomplete","off");
+    inp.addEventListener("input",()=>show(n));
+    inp.addEventListener("focus",()=>show(n));
+    inp.addEventListener("click",()=>show(n));
+    inp.addEventListener("blur",()=>setTimeout(()=>{ if(curN===n) hide(); },150));
+    inp.addEventListener("keydown",e=>{ if(e.key==="Escape") hide(); });
+  });
+  window.addEventListener("scroll",e=>{ if(box&&e.target===box) return; hide(); },true);
+  window.addEventListener("resize",hide);
+})();
 
 /* ===== CONVERT a Price Comparison into a Regular Quotation / Cash Bill =====
    Once the client confirms ONE brand, this copies just that brand's column
@@ -3920,6 +3971,12 @@ function cmpItemPicked(n){
   const mrpVal=parseFloat(opt.dataset.mrp)||0;
   const brandKey=opt.dataset.brandKey||"";
   const _codeEl=document.getElementById("cmpCode"+n); if(_codeEl) _codeEl.value=opt.dataset.code||"";
+  // Auto-fetch HSN exactly like Regular Quotation: item's own HSN, else the standard HSN for that item type
+  try{
+    const _itObj=(items[brandKey]||[]).find(i=>i.name===opt.value);
+    const _hsn=((_itObj&&_itObj.hsn)?String(_itObj.hsn).trim():"")||getHSN(brandKey,opt.value);
+    const _hsnEl=document.getElementById("cmpItemHSN"); if(_hsnEl&&_hsn) _hsnEl.value=_hsn;
+  }catch(e){}
   cmpRateManuallyEdited[n-1]=false;
   document.getElementById("cmpMRP"+n).value=mrpVal||"";
   document.getElementById("cmpDisc"+n).value="";
@@ -4042,7 +4099,14 @@ function clearCmpEntry(){
 
 function addCmpRow(){
   let desc=(document.getElementById("cmpItemDesc").value||"").trim();
-  const hsn=(document.getElementById("cmpItemHSN").value||"").trim();
+  let hsn=(document.getElementById("cmpItemHSN").value||"").trim();
+  if(!hsn){
+    for(const n of [1,2,3]){
+      const o=document.getElementById("cmpItemSel"+n)?.selectedOptions?.[0];
+      if(o&&o.value){ const bk=o.dataset.brandKey||""; const it=(items[bk]||[]).find(i=>i.name===o.value); hsn=((it&&it.hsn)?String(it.hsn).trim():"")||getHSN(bk,o.value); break; }
+    }
+    if(!hsn&&desc) hsn=getHSN("",desc);
+  }
   const unit=getUnitVal("cmpItemUnit");
   const qty=parseFloat(document.getElementById("cmpItemQty").value)||1;
   const frType=document.getElementById("cmpFrType").value||"";
