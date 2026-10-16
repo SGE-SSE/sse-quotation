@@ -233,6 +233,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <span>Customer Details</span>
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openQuotDashboard()" style="font-size:11px;padding:4px 10px;background:#0b6e6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📊 Quotations Dashboard</button>
+      <button type="button" onclick="openBulkDisc()" style="font-size:11px;padding:4px 10px;background:#b8590a;color:#fff;border:none;border-radius:4px;cursor:pointer">✏️ Bulk Discount Edit</button>
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
       <button type="button" onclick="openDeletedQuotations()" style="font-size:11px;padding:4px 10px;background:#c0392b;color:#fff;border:none;border-radius:4px;cursor:pointer">🗑️ Deleted Quotations</button>
@@ -350,6 +351,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <div class="dc-hide-price" style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
   <label><input type="checkbox" id="showMRP" onchange="calc()"> Show MRP &amp; Discount (default for new brands)</label>
   <label style="margin-left:15px"><input type="checkbox" id="gstToggle" checked onchange="calc()"> Apply GST 18%</label>
+  <button type="button" class="no-print" onclick="openBulkRowDisc()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#b8590a;color:#fff;border:none;border-radius:4px;cursor:pointer">✏️ Bulk Edit Discount (this quotation)</button>
   <button type="button" class="no-print" onclick="openMrpSettings()" style="margin-left:15px;font-size:11px;padding:4px 10px;background:#6a1b9a;color:#fff;border:none;border-radius:4px;cursor:pointer">🏷️ Per-Brand MRP &amp; Discount Settings</button>
 </div>
 </div>
@@ -569,6 +571,41 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   </div>
 </div>
 
+<!-- BULK DISCOUNT EDIT — change the discount % of matching items across many saved quotations at once -->
+<div id="bulkDiscModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:880px;max-height:92vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#b8590a,#e0801f);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">✏️ Bulk Discount Edit — saved quotations</strong>
+      <button type="button" onclick="closeBulkDisc()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:12px 18px;border-bottom:1px solid #eee">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <label style="font-size:11px;font-weight:700;color:#0b6e6e">Client name contains (optional)<input type="text" id="bdClient" placeholder="e.g. ABC Constructions" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:2px solid #139a9a;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Product (same list as Add Item)<select id="bdSeries" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></select></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Brand contains<input type="text" id="bdBrand" placeholder="e.g. IND" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#c0392b">Exclude items containing (optional)<input type="text" id="bdExc" placeholder="e.g. FLEXIBLE" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #e3b4ae;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Item contains — all words (optional)<input type="text" id="bdDesc" placeholder="e.g. IND COPPER" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Only where current discount is (optional)<input type="number" step="any" id="bdOld" placeholder="e.g. 58" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#b8590a">NEW discount %<input type="number" step="any" id="bdNew" placeholder="e.g. 60" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:2px solid #e0801f;border-radius:6px"></label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <select id="bdType" style="font-size:12px;padding:6px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">All types</option><option value="QTN">Quotation</option><option value="PI">Proforma</option><option value="CB">Cash Bill</option></select>
+        <input type="date" id="bdFrom" title="From date" style="font-size:12px;padding:5px 8px;border:1px solid #c5d3e8;border-radius:6px">
+        <input type="date" id="bdTo" title="To date" style="font-size:12px;padding:5px 8px;border:1px solid #c5d3e8;border-radius:6px">
+        <label style="font-size:12px"><input type="checkbox" id="bdQuotedOnly" checked> Only "Quoted" documents (skip Confirmed / Cancelled)</label>
+        <button type="button" onclick="bulkDiscFind()" style="background:#1a3c6e;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-weight:700;cursor:pointer">🔎 Find &amp; Preview</button>
+        <button type="button" id="bdUndoBtn" onclick="bulkDiscUndo()" style="display:none;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer">↩ Undo last bulk edit</button>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:6px">Only items with an MRP and a % discount are changed (Net-rate items, Price Comparison and Delivery Challans are skipped). Rate, amount, per-metre rate and all totals / GST / round-off are recalculated.</div>
+    </div>
+    <div id="bdResult" style="overflow-y:auto;padding:12px 18px;flex:1"><div style="text-align:center;color:#888;padding:30px 10px">Fill the filters and press <b>Find &amp; Preview</b>. Nothing changes until you confirm.</div></div>
+    <div id="bdFooter" style="display:none;padding:10px 18px;border-top:1px solid #eee;background:#fafbfd;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="bdSummary" style="font-size:12.5px;font-weight:700;color:#1a3c6e"></span>
+      <button type="button" id="bdApplyBtn" onclick="bulkDiscApply()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:9px 18px;font-weight:800;cursor:pointer">✅ Apply to selected</button>
+    </div>
+  </div>
+</div>
+
 <!-- QUOTATIONS DASHBOARD MODAL — every Quotation / Cash Bill / Proforma across all parties
      (Delivery Challans have their own dashboard above). Same Preview as Party History. -->
 <div id="quotDashModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:12px" onclick="if(event.target===this)closeQuotDashboard()">
@@ -634,6 +671,34 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 </div>
 
 <!-- EDIT ROW MODAL -->
+<!-- BULK EDIT DISCOUNT — inside the quotation currently open in the editor -->
+<div id="bulkRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px" onclick="if(event.target===this)closeBulkRowDisc()">
+  <div style="background:#fff;width:100%;max-width:680px;max-height:90vh;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#b8590a,#e0801f);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center">
+      <strong style="font-size:15px">✏️ Bulk Edit Discount — this quotation</strong>
+      <button type="button" onclick="closeBulkRowDisc()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:12px 18px;border-bottom:1px solid #eee">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Product (same list as Add Item)<select id="brBrand" onchange="bulkRowPreview()" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></select></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Item contains — all words (optional)<input type="text" id="brDesc" oninput="bulkRowPreview()" placeholder="e.g. IND COPPER" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#c0392b">Exclude items containing (optional)<input type="text" id="brExc" oninput="bulkRowPreview()" placeholder="e.g. FLEXIBLE" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #e3b4ae;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#5a6a85">Current discount % (optional)<input type="number" step="any" id="brOld" oninput="bulkRowPreview()" placeholder="e.g. 60" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"></label>
+        <label style="font-size:11px;font-weight:700;color:#b8590a">NEW discount %<input type="number" step="any" id="brNew" oninput="bulkRowPreview()" placeholder="e.g. 61" style="width:100%;box-sizing:border-box;font-size:13px;padding:7px 8px;border:2px solid #e0801f;border-radius:6px"></label>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:6px">Only rows with an MRP and a % discount are listed (Net-rate and custom items are skipped). Untick any row you don't want to change.</div>
+    </div>
+    <div id="brList" style="overflow-y:auto;padding:12px 18px;flex:1"></div>
+    <div style="padding:10px 18px;border-top:1px solid #eee;background:#fafbfd;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="brSummary" style="font-size:12.5px;font-weight:700;color:#1a3c6e"></span>
+      <span style="display:flex;gap:8px">
+        <button type="button" id="brUndoBtn" onclick="bulkRowUndo()" style="display:none;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer">↩ Undo</button>
+        <button type="button" id="brApplyBtn" onclick="bulkRowApply()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-weight:800;cursor:pointer">✅ Apply</button>
+      </span>
+    </div>
+  </div>
+</div>
+
 <div id="editRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px">
   <div style="background:#fff;width:100%;max-width:580px;border-radius:12px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35)">
     <div style="background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center">
@@ -2141,6 +2206,171 @@ async function loadDcDashboard(){
     </div>`).join("")+`</div>`;
 }
 
+
+
+/* ===== BULK DISCOUNT EDIT ================================================
+   Finds saved Quotation/Proforma/Cash Bill items matching Brand (+ optional
+   description / current discount), shows old → new rate and total per
+   document, and only writes after confirmation. Recalculates item rate,
+   amount, per-metre rate and sub_total / cash discount / taxable / GST /
+   grand total / round-off / net payable using the same formulas as calc().
+   The previous items + totals of every changed document are kept in
+   localStorage (SSE_BULK_UNDO) so the last bulk edit can be undone. */
+let _bdPlan=[];
+function openBulkDisc(){
+  document.getElementById("bdSeries").innerHTML=`<option value="">All products</option>`+Object.keys(items||{}).sort().map(k=>`<option value="${k.replace(/"/g,"&quot;")}">${k}</option>`).join("")+`<option value="${_SERIES_OTHER}">${_SERIES_OTHER}</option>`;
+  document.getElementById("bulkDiscModal").style.display="flex"; _bdShowUndo();
+}
+function closeBulkDisc(){ document.getElementById("bulkDiscModal").style.display="none"; }
+function _bdShowUndo(){ let u=null; try{ u=JSON.parse(localStorage.getItem("SSE_BULK_UNDO")||"null"); }catch(e){} const b=document.getElementById("bdUndoBtn"); if(b){ b.style.display=u&&u.docs&&u.docs.length?"":"none"; if(u&&u.docs) b.textContent="↩ Undo last bulk edit ("+u.docs.length+" docs)"; } }
+function _bdNum(v){ const n=parseFloat(String(v).replace(/[^\d.\-]/g,"")); return isNaN(n)?0:n; }
+function _bdRecalcTotals(q,items){
+  const sub=items.reduce((t,i)=>t+_bdNum(i.amount),0);
+  const cashPct=parseFloat(q.cash_disc_pct)||0;
+  const cash=cashPct>0?sub*cashPct/100:0, taxable=sub-cash;
+  const gstAmt=q.gst_applied?taxable*0.18:0;
+  const gtot=taxable+ +gstAmt.toFixed(2);
+  const rounded=Math.round(gtot);
+  return { sub_total:+sub.toFixed(2), cash_disc_amt:+cash.toFixed(2), taxable:+taxable.toFixed(2), gst_amt:+gstAmt.toFixed(2), grand_total:+gtot.toFixed(2), round_off:+(rounded-gtot).toFixed(2), net_payable:rounded };
+}
+async function bulkDiscFind(){
+  const brand=document.getElementById("bdBrand").value.trim().toLowerCase();
+  const desc=document.getElementById("bdDesc").value.trim().toLowerCase();
+  const client=document.getElementById("bdClient").value.trim().toLowerCase();
+  const exc=document.getElementById("bdExc").value;
+  const series=document.getElementById("bdSeries").value;
+  const oldRaw=document.getElementById("bdOld").value, newRaw=document.getElementById("bdNew").value;
+  const res=document.getElementById("bdResult"), foot=document.getElementById("bdFooter");
+  foot.style.display="none"; _bdPlan=[];
+  if(!brand && !desc && !series){ alert("Choose a Product (or enter a Brand / item description) to match."); return; }
+  const newD=parseFloat(newRaw);
+  if(isNaN(newD)||newD<0||newD>=100){ alert("Enter a valid NEW discount % (0 to 99.99)."); return; }
+  const oldD=oldRaw===""?null:parseFloat(oldRaw);
+  res.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">Searching…</div>`;
+  const type=document.getElementById("bdType").value, from=document.getElementById("bdFrom").value, to=document.getElementById("bdTo").value;
+  const quotedOnly=document.getElementById("bdQuotedOnly").checked;
+  const cols="id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable,doc_status,stock_reduced";
+  let qy=sb.from("quotations").select(cols).neq("doc_type","DC").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+  if(type!=="ALL") qy=qy.eq("doc_type",type);
+  let { data, error } = await qy;
+  if(error && isMissingColumnError(error)){
+    let q2=sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable").neq("doc_type","DC").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+    if(type!=="ALL") q2=q2.eq("doc_type",type);
+    ({ data, error } = await q2);
+  }
+  if(error){ res.innerHTML=`<div style="color:#c0392b;padding:20px;text-align:center">Could not load: ${_hEsc(error.message||error)}</div>`; return; }
+  const plan=[]; let skippedStatus=0;
+  (data||[]).forEach(q=>{
+    if(!Array.isArray(q.items)) return;
+    if(client && !String(q.cust_name||"").toLowerCase().includes(client)) return;
+    if(from && String(q.doc_date||"")<from) return;
+    if(to && String(q.doc_date||"")>to) return;
+    const st=q.doc_status||"Quoted";
+    const hits=[];
+    q.items.forEach((it,idx)=>{
+      if(brand && !String(it.brand||"").toLowerCase().includes(brand)) return;
+      if(series && _seriesOf(it.brand,it.description)!==series) return;
+      if(!_wordsMatch(it.description,desc,exc)) return;
+      if(it.discMode==="net") return;
+      const mrp=_bdNum(it.mrp), d=parseFloat(it.discount);
+      if(!(mrp>0) || isNaN(d)) return;           // needs MRP + % discount
+      if(oldD!==null && Math.abs(d-oldD)>0.0001) return;
+      if(Math.abs(d-newD)<0.0001) return;         // already at the new discount
+      hits.push(idx);
+    });
+    if(!hits.length) return;
+    if(quotedOnly && st!=="Quoted"){ skippedStatus++; return; }
+    const newItems=q.items.map((it,idx)=>{
+      if(!hits.includes(idx)) return it;
+      const mrp=_bdNum(it.mrp), qty=_bdNum(it.qty), oldRate=_bdNum(it.rate);
+      const rate=+(mrp-mrp*newD/100).toFixed(2);
+      const n={...it, discount:newD, rate:rate.toFixed(2), amount:(qty*rate).toFixed(2)};
+      const pm=_bdNum(it.perMtr);
+      if(pm>0 && oldRate>0) n.perMtr=(pm*rate/oldRate).toFixed(2);
+      return n;
+    });
+    const tot=_bdRecalcTotals(q,newItems);
+    plan.push({ q, st, hits, newItems, tot, on:true });
+  });
+  _bdPlan=plan;
+  if(!plan.length){ res.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">No matching documents found${skippedStatus?` (${skippedStatus} matching Confirmed/Cancelled document(s) were skipped — untick "Only Quoted" to include them)`:""}.</div>`; return; }
+  plan.sort((a,b)=>String(a.q.cust_name||"").localeCompare(String(b.q.cust_name||""))||String(b.q.doc_date||"").localeCompare(String(a.q.doc_date||"")));
+  const groups=[]; plan.forEach((p,i)=>{ p.i=i; const k=(p.q.cust_name||"—").trim().toUpperCase(); let g=groups.find(x=>x.k===k); if(!g){ g={k,name:p.q.cust_name||"—",items:[]}; groups.push(g); } g.items.push(p); });
+  _bdGroups=groups;
+  const card=p=>`
+    <div style="border:1px solid #c5d3e8;border-radius:9px;padding:9px 12px;background:#f8fafd">
+      <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+        <input type="checkbox" class="bdChk" data-g="${p.gi}" ${p.on?"checked":""} onchange="_bdPlan[${p.i}].on=this.checked;bdUpdateSummary()" style="margin-top:3px">
+        <span style="flex:1">
+          <span style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b style="color:#1a3c6e;font-size:13px">${_hEsc(p.q.doc_no)}</b><span style="font-size:11px;color:#5a6a85">${_hEsc(p.q.doc_date||"")} · ${_hEsc(p.st)}${p.q.stock_reduced?" · <b style='color:#c0392b'>Stock already reduced</b>":""}</span></span>
+          <span style="display:block;font-size:12px;margin-top:3px">Net payable: <s style="color:#888">${_qdInr(p.q.net_payable)}</s> → <b style="color:#1b7a4a">${_qdInr(p.tot.net_payable)}</b></span>
+          <span style="display:block;font-size:11px;color:#5a6a85;margin-top:3px">${p.hits.map(ix=>{const o=p.q.items[ix],n=p.newItems[ix];return `${_hEsc(o.description)}: ${_hEsc(o.discount)}% → <b>${n.discount}%</b>, rate ${_hEsc(o.rate)} → <b>${n.rate}</b>`;}).join("<br>")}</span>
+        </span>
+      </label></div>`;
+  groups.forEach((g,gi)=>g.items.forEach(p=>p.gi=gi));
+  res.innerHTML=(skippedStatus?`<div style="font-size:11.5px;color:#b8590a;margin-bottom:8px">${skippedStatus} matching Confirmed/Cancelled document(s) skipped.</div>`:"")+
+    groups.map((g,gi)=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:#e6f4f4;border:1px solid #b9dede;border-radius:8px;padding:7px 11px;margin-bottom:7px">
+        <label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;font-weight:800;color:#0b6e6e"><input type="checkbox" checked onchange="bdToggleGroup(${gi},this.checked)">👤 ${_hEsc(g.name)} <span style="font-weight:600;color:#5a6a85;font-size:11.5px">(${g.items.length} doc${g.items.length>1?"s":""})</span></label>
+        <button type="button" onclick="bulkDiscApply(${gi})" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer">✅ Apply to this client only</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">${g.items.map(card).join("")}</div>
+    </div>`).join("");
+  foot.style.display="flex"; bdUpdateSummary();
+}
+let _bdGroups=[];
+function bdToggleGroup(gi,on){
+  _bdGroups[gi].items.forEach(p=>p.on=on);
+  document.querySelectorAll('.bdChk[data-g="'+gi+'"]').forEach(c=>c.checked=on);
+  bdUpdateSummary();
+}
+function bdUpdateSummary(){
+  const sel=_bdPlan.filter(p=>p.on);
+  const diff=sel.reduce((t,p)=>t+(p.tot.net_payable-(+p.q.net_payable||0)),0);
+  document.getElementById("bdSummary").textContent=`${sel.length} of ${_bdPlan.length} document(s) selected · total change ${diff>=0?"+":"−"}${_qdInr(Math.abs(diff))}`;
+  document.getElementById("bdApplyBtn").disabled=!sel.length;
+}
+async function bulkDiscApply(gi){
+  const only=(typeof gi==="number")?_bdGroups[gi]:null;
+  const sel=_bdPlan.filter(p=>p.on && (!only || only.items.includes(p))); if(!sel.length){ alert("Nothing selected."); return; }
+  const newD=document.getElementById("bdNew").value;
+  if(!confirm(`Change the discount to ${newD}% on matching items in ${sel.length} saved document(s)${only?" of "+only.name:""}?\n\nRates, amounts and totals will be recalculated and saved. You can undo this once afterwards.`)) return;
+  const btn=document.getElementById("bdApplyBtn"); btn.disabled=true; btn.textContent="Applying…";
+  const undo={ at:new Date().toISOString(), docs:[] }, failed=[];
+  for(const p of sel){
+    const q=p.q;
+    const { error } = await sb.from("quotations").update({ items:p.newItems, ...p.tot }).eq("id",q.id);
+    if(error){ failed.push(q.doc_no+" ("+(error.message||error)+")"); continue; }
+    undo.docs.push({ id:q.id, doc_no:q.doc_no, items:q.items, sub_total:q.sub_total, net_payable:q.net_payable });
+  }
+  try{ localStorage.setItem("SSE_BULK_UNDO",JSON.stringify(undo)); }catch(e){ console.warn("Could not store undo",e); }
+  btn.disabled=false; btn.textContent="✅ Apply to selected";
+  _bdShowUndo();
+  let msg=`✓ Updated ${undo.docs.length} document(s).`;
+  if(failed.length) msg+=`\n\nFailed (${failed.length}):\n`+failed.join("\n");
+  msg+="\n\nIf any of these quotations is open in the editor, re-open it from Party History to see the new values.";
+  alert(msg);
+  _qdLoaded=false;
+  bulkDiscFind(); // refresh: updated docs drop out, other clients stay for the next one
+}
+async function bulkDiscUndo(){
+  let u=null; try{ u=JSON.parse(localStorage.getItem("SSE_BULK_UNDO")||"null"); }catch(e){}
+  if(!u||!u.docs||!u.docs.length){ alert("Nothing to undo."); return; }
+  if(!confirm(`Restore the previous items and totals of ${u.docs.length} document(s) changed by the last bulk edit?\n\nAny edits made to those documents since then will be overwritten.`)) return;
+  let ok=0; const failed=[];
+  for(const d of u.docs){
+    const base=(typeof d.items==="object")?d:null;
+    // recompute all totals from the restored items so every column stays consistent
+    const { data:q } = await sb.from("quotations").select("gst_applied,cash_disc_pct").eq("id",d.id).single();
+    const tot=_bdRecalcTotals(q||{},d.items);
+    const { error } = await sb.from("quotations").update({ items:d.items, ...tot }).eq("id",d.id);
+    if(error) failed.push(d.doc_no); else ok++;
+  }
+  if(!failed.length) localStorage.removeItem("SSE_BULK_UNDO");
+  _bdShowUndo(); _qdLoaded=false;
+  alert(`Restored ${ok} document(s).`+(failed.length?`\nFailed: ${failed.join(", ")}`:""));
+}
 
 /* ===== QUOTATIONS DASHBOARD — every Quotation / Cash Bill / Proforma across ALL parties =====
    Filters: search, doc type, regular vs price-comparison, date range, status.
@@ -3858,6 +4088,103 @@ function saveEditRow(){
 }
 function closeEditRow(){ document.getElementById("editRowModal").style.display="none"; }
 function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
+
+/* ===== BULK EDIT DISCOUNT inside the open quotation =====
+   Pick Brand (+ optional item text / current discount), type the new %,
+   see each affected row old → new, untick any, Apply. Uses the same maths
+   as saveEditRow(): rate = MRP − MRP×disc/100, per-metre = rate ÷ coil length,
+   amount = qty × rate, then calc() refreshes all totals. */
+let _brRows=[], _brUndo=null;
+// Rows only keep the short brand ("KEI"); the exact product list the item was picked from
+// (e.g. "KEI - IND COPPER WIRE" vs a KEI flexible list) is recovered from the item name.
+const _SERIES_OTHER="OTHER / CUSTOM ITEMS";
+function _seriesOf(brand,desc){
+  brand=String(brand||"").trim(); desc=String(desc||"").trim();
+  let best=null,bestLen=-1;
+  Object.keys(items||{}).forEach(k=>{
+    if(getDisplayBrand(k)!==brand && k!==brand) return;
+    (items[k]||[]).forEach(i=>{ const n=String(i.name||"").trim(); if(n && (desc===n||desc.startsWith(n)) && n.length>bestLen){ best=k; bestLen=n.length; } });
+  });
+  return best||_SERIES_OTHER;
+}
+// every typed word must appear (any order); exclude: any listed word/phrase (comma or space separated) rejects the row
+function _wordsMatch(text,inc,exc){
+  text=String(text||"").toLowerCase();
+  const iw=String(inc||"").toLowerCase().split(/\s+/).filter(Boolean);
+  if(!iw.every(w=>text.includes(w))) return false;
+  const ew=String(exc||"").toLowerCase().split(/[,\s]+/).filter(Boolean);
+  if(ew.some(w=>text.includes(w))) return false;
+  return true;
+}
+function openBulkRowDisc(){
+  const cnt={};
+  [...tbody.rows].forEach(r=>{ if(r.dataset.discMode==="net") return; const m=parseFloat(r.dataset.mrpRaw), d=parseFloat(r.dataset.discRaw); if(!(m>0)||isNaN(d)) return; const k=_seriesOf((r.dataset.brand||r.cells[1].innerText||"").trim(),r.cells[3].innerText); cnt[k]=(cnt[k]||0)+1; });
+  const brands=Object.keys(cnt).sort();
+  if(!brands.length){ alert("No items with an MRP and % discount in this quotation."); return; }
+  document.getElementById("brBrand").innerHTML=`<option value="">All products</option>`+brands.map(b=>`<option value="${b.replace(/"/g,"&quot;")}">${b} (${cnt[b]} item${cnt[b]>1?"s":""})</option>`).join("");
+  document.getElementById("brDesc").value=""; document.getElementById("brExc").value=""; document.getElementById("brOld").value=""; document.getElementById("brNew").value="";
+  document.getElementById("bulkRowModal").style.display="flex";
+  document.getElementById("brUndoBtn").style.display=_brUndo?"":"none";
+  bulkRowPreview();
+  document.getElementById("brNew").focus();
+}
+function closeBulkRowDisc(){ document.getElementById("bulkRowModal").style.display="none"; }
+function bulkRowPreview(){
+  const brand=document.getElementById("brBrand").value;
+  const desc=document.getElementById("brDesc").value.trim().toLowerCase();
+  const exc=document.getElementById("brExc").value;
+  const oldRaw=document.getElementById("brOld").value, newRaw=document.getElementById("brNew").value;
+  const oldD=oldRaw===""?null:parseFloat(oldRaw), newD=parseFloat(newRaw);
+  const list=document.getElementById("brList"), valid=!isNaN(newD)&&newD>=0&&newD<100;
+  _brRows=[];
+  [...tbody.rows].forEach((r,idx)=>{
+    if(r.dataset.discMode==="net") return;
+    const mrp=parseFloat(r.dataset.mrpRaw), d=parseFloat(r.dataset.discRaw);
+    if(!(mrp>0)||isNaN(d)) return;
+    if(brand && _seriesOf((r.dataset.brand||r.cells[1].innerText||"").trim(),r.cells[3].innerText)!==brand) return;
+    if(!_wordsMatch(r.cells[3].innerText,desc,exc)) return;
+    if(oldD!==null && Math.abs(d-oldD)>0.0001) return;
+    const qty=parseFloat(r.cells[7].innerText)||0;
+    const rate=valid?+(mrp-mrp*newD/100).toFixed(2):null;
+    _brRows.push({ r, idx, mrp, d, qty, rate, on:true, changes: valid && Math.abs(d-newD)>0.0001 });
+  });
+  if(!_brRows.length){ list.innerHTML=`<div style="text-align:center;color:#888;padding:24px 10px">No matching % discount rows in this quotation.</div>`; }
+  else list.innerHTML=_brRows.map((x,i)=>`
+    <label style="display:flex;gap:9px;align-items:flex-start;border:1px solid #c5d3e8;border-radius:8px;padding:8px 11px;margin-bottom:7px;background:#f8fafd;cursor:pointer">
+      <input type="checkbox" ${x.changes?"checked":""} ${x.changes?"":"disabled"} onchange="_brRows[${i}].on=this.checked;bulkRowSummary()" style="margin-top:3px">
+      <span style="flex:1;font-size:12px">
+        <b style="color:#1a3c6e">#${x.idx+1} · ${_hEsc(x.r.dataset.brand||"")}</b> — ${_hEsc(x.r.cells[3].innerText)}
+        <span style="display:block;color:#5a6a85;margin-top:2px">Disc ${x.d}%${valid?` → <b style="color:#b8590a">${newD}%</b>`:""} &nbsp;·&nbsp; Rate ${_hEsc(x.r.cells[10].innerText)}${valid?` → <b style="color:#1b7a4a">${x.rate.toFixed(2)}</b>`:""} &nbsp;·&nbsp; Qty ${x.qty}${valid?` &nbsp;·&nbsp; Amount ${_hEsc(x.r.cells[12].innerText)} → <b>${(x.qty*x.rate).toFixed(2)}</b>`:""}${valid&&!x.changes?" &nbsp;<i>(already at this discount)</i>":""}</span>
+      </span></label>`).join("");
+  _brRows.forEach(x=>{ x.on=x.changes; });
+  bulkRowSummary();
+}
+function bulkRowSummary(){
+  const n=_brRows.filter(x=>x.on).length;
+  document.getElementById("brSummary").textContent=n?`${n} item(s) will change`:(_brRows.length?"Enter the NEW discount %":"");
+  document.getElementById("brApplyBtn").disabled=!n;
+}
+function bulkRowApply(){
+  const newD=parseFloat(document.getElementById("brNew").value);
+  const sel=_brRows.filter(x=>x.on&&x.changes); if(!sel.length||isNaN(newD)) return;
+  _brUndo=sel.map(x=>{ const r=x.r; return { r, discRaw:r.dataset.discRaw, discMode:r.dataset.discMode, c:[9,10,11,12].map(i=>r.cells[i].innerText) }; });
+  sel.forEach(x=>{
+    const r=x.r, cells=r.cells, rate=+(x.mrp-x.mrp*newD/100).toFixed(2);
+    r.dataset.discRaw=newD; r.dataset.discMode="pct";
+    cells[9].innerText=isBrandMrpVisible(r.dataset.brand||cells[1].innerText)?newD:"-";
+    cells[10].innerText=rate.toFixed(2);
+    const coilLen=parseFloat(r.dataset.coilLen);
+    cells[11].innerText=(!isNaN(coilLen)&&coilLen>0)?(rate/coilLen).toFixed(2):cells[11].innerText;
+    cells[12].innerText=(x.qty*rate).toFixed(2);
+  });
+  calc();
+  closeBulkRowDisc();
+}
+function bulkRowUndo(){
+  if(!_brUndo) return;
+  _brUndo.forEach(u=>{ if(!u.r.isConnected) return; u.r.dataset.discRaw=u.discRaw; u.r.dataset.discMode=u.discMode; [9,10,11,12].forEach((ci,k)=>u.r.cells[ci].innerText=u.c[k]); });
+  _brUndo=null; calc(); closeBulkRowDisc();
+}
 
 /* ===== PER-BRAND MRP & DISCOUNT VISIBILITY (Regular Quotation + Comparison) ===== */
 let brandMrpVisibility={};
