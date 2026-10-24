@@ -1241,9 +1241,14 @@ async function loadInventoryStock(){
     // has 2500+ items across both locations, so a single unpaginated fetch was silently
     // missing everything past row 1000 — making already-tracked items look "not tracked"
     // and get added again. Paging through in batches of 1000 fixes that for good.
-    let data=[], from=0, pageSize=1000;
+    let data=[], from=0, pageSize=1000, invSource="item_stock_fast";
     while(true){
-      const { data:page, error } = await invSb.from("items").select("*").range(from, from+pageSize-1);
+      // Read from the SAME view the Godown page uses (item_stock_fast) so the stock figure is
+      // always identical to what the Godown shows (opening + IN - OUT, incl. returns).
+      // The raw "items" table has no live running stock, which is why returns showed 0 here.
+      let res = await invSb.from(invSource).select("*").range(from, from+pageSize-1);
+      if(res.error && invSource==="item_stock_fast"){ invSource="items"; res = await invSb.from("items").select("*").range(from, from+pageSize-1); }
+      const page=res.data, error=res.error;
       if(error) throw error;
       data=data.concat(page||[]);
       if(!page || page.length<pageSize) break;
