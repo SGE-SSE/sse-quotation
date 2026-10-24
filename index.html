@@ -486,6 +486,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <button class="btn-prices" onclick="checkInventoryNow(this)" style="background:#8a5a00;color:#fff">🔍 CHECK INVENTORY</button>
   <button class="btn-prices" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
+  <button type="button" class="btn-prices no-print" onclick="refreshStockNow(this)" style="background:#2e7d32;color:#fff">🔄 REFRESH STOCK</button>
   <span id="invStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
 </div>
@@ -3407,7 +3408,36 @@ window.onload=()=>{
   syncCmpPayUIVisibility();
   refreshPrices(false);
   loadInventoryStock();
+  startAutoStockRefresh();
 };
+
+/* ===== AUTO-REFRESH STOCK =====
+   Stock used to load only once when the page opened, so a Return/Stock-IN
+   entered in the Godown afterwards never showed up here until a manual reload.
+   Now it re-reads live stock: when you switch back to this tab/window, and
+   every 60 seconds while the tab is visible. Also available via REFRESH STOCK. */
+let _stockRefreshing=false, _lastStockLoad=Date.now();
+async function refreshStockQuiet(){
+  if(_stockRefreshing) return;
+  _stockRefreshing=true;
+  try{ await loadInventoryStock(); _lastStockLoad=Date.now(); }
+  finally{ _stockRefreshing=false; }
+}
+async function refreshStockNow(btn){
+  const old=btn?btn.textContent:"";
+  if(btn){ btn.disabled=true; btn.textContent="⏳ Refreshing…"; }
+  await refreshStockQuiet();
+  if(btn){ btn.disabled=false; btn.textContent=old; }
+}
+function startAutoStockRefresh(){
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden && Date.now()-_lastStockLoad>3000) refreshStockQuiet();
+  });
+  window.addEventListener("focus",()=>{
+    if(Date.now()-_lastStockLoad>3000) refreshStockQuiet();
+  });
+  setInterval(()=>{ if(!document.hidden) refreshStockQuiet(); },60000);
+}
 
 /* ===== PRICE EDITOR ===== */
 let peWorkingCopy=null, peDirty=false;
