@@ -1640,8 +1640,8 @@ function indentSupplierGroupFor(brand){
   return (rootWord || raw).toUpperCase();
 }
 
-function generateIndentPDF(){
-  if(!lastShortfalls.length && !lastUntracked.length){ alert("No shortfall or untracked items to raise an indent for."); return; }
+function buildIndentPages(lastShortfalls,lastUntracked,tag){
+  if(!lastShortfalls.length && !lastUntracked.length) return "";
   const now=new Date();
 
   // Grouped by SUPPLIER (usually = brand, except where multiple brand-catalog
@@ -1704,7 +1704,7 @@ function generateIndentPDF(){
           <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
           <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
           <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
-          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${brand}</div>
+          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">${tag?tag+" — ":""}Material Indent / Purchase Order — ${brand}</div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
           <tr><td style="padding:3px 0"><b>Indent No:</b> ${indentNo}</td><td style="padding:3px 0"><b>Date:</b> ${now.toLocaleDateString("en-IN")}</td></tr>
@@ -1718,6 +1718,10 @@ function generateIndentPDF(){
       </div>`;
   }).join("");
 
+  return pages;
+}
+function openIndentWindow(pages){
+  const now=new Date();
   const holder=window.open("","_blank");
   if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
   holder.document.write(`<!DOCTYPE html><html><head><title>Indents_${now.toISOString().slice(0,10)}</title>
@@ -1732,6 +1736,62 @@ function generateIndentPDF(){
     <\/script>
     </body></html>`);
   holder.document.close();
+}
+
+
+/* ===== INDENT CHOICE: edit same indent  OR  raise more (additional indent) ===== */
+let _extraNew=[];
+function generateIndentPDF(){
+  if(!lastShortfalls.length && !lastUntracked.length){ alert("No shortfall or untracked items to raise an indent for."); return; }
+  _extraNew=[];
+  const src=[...lastShortfalls.map(x=>({x,q:x.shortQty,t:"s"})),...lastUntracked.map(x=>({x,q:x.qtyReq,t:"u"}))];
+  let m=document.getElementById("indChoice"); if(m) m.remove();
+  m=document.createElement("div"); m.id="indChoice"; m.className="no-print";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px";
+  const nm=x=>x.desc+(x.colour&&x.colour!=="-"?" ("+x.colour+")":"")+" <small style='color:#777'>"+(x.brand||"")+"</small>";
+  const th='style="padding:6px;text-align:left"';
+  m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:880px;width:100%;max-height:92vh;overflow:auto;padding:14px;font-size:12.5px">'+
+   '<b style="font-size:15px">Raise Indent</b>'+
+   '<div style="margin:8px 0"><label style="margin-right:18px"><input type="radio" name="indMode" value="A" checked onchange="indModeSw()"> <b>Edit same indent</b> (change the quantities of this indent)</label>'+
+   '<label><input type="radio" name="indMode" value="B" onchange="indModeSw()"> <b>Raise more</b> (this indent as it is + an additional indent)</label></div>'+
+   '<div id="indA"><table style="width:100%;border-collapse:collapse"><tr style="background:#f3f3f3"><th></th><th '+th+'>Item</th><th '+th+'>Short / Needed</th><th '+th+'>Order qty</th></tr>'+
+   src.map((o,i)=>'<tr style="border-top:1px solid #ddd"><td style="padding:6px"><input type="checkbox" id="ia-c'+i+'" checked></td><td style="padding:6px">'+nm(o.x)+'</td><td style="padding:6px">'+o.q+' '+(o.x.unit||"")+'</td><td style="padding:6px"><input type="number" min="0" step="any" id="ia-q'+i+'" value="'+o.q+'" style="width:90px"></td></tr>').join("")+'</table></div>'+
+   '<div id="indB" style="display:none"><div style="color:#555;margin-bottom:6px">Indent 1 will print as it is. Enter the <b>extra</b> quantity for the additional indent (leave blank for none).</div>'+
+   '<table style="width:100%;border-collapse:collapse"><tr style="background:#f3f3f3"><th '+th+'>Item</th><th '+th+'>In indent 1</th><th '+th+'>Extra qty</th></tr>'+
+   src.map((o,i)=>'<tr style="border-top:1px solid #ddd"><td style="padding:6px">'+nm(o.x)+'</td><td style="padding:6px">'+o.q+' '+(o.x.unit||"")+'</td><td style="padding:6px"><input type="number" min="0" step="any" id="ib-q'+i+'" style="width:90px"></td></tr>').join("")+'</table>'+
+   '<div style="margin-top:10px"><b>Add another item (not in this quotation)</b><br><input id="ib-br" placeholder="Brand / Supplier" style="width:150px"> <input id="ib-ds" placeholder="Item description" style="width:230px"> <input id="ib-un" placeholder="Unit" style="width:60px"> <input id="ib-qt" type="number" min="0" step="any" placeholder="Qty" style="width:70px"> <button onclick="indAddNew()">+ Add</button><div id="ib-list" style="margin-top:6px;color:#1b7a4a"></div></div></div>'+
+   '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button onclick="document.getElementById(\'indChoice\').remove()">Cancel</button><button onclick="indRun()" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700">📋 Print / Save Indent</button></div></div>';
+  document.body.appendChild(m); window._indSrc=src;
+}
+function indModeSw(){ const b=document.querySelector('input[name=indMode]:checked').value==="B"; document.getElementById("indA").style.display=b?"none":""; document.getElementById("indB").style.display=b?"":"none"; }
+function indAddNew(){
+  const br=document.getElementById("ib-br").value.trim(), ds=document.getElementById("ib-ds").value.trim(), un=document.getElementById("ib-un").value.trim(), q=parseFloat(document.getElementById("ib-qt").value)||0;
+  if(!br||!ds||q<=0){ alert("Enter brand/supplier, description and quantity."); return; }
+  _extraNew.push({brand:br,itemCode:"-",desc:ds,colour:"-",unit:un,shortQty:q});
+  ["ib-br","ib-ds","ib-un","ib-qt"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("ib-list").innerHTML=_extraNew.map(e=>"✔ "+e.brand+" – "+e.desc+" : "+e.shortQty+" "+e.unit).join("<br>");
+}
+function indRun(){
+  const src=window._indSrc, mode=document.querySelector('input[name=indMode]:checked').value;
+  let pages="";
+  if(mode==="A"){
+    const sf=[],ut=[];
+    src.forEach((o,i)=>{
+      if(!document.getElementById("ia-c"+i).checked) return;
+      const q=parseFloat(document.getElementById("ia-q"+i).value)||0; if(q<=0) return;
+      if(o.t==="s") sf.push({...o.x,shortQty:q}); else ut.push({...o.x,qtyReq:q});
+    });
+    if(!sf.length&&!ut.length){ alert("Nothing selected to order."); return; }
+    pages=buildIndentPages(sf,ut,"");
+  }else{
+    const ex=[];
+    src.forEach((o,i)=>{ const q=parseFloat(document.getElementById("ib-q"+i).value)||0; if(q>0) ex.push({...o.x,shortQty:q}); });
+    _extraNew.forEach(e=>ex.push(e));
+    if(!ex.length){ alert("Enter an extra quantity or add an item for the additional indent."); return; }
+    pages=buildIndentPages(lastShortfalls,lastUntracked,"")+'<div style="page-break-after:always"></div>'+buildIndentPages(ex,[],"ADDITIONAL");
+  }
+  document.getElementById("indChoice").remove();
+  openIndentWindow(pages);
 }
 
 let currentPartyId = null;
@@ -3434,7 +3494,7 @@ async function _indPost(r){
 }
 async function recordIndent(no,supplier,items,qno,cust){
   const r={no,supplier,qno:qno||"",cust:cust||"",status:"BILL PENDING",bill_no:"",
-    items:items.map(x=>({desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty}))};
+    items:items.map(x=>({line:x.line||"",code:x.code||"",desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty})),received:{}};
   try{ await _indPost(r); }catch(e){ const q=_qGet(); q.push(r); _qSet(q); }
   indRefresh();
 }
@@ -3468,6 +3528,73 @@ async function indDel(no){
   await fetch(_IB+"?no=eq."+encodeURIComponent(no),{method:"DELETE",headers:_IH});
   indRefresh();
 }
+/* ---- Goods received: confirm screen, adds Stock IN to GODOWN (supports partial delivery) ---- */
+const _SB="https://ibawonlchzxmocoxkirz.supabase.co/rest/v1/";
+const _nk=s=>String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+let _rcv=null;
+async function openReceive(no){
+  const x=_indRows.find(r=>r.no===no); if(!x) return;
+  let inv=[];
+  try{
+    const res=await fetch(_SB+"item_stock_fast?select=id,name,brand,location&limit=5000",{headers:_IH});
+    inv=(await res.json()).filter(i=>String(i.location||"GODOWN").trim().toUpperCase()==="GODOWN");
+  }catch(e){ alert("Could not read Godown items: "+e.message); return; }
+  const rc=x.received||{};
+  const rows=(x.items||[]).map((it,k)=>{
+    const cand=inv.filter(i=>_nk(i.name)===_nk(it.desc)&&(!it.line||_nk(i.brand)===_nk(it.line)));
+    const m=cand.length===1?cand[0]:null;
+    const rem=Math.max(0,+(it.qty-(rc[k]||0)).toFixed(2));
+    return {k,it,m,rem,done:rem<=0};
+  });
+  _rcv={x,rows};
+  let h=document.getElementById("rcvBox"); if(h) h.remove();
+  h=document.createElement("div"); h.id="rcvBox"; h.className="no-print";
+  h.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px";
+  h.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:860px;width:100%;max-height:92vh;overflow:auto;padding:14px">'+
+   '<b style="font-size:15px">Goods received – '+x.no+' ('+x.supplier+')</b>'+
+   '<div style="font-size:11.5px;color:#555;margin:6px 0">Change the quantity to what actually arrived. Untick items that did not arrive. Stock IN is added to the <b>Godown</b>.</div>'+
+   '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th></th><th style="padding:6px">Item</th><th style="padding:6px">Ordered</th><th style="padding:6px">Already recd</th><th style="padding:6px">Received now</th></tr>'+
+   rows.map(r=>'<tr style="border-top:1px solid #ddd"><td style="padding:6px"><input type="checkbox" id="rc-ck-'+r.k+'" '+(r.m&&!r.done?'checked':'disabled')+'></td>'+
+     '<td style="padding:6px">'+r.it.desc+(r.it.colour&&r.it.colour!=="-"?" ("+r.it.colour+")":"")+(r.m?'':'<br><b style="color:#c0392b;font-size:11px">Not found in Godown (name/brand mismatch) – cannot add automatically</b>')+'</td>'+
+     '<td style="padding:6px">'+r.it.qty+' '+(r.it.unit||'')+'</td><td style="padding:6px">'+(rc[r.k]||0)+'</td>'+
+     '<td style="padding:6px"><input type="number" min="0" step="any" id="rc-q-'+r.k+'" value="'+r.rem+'" '+(r.m&&!r.done?'':'disabled')+' style="width:90px"></td></tr>').join("")+
+   '</table></div>'+
+   '<div style="margin:10px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><label>Date <input type="date" id="rc-date" value="'+new Date().toISOString().slice(0,10)+'"></label>'+
+   '<label>By <input id="rc-by" value="'+(localStorage.getItem("sge_operator")||"")+'" style="width:110px"></label>'+
+   '<label><input type="checkbox" id="rc-close"> Close this indent (no more deliveries expected)</label></div>'+
+   '<div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById(\'rcvBox\').remove()">Cancel</button>'+
+   '<button id="rc-ok" onclick="confirmReceive()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700">✔ Confirm &amp; add Stock IN</button></div></div>';
+  document.body.appendChild(h);
+}
+async function confirmReceive(){
+  if(!_rcv) return;
+  const {x,rows}=_rcv, date=document.getElementById("rc-date").value, by=document.getElementById("rc-by").value.trim();
+  const todo=rows.filter(r=>r.m&&!r.done&&document.getElementById("rc-ck-"+r.k).checked)
+    .map(r=>({...r,q:parseFloat(document.getElementById("rc-q-"+r.k).value)||0})).filter(r=>r.q>0);
+  const close=document.getElementById("rc-close").checked;
+  if(!todo.length&&!close){ alert("Nothing to add. Enter a quantity, or tick 'Close this indent'."); return; }
+  if(!confirm("Add Stock IN to GODOWN for "+todo.length+" item(s)?\n\n"+todo.map(r=>r.it.desc+" : "+r.q).join("\n")+"\n\nThis cannot be undone from here.")) return;
+  const btn=document.getElementById("rc-ok"); btn.disabled=true; btn.textContent="Adding…";
+  const rc={...(x.received||{})}; const fails=[];
+  for(const r of todo){
+    const txn={item_id:r.m.id,type:"IN",qty:r.q,date,supplier:x.supplier,note:"Indent "+x.no+" – bill pending"};
+    if(by){ txn.operator=by; localStorage.setItem("sge_operator",by); }
+    try{
+      const res=await fetch(_SB+"transactions",{method:"POST",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(txn)});
+      if(!res.ok) throw new Error(await res.text());
+      rc[r.k]=+((rc[r.k]||0)+r.q).toFixed(2);
+    }catch(e){ fails.push(r.it.desc+": "+String(e.message).slice(0,80)); }
+  }
+  const allDone=(x.items||[]).every((it,k)=>(rc[k]||0)>=it.qty-1e-9);
+  const status=(allDone||close)?"GOODS RECEIVED":(Object.keys(rc).length?"PARTIAL RECEIVED":x.status);
+  await fetch(_IB+"?no=eq."+encodeURIComponent(x.no),{method:"PATCH",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify({received:rc,status})});
+  document.getElementById("rcvBox").remove(); _rcv=null;
+  if(fails.length) alert("Some items failed and were NOT added:\n"+fails.join("\n"));
+  else alert("Stock IN added. Status: "+status);
+  if(typeof refreshStockQuiet==="function") refreshStockQuiet();
+  if(typeof load==="function"){ try{load(true);}catch(e){} }
+  indRefresh();
+}
 function openIndentTracker(){
   let m=document.getElementById("indTrk");
   if(!m){ m=document.createElement("div"); m.id="indTrk"; m.className="no-print";
@@ -3477,11 +3604,11 @@ function openIndentTracker(){
 }
 function renderIndentTracker(){
   const m=document.getElementById("indTrk"); if(!m) return;
-  const col={"BILL PENDING":"#c0392b","GOODS RECEIVED":"#e65100","BILLED":"#1b7a4a"};
+  const col={"BILL PENDING":"#c0392b","PARTIAL RECEIVED":"#b8860b","GOODS RECEIVED":"#e65100","BILLED":"#1b7a4a"};
   const a=_indRows.slice().sort((x,y)=>(x.status==="BILLED")-(y.status==="BILLED"));
   const rows=a.map(x=>{
-    const items=(x.items||[]).map(i=>i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"")).join("<br>");
-    const btns=x.status==="BILLED"?"":(x.status==="BILL PENDING"?'<button onclick="indSet(\''+x.no+'\',\'GOODS RECEIVED\')">Goods received</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
+    const rc=x.received||{}; const items=(x.items||[]).map((i,k)=>i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"")+(rc[k]?" <span style=\"color:#1b7a4a\">(recd "+rc[k]+")</span>":"")).join("<br>");
+    const btns=x.status==="BILLED"?"":(x.status==="BILL PENDING"||x.status==="PARTIAL RECEIVED"?'<button onclick="openReceive(\''+x.no+'\')">Goods received</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
     return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+col[x.status]+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
   }).join("");
   m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">📋 Indents – Bill Pending Tracker (live)</b><button onclick="document.getElementById(\'indTrk\').remove()">✕ Close</button></div>'+
