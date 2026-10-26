@@ -486,6 +486,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <button class="btn-prices" onclick="checkInventoryNow(this)" style="background:#8a5a00;color:#fff">🔍 CHECK INVENTORY</button>
   <button class="btn-prices" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
+  <button type="button" class="btn-prices no-print" id="pendIndBtn" onclick="openIndentTracker()" style="background:#e65100;color:#fff">📋 PENDING INDENTS</button>
   <button type="button" class="btn-prices no-print" onclick="refreshStockNow(this)" style="background:#2e7d32;color:#fff">🔄 REFRESH STOCK</button>
   <span id="invStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <span id="saveStatus" class="no-print" style="font-size:11px;color:#1b7a4a;align-self:center;margin-left:4px;font-weight:700"></span>
@@ -1672,6 +1673,7 @@ function generateIndentPDF(){
       ...shortfalls.map(s=>({line:s.brand||"-",code:s.itemCode||"-",desc:s.desc,colour:s.colour||"-",unit:s.unit,qty:s.shortQty})),
       ...untracked.map(s=>({line:s.brand||"-",code:s.itemCode||"-",desc:s.desc,colour:s.colour||"-",unit:s.unit,qty:s.qtyReq}))
     ];
+    recordIndent(indentNo,brand,allItems,(lastIndentMeta&&lastIndentMeta.docNo)||"",(lastIndentMeta&&lastIndentMeta.custName)||"");
     const rows=allItems.map((s,i)=>`
       <tr>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
@@ -3415,6 +3417,86 @@ window.onload=()=>{
   loadInventoryStock();
   startAutoStockRefresh();
 };
+
+
+/* ===== INDENT TRACKER (Bill Pending marker) - shared live via Supabase table "indents" =====
+   BILL PENDING -> GOODS RECEIVED -> BILLED (bill no.). Same block is in Quotation + Godown pages. */
+const _IB="https://ibawonlchzxmocoxkirz.supabase.co/rest/v1/indents";
+const _IK="sb_publishable_j3BvHCejXy9hOnlB0EpcSw_6nJM5N-l";
+const _IH={apikey:_IK,Authorization:"Bearer "+_IK,"Content-Type":"application/json"};
+const IND_Q="SSE_INDENT_QUEUE";
+let _indRows=[], _indErr="";
+function _qGet(){ try{return JSON.parse(localStorage.getItem(IND_Q)||"[]");}catch(e){return [];} }
+function _qSet(a){ try{localStorage.setItem(IND_Q,JSON.stringify(a));}catch(e){} }
+async function _indPost(r){
+  const res=await fetch(_IB,{method:"POST",headers:{..._IH,Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(r)});
+  if(!res.ok) throw new Error(await res.text());
+}
+async function recordIndent(no,supplier,items,qno,cust){
+  const r={no,supplier,qno:qno||"",cust:cust||"",status:"BILL PENDING",bill_no:"",
+    items:items.map(x=>({desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty}))};
+  try{ await _indPost(r); }catch(e){ const q=_qGet(); q.push(r); _qSet(q); }
+  indRefresh();
+}
+async function indRefresh(){
+  try{
+    const q=_qGet(), left=[];
+    for(const r of q){ try{await _indPost(r);}catch(e){left.push(r);} }
+    _qSet(left);
+    const res=await fetch(_IB+"?select=*&order=created_at.desc",{headers:_IH});
+    if(!res.ok) throw new Error(await res.text());
+    _indRows=await res.json(); _indErr="";
+  }catch(e){ _indErr=String(e.message||e).slice(0,160); }
+  updateIndBadge();
+  if(document.getElementById("indTrk")) renderIndentTracker();
+}
+function updateIndBadge(){
+  const n=_indRows.filter(x=>x.status!=="BILLED").length+_qGet().length;
+  const b=document.getElementById("pendIndBtn");
+  if(b) b.textContent="📋 PENDING INDENTS"+(n?" ("+n+")":"");
+}
+async function indSet(no,status){
+  let bill="";
+  if(status==="BILLED"){ bill=prompt("Enter the supplier BILL NUMBER:","")||""; if(!bill.trim()){alert("Bill number required.");return;} }
+  const body={status}; if(bill) body.bill_no=bill.trim();
+  const res=await fetch(_IB+"?no=eq."+encodeURIComponent(no),{method:"PATCH",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(body)});
+  if(!res.ok){ alert("Could not update: "+await res.text()); return; }
+  indRefresh();
+}
+async function indDel(no){
+  if(!confirm("Delete indent "+no+" from the list?")) return;
+  await fetch(_IB+"?no=eq."+encodeURIComponent(no),{method:"DELETE",headers:_IH});
+  indRefresh();
+}
+function openIndentTracker(){
+  let m=document.getElementById("indTrk");
+  if(!m){ m=document.createElement("div"); m.id="indTrk"; m.className="no-print";
+    m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:12px";
+    m.onclick=e=>{ if(e.target===m) m.remove(); }; document.body.appendChild(m); }
+  renderIndentTracker(); indRefresh();
+}
+function renderIndentTracker(){
+  const m=document.getElementById("indTrk"); if(!m) return;
+  const col={"BILL PENDING":"#c0392b","GOODS RECEIVED":"#e65100","BILLED":"#1b7a4a"};
+  const a=_indRows.slice().sort((x,y)=>(x.status==="BILLED")-(y.status==="BILLED"));
+  const rows=a.map(x=>{
+    const items=(x.items||[]).map(i=>i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"")).join("<br>");
+    const btns=x.status==="BILLED"?"":(x.status==="BILL PENDING"?'<button onclick="indSet(\''+x.no+'\',\'GOODS RECEIVED\')">Goods received</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
+    return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+col[x.status]+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
+  }).join("");
+  m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">📋 Indents – Bill Pending Tracker (live)</b><button onclick="document.getElementById(\'indTrk\').remove()">✕ Close</button></div>'+
+   (_indErr?'<div style="background:#fdecea;color:#a32;padding:8px;border-radius:6px;font-size:12px;margin-bottom:8px">Database table not ready: '+_indErr+'<br>Run the SQL for the "indents" table in Supabase once.</div>':'')+
+   '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Goods received? Enter Stock IN in the Godown (note: indent no. + "bill pending"). When the bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
+   (a.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th style="padding:6px">Indent</th><th style="padding:6px">Supplier</th><th style="padding:6px">Items</th><th style="padding:6px">Status</th><th style="padding:6px">Action</th></tr>'+rows+'</table></div>':'<p>No indents raised yet.</p>')+'</div>';
+}
+window.addEventListener("load",()=>{
+  if(!document.getElementById("pendIndBtn")){
+    const b=document.createElement("button"); b.id="pendIndBtn"; b.className="no-print"; b.onclick=openIndentTracker; b.textContent="📋 PENDING INDENTS";
+    b.style.cssText="position:fixed;right:12px;bottom:12px;z-index:9998;background:#e65100;color:#fff;border:none;border-radius:22px;padding:10px 14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)";
+    document.body.appendChild(b);
+  }
+  indRefresh(); setInterval(()=>{ if(!document.hidden) indRefresh(); },60000);
+});
 
 /* ===== AUTO-REFRESH STOCK =====
    Stock used to load only once when the page opened, so a Return/Stock-IN
