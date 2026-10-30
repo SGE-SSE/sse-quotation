@@ -213,6 +213,8 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="CB" onchange="switchDocType(this.value)"> Cash Bill</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="DC" onchange="switchDocType(this.value)"> Delivery Challan</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="IND" onchange="switchDocType(this.value)"> Indent</label>
+    <label id="indRatesBox" style="display:none;font-size:12px;font-weight:700;cursor:pointer;color:#1b7a4a"><input type="checkbox" id="indShowRates" checked> 💰 Show MRP / Rates on Indent print</label>
   </div>
   <div class="header-grid">
     <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
@@ -230,7 +232,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 
 <div class="section-panel" style="margin-top:0">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
-    <span>Customer Details</span>
+    <span id="custSectionTitle">Customer Details</span>
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openQuotDashboard()" style="font-size:11px;padding:4px 10px;background:#0b6e6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📊 Quotations Dashboard</button>
       <button type="button" onclick="openBulkDisc()" style="font-size:11px;padding:4px 10px;background:#b8590a;color:#fff;border:none;border-radius:4px;cursor:pointer">✏️ Bulk Discount Edit</button>
@@ -623,7 +625,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
       <div id="qdStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:12px 18px 6px"></div>
       <div style="padding:6px 18px 4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <input type="text" id="qdSearch" placeholder="Search number, customer…" oninput="renderQuotDashboard()" style="flex:1;min-width:160px;font-size:13px;padding:7px 10px;border:1px solid #c5d3e8;border-radius:6px">
-        <select id="qdType" onchange="renderQuotDashboard()" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">All Types</option><option value="QTN">Quotation</option><option value="CB">Cash Bill</option><option value="PI">Proforma</option></select>
+        <select id="qdType" onchange="renderQuotDashboard()" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">All Types</option><option value="QTN">Quotation</option><option value="CB">Cash Bill</option><option value="PI">Proforma</option><option value="IND">Indent</option></select>
         <select id="qdKind" onchange="renderQuotDashboard()" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">Regular + Comparison</option><option value="REG">Regular only</option><option value="CMP">Price Comparison only</option></select>
         <input type="date" id="qdFrom" onchange="renderQuotDashboard()" title="From date" style="font-size:12px;padding:6px 8px;border:1px solid #c5d3e8;border-radius:6px">
         <input type="date" id="qdTo" onchange="renderQuotDashboard()" title="To date" style="font-size:12px;padding:6px 8px;border:1px solid #c5d3e8;border-radius:6px">
@@ -1489,6 +1491,7 @@ async function insertStockMovementOut(itemId,location,qty,note){
 }
 
 async function reduceStockFromQuotation(btn){
+  if(currentDocType==="IND"){ alert("This is an Indent (a purchase request) — stock is added when the material is received (📋 PENDING INDENTS → Goods received), never reduced."); return; }
   const rows=collectRowsForReduce();
   if(!rows.length){ alert("No items in the quotation table to reduce."); return; }
 
@@ -1583,6 +1586,130 @@ function showIndentBanner(result,docNo,addedCount){
   document.getElementById("indentBannerText").textContent=
     "⚠ "+parts.join(" · ")+" — quotation saved anyway. Generate an indent to raise a purchase request / verify stock.";
   banner.style.display="flex";
+}
+/* An Indent document (document type "Indent") is a purchase request to a supplier.
+   When it is saved, its rows go into PENDING INDENTS exactly like the indents raised from the
+   stock-shortage banner: BILL PENDING -> GOODS RECEIVED (adds Stock IN) -> BILLED (bill no.).
+   Supplier = the party chosen in "Supplier Details". */
+function recordIndentFromDoc(docNo){
+  const its=[];
+  [...tbody.rows].forEach(r=>{
+    const c=r.cells; if(!c||c.length<8) return;
+    const qty=parseFloat(c[7].innerText)||0; if(!qty) return;
+    const colourRaw=c[4].innerText.trim();
+    its.push({line:c[1].innerText.trim(), code:(c[2].innerText||"").trim().replace(/^-$/,""), desc:c[3].innerText.trim(),
+      colour:(colourRaw&&colourRaw!=='-'&&colourRaw!=='—')?colourRaw:"-", unit:c[6].innerText.trim(), qty});
+  });
+  if(!its.length) return;
+  recordIndent(docNo, (custName.value||"").trim()||"INDENT", its, "", "");
+}
+/* ---- INDENT document: prints in the plain indent layout (no prices) — same look as the indent
+   raised from the stock-shortage banner. One page per supplier group; uses the document's own Indent No. ---- */
+function buildIndentDocPages(){
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const rows=[];
+  [...tbody.rows].forEach(r=>{
+    const c=r.cells; if(!c||c.length<8) return;
+    const qty=parseFloat(c[7].innerText)||0; if(!qty) return;
+    const colourRaw=c[4].innerText.trim(), code=(c[2].innerText||"").trim();
+    const dsx=r.dataset||{};
+    const mrpV=(dsx.mrpRaw!==undefined&&dsx.mrpRaw!=="")?dsx.mrpRaw:(c[8]?c[8].innerText.trim():"-");           // true MRP even if hidden by brand toggle
+    const discV=(dsx.discMode==="net")?"-":((dsx.discRaw!==undefined&&dsx.discRaw!=="")?dsx.discRaw:(c[9]?c[9].innerText.trim():"-"));
+    rows.push({line:c[1].innerText.trim()||"-", code:code||"-", desc:c[3].innerText.trim(),
+      colour:(colourRaw&&colourRaw!=="—")?colourRaw:"-", unit:c[6].innerText.trim(), qty,
+      mrp:mrpV||"-", disc:discV||"-", rate:c[10]?c[10].innerText.trim():"-", amt:c[12]?c[12].innerText.trim():"-"});
+  });
+  if(!rows.length) return "";
+  const groups={};
+  rows.forEach(x=>{ const g=indentSupplierGroupFor(x.line); (groups[g]=groups[g]||[]).push(x); });
+  const names=Object.keys(groups).sort();
+  const docNo=(qno.value||"").trim();
+  const d=qdate.value?new Date(qdate.value+"T00:00:00"):new Date();
+  const dateStr=d.toLocaleDateString("en-IN");
+  const party=(custName.value||"").trim();
+  const showRates=!!(document.getElementById("indShowRates")&&document.getElementById("indShowRates").checked);
+  const num=v=>parseFloat(String(v==null?"":v).replace(/[₹,\s]/g,""))||0;
+  const fm=n=>n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const dash=v=>(v===""||v==null)?"-":esc(v);
+  const td='padding:6px 8px;border:1px solid #ccc';
+  return names.map((g,idx)=>{
+    const body=groups[g].map((s,i)=>`
+      <tr>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${i+1}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc">${esc(s.line)}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;font-size:11px">${escItemCode(s.code)}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc">${esc(s.desc)}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${esc(s.colour)}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${esc(s.unit||"-")}</td>
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>${showRates?`
+        <td style="${td};text-align:right">${dash(s.mrp)}</td>
+        <td style="${td};text-align:center">${(s.disc&&s.disc!=="-"&&num(s.disc)>0)?esc(s.disc)+"%":"-"}</td>
+        <td style="${td};text-align:right">${dash(s.rate)}</td>
+        <td style="${td};text-align:right;font-weight:700">${dash(s.amt)}</td>`:""}
+      </tr>`).join("");
+    const grpTotal=groups[g].reduce((t,x)=>t+num(x.amt),0);
+    const last=idx===names.length-1;
+    return `
+      <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px;${last?"":"page-break-after:always"}">
+        <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
+          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
+          <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
+          <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
+          <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${esc(g)}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+          <tr><td style="padding:3px 0"><b>Indent No:</b> ${esc(docNo||"-")}</td><td style="padding:3px 0"><b>Date:</b> ${dateStr}</td></tr>
+        </table>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f0f4fa">
+            <th style="padding:6px 8px;border:1px solid #ccc">#</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Brand / Line</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Item Code</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Item Description</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Colour</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
+            <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>${showRates?`
+            <th style="${td}">MRP</th><th style="${td}">Disc %</th><th style="${td}">Net Rate</th><th style="${td}">Amount</th>`:""}
+          </tr></thead>
+          <tbody>${body}</tbody>${showRates?`
+          <tfoot><tr><td colspan="10" style="${td};text-align:right;font-weight:700">Total (excl. GST)</td><td style="${td};text-align:right;font-weight:800">${fm(grpTotal)}</td></tr></tfoot>`:""}
+        </table>
+        <div style="margin-top:26px;font-size:12px"><b>Supplier:</b> ${names.length===1&&party?esc(party):"_____________________________"} &nbsp;&nbsp; <b>Expected Date:</b> ______________</div>
+        <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:12px">
+          <div>Prepared By: ______________</div>
+          <div>Approved By: ______________</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+function printIndentDocument(){
+  const pages=buildIndentDocPages();
+  if(!pages){ alert("Add at least one item before printing the Indent."); return; }
+  const holder=window.open("","_blank");
+  if(!holder){ alert("Please allow pop-ups for this site, then try again."); return; }
+  const t=((qno.value||"Indent")).replace(/[\/:]/g,"-");
+  holder.document.write(`<!DOCTYPE html><html><head><title>${t}</title>
+    <style>@page{ margin:14mm; } body{ font-family:Arial,sans-serif; color:#1a1a1a; margin:0; padding:0; }</style>
+    </head><body>${pages}
+    <script>
+      window.onload=function(){ setTimeout(function(){ window.print(); }, 200); };
+      window.onafterprint=function(){ window.close(); };
+    <\/script>
+    </body></html>`);
+  holder.document.close();
+}
+function exportIndentDocumentPDF(){
+  const pages=buildIndentDocPages();
+  if(!pages){ alert("Add at least one item before exporting the Indent."); return; }
+  const el=document.getElementById("printArea");
+  const originalHTML=el.innerHTML, originalStyle=el.getAttribute("style")||"";
+  el.innerHTML=pages;
+  el.style.boxShadow="none"; el.style.borderRadius="0"; el.style.background="#fff"; el.style.overflow="visible"; el.style.maxWidth="100%";
+  const opt={ margin:8, filename:exportFileName()+".pdf",
+    html2canvas:{ scale:2, useCORS:true, windowWidth:el.scrollWidth, scrollX:0, scrollY:0 },
+    jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" },
+    pagebreak:{ mode:["css","legacy"], avoid:["tr","thead"] } };
+  html2pdf().set(opt).from(el).save().then(()=>{ el.innerHTML=originalHTML; el.setAttribute("style",originalStyle); });
 }
 function dismissIndentBanner(){ document.getElementById("indentBanner").style.display="none"; }
 
@@ -2033,8 +2160,10 @@ async function performUpdateExistingQuotation(){
     setTimeout(()=>status.textContent="", 5000);
     if(currentDocType==="DC") renderDcBillingStatus(currentQuotationId, JSON.parse(remarksVal));
     try{
+      if(currentDocType!=="IND"){
       const final=computeShortfalls();
       showIndentBanner(final, qno.value, 0);
+      }
     }catch(e){ console.warn("Stock check skipped:",e.message); }
   }catch(err){
     console.error(err);
@@ -2128,8 +2257,11 @@ async function performInsertNewQuotation(){
          stock so the indent banner can warn about shortages/untracked
          items. Actually creating Inventory items now only happens
          when the "ADD ITEMS TO INVENTORY" button is pressed. */
+      if(currentDocType==="IND"){ recordIndentFromDoc(docNo); }   // Indent -> Pending Indents (BILL PENDING -> RECEIVED -> BILLED)
+      else{
       const final=computeShortfalls();
       showIndentBanner(final, docNo, 0);
+      }
     }catch(e){ console.warn("Stock check skipped:",e.message); }
   }catch(err){
     console.error(err);
@@ -2318,11 +2450,11 @@ async function bulkDiscFind(){
   const type=document.getElementById("bdType").value, from=document.getElementById("bdFrom").value, to=document.getElementById("bdTo").value;
   const quotedOnly=document.getElementById("bdQuotedOnly").checked;
   const cols="id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable,doc_status,stock_reduced";
-  let qy=sb.from("quotations").select(cols).neq("doc_type","DC").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+  let qy=sb.from("quotations").select(cols).neq("doc_type","DC").neq("doc_type","IND").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
   if(type!=="ALL") qy=qy.eq("doc_type",type);
   let { data, error } = await qy;
   if(error && isMissingColumnError(error)){
-    let q2=sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable").neq("doc_type","DC").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+    let q2=sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable").neq("doc_type","DC").neq("doc_type","IND").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
     if(type!=="ALL") q2=q2.eq("doc_type",type);
     ({ data, error } = await q2);
   }
@@ -3389,7 +3521,8 @@ const DOC_TYPES={
   QTN:{label:"QUOTATION",noLabel:"Quotation No",dateLabel:"Quotation Date",section:"Quotation Details",addTitle:"Add Item to Quotation",itemsTitle:"Quotation Items",prefix:"SSE/QTN",storageKey:"SSE_QTN",file:"SSE_Quotation"},
   CB:{label:"CASH BILL",noLabel:"Cash Bill No",dateLabel:"Cash Bill Date",section:"Cash Bill Details",addTitle:"Add Item",itemsTitle:"Cash Bill Items",prefix:"SSE/CB",storageKey:"SSE_CB",file:"SSE_CashBill"},
   PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"},
-  DC:{label:"DELIVERY CHALLAN",noLabel:"DC No",dateLabel:"DC Date",section:"Delivery Challan Details",addTitle:"Add Item to Delivery Challan",itemsTitle:"Delivery Challan Items",prefix:"SSE/DC",storageKey:"SSE_DC",file:"SSE_DeliveryChallan"}
+  DC:{label:"DELIVERY CHALLAN",noLabel:"DC No",dateLabel:"DC Date",section:"Delivery Challan Details",addTitle:"Add Item to Delivery Challan",itemsTitle:"Delivery Challan Items",prefix:"SSE/DC",storageKey:"SSE_DC",file:"SSE_DeliveryChallan"},
+  IND:{label:"MATERIAL INDENT",noLabel:"Indent No",dateLabel:"Indent Date",section:"Indent Details",addTitle:"Add Item to Indent",itemsTitle:"Indent Items",prefix:"SSE/IND",storageKey:"SSE_IND",file:"SSE_Indent"}
 };
 let currentDocType="QTN";
 function switchDocType(type){
@@ -3407,6 +3540,8 @@ function switchDocType(type){
   const dcBox=document.getElementById("dcExtraBox");
   if(dcBox) dcBox.style.display=(type==="DC")?"":"none";
   document.body.classList.toggle("dc-mode", type==="DC");
+  const irb=document.getElementById("indRatesBox"); if(irb) irb.style.display=(type==="IND")?"":"none";
+  const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
   if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
 }
@@ -4548,6 +4683,7 @@ function updateBrandDiscSummary(){
 
 function printQuotation(){
   if(currentDocType==="DC"){ printDeliveryChallan(); return; }
+  if(currentDocType==="IND"){ printIndentDocument(); return; }
   const originalTitle = document.title;
   document.title = exportFileName();
   window.print();
@@ -4744,6 +4880,7 @@ function exportExcel(){
 
 function exportPDF(){
   if(currentDocType==="DC"){ exportDeliveryChallanPDF(); return; }
+  if(currentDocType==="IND"){ exportIndentDocumentPDF(); return; }
   document.body.classList.add("pdf-export-mode");
   document.querySelectorAll(".entry-only,.no-print").forEach(e=>e.classList.add("pdf-hide"));
   const el = document.getElementById("printArea");
