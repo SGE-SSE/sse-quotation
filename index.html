@@ -214,7 +214,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="DC" onchange="switchDocType(this.value)"> Delivery Challan</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="IND" onchange="switchDocType(this.value)"> Indent</label>
-    <label id="indRatesBox" style="display:none;font-size:12px;font-weight:700;cursor:pointer;color:#1b7a4a"><input type="checkbox" id="indShowRates" checked> 💰 Show MRP / Rates on Indent print</label>
+
   </div>
   <div class="header-grid">
     <div><label id="docNoLabel">Quotation No</label><input type="text" id="qno"></div>
@@ -1627,7 +1627,9 @@ function buildIndentDocPages(){
   const d=qdate.value?new Date(qdate.value+"T00:00:00"):new Date();
   const dateStr=d.toLocaleDateString("en-IN");
   const party=(custName.value||"").trim();
-  const showRates=!!(document.getElementById("indShowRates")&&document.getElementById("indShowRates").checked);
+  const showMRP=!!(document.getElementById("showMRP")&&document.getElementById("showMRP").checked);   // existing "Show MRP & Discount" tick
+  const showRates=true;   // Net Rate + Amount always shown
+  const showGST=showRates && !!(document.getElementById("gstToggle")&&document.getElementById("gstToggle").checked);   // uses the existing "Apply GST 18%" tick
   const num=v=>parseFloat(String(v==null?"":v).replace(/[₹,\s]/g,""))||0;
   const fm=n=>n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
   const dash=v=>(v===""||v==null)?"-":esc(v);
@@ -1641,9 +1643,9 @@ function buildIndentDocPages(){
         <td style="padding:6px 8px;border:1px solid #ccc">${esc(s.desc)}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${esc(s.colour)}</td>
         <td style="padding:6px 8px;border:1px solid #ccc;text-align:center">${esc(s.unit||"-")}</td>
-        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>${showRates?`
+        <td style="padding:6px 8px;border:1px solid #ccc;text-align:center;font-weight:700">${s.qty}</td>${showRates?`${showMRP?`
         <td style="${td};text-align:right">${dash(s.mrp)}</td>
-        <td style="${td};text-align:center">${(s.disc&&s.disc!=="-"&&num(s.disc)>0)?esc(s.disc)+"%":"-"}</td>
+        <td style="${td};text-align:center">${(s.disc&&s.disc!=="-"&&num(s.disc)>0)?esc(s.disc)+"%":"-"}</td>`:""}
         <td style="${td};text-align:right">${dash(s.rate)}</td>
         <td style="${td};text-align:right;font-weight:700">${dash(s.amt)}</td>`:""}
       </tr>`).join("");
@@ -1669,10 +1671,12 @@ function buildIndentDocPages(){
             <th style="padding:6px 8px;border:1px solid #ccc">Colour</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Unit</th>
             <th style="padding:6px 8px;border:1px solid #ccc">Qty</th>${showRates?`
-            <th style="${td}">MRP</th><th style="${td}">Disc %</th><th style="${td}">Net Rate</th><th style="${td}">Amount</th>`:""}
+            ${showMRP?`<th style="${td}">MRP</th><th style="${td}">Disc %</th>`:""}<th style="${td}">Net Rate</th><th style="${td}">Amount</th>`:""}
           </tr></thead>
           <tbody>${body}</tbody>${showRates?`
-          <tfoot><tr><td colspan="10" style="${td};text-align:right;font-weight:700">Total (excl. GST)</td><td style="${td};text-align:right;font-weight:800">${fm(grpTotal)}</td></tr></tfoot>`:""}
+          <tfoot><tr><td colspan="${showMRP?10:8}" style="${td};text-align:right;font-weight:700">Total (excl. GST)</td><td style="${td};text-align:right;font-weight:800">${fm(grpTotal)}</td></tr>${showGST?`
+            <tr><td colspan="${showMRP?10:8}" style="${td};text-align:right;font-weight:700;color:#7a5000;background:#fffaf0">GST 18%</td><td style="${td};text-align:right;font-weight:700;color:#7a5000;background:#fffaf0">${fm(grpTotal*0.18)}</td></tr>
+            <tr><td colspan="${showMRP?10:8}" style="${td};text-align:right;font-weight:800">Total (incl. GST)</td><td style="${td};text-align:right;font-weight:800">${fm(grpTotal*1.18)}</td></tr>`:""}</tfoot>`:""}
         </table>
         <div style="margin-top:26px;font-size:12px"><b>Supplier:</b> ${names.length===1&&party?esc(party):"_____________________________"} &nbsp;&nbsp; <b>Expected Date:</b> ______________</div>
         <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:12px">
@@ -3540,7 +3544,6 @@ function switchDocType(type){
   const dcBox=document.getElementById("dcExtraBox");
   if(dcBox) dcBox.style.display=(type==="DC")?"":"none";
   document.body.classList.toggle("dc-mode", type==="DC");
-  const irb=document.getElementById("indRatesBox"); if(irb) irb.style.display=(type==="IND")?"":"none";
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
   if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
