@@ -3670,6 +3670,7 @@ async function indDel(no){
 const _SB="https://ibawonlchzxmocoxkirz.supabase.co/rest/v1/";
 const _nk=s=>String(s||"").trim().toUpperCase().replace(/\s+/g," ");
 let _rcv=null;
+const _rcEsc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 async function openReceive(no){
   const x=_indRows.find(r=>r.no===no); if(!x) return;
   let inv=[];
@@ -3684,38 +3685,81 @@ async function openReceive(no){
     const rem=Math.max(0,+(it.qty-(rc[k]||0)).toFixed(2));
     return {k,it,m,rem,done:rem<=0};
   });
-  _rcv={x,rows};
+  _rcv={x,rows,inv};
+  const picker=r=>{
+    if(r.m||r.done) return "";
+    let pool=inv.filter(i=>!r.it.line||_nk(i.brand)===_nk(r.it.line));
+    if(!pool.length) pool=inv;
+    pool=pool.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    return '<select id="rc-m-'+r.k+'" style="width:100%;margin-top:4px;font-size:11.5px"><option value="">— name not matched: pick the Godown item —</option>'+
+      pool.map(i=>'<option value="'+_rcEsc(i.id)+'">'+_rcEsc(i.name)+(i.brand?' ['+_rcEsc(i.brand)+']':'')+'</option>').join("")+'</select>';
+  };
   let h=document.getElementById("rcvBox"); if(h) h.remove();
   h=document.createElement("div"); h.id="rcvBox"; h.className="no-print";
   h.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px";
-  h.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:860px;width:100%;max-height:92vh;overflow:auto;padding:14px">'+
-   '<b style="font-size:15px">Goods received – '+x.no+' ('+x.supplier+')</b>'+
-   '<div style="font-size:11.5px;color:#555;margin:6px 0">Change the quantity to what actually arrived. Untick items that did not arrive. Stock IN is added to the <b>Godown</b>.</div>'+
-   '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th></th><th style="padding:6px">Item</th><th style="padding:6px">Ordered</th><th style="padding:6px">Already recd</th><th style="padding:6px">Received now</th></tr>'+
-   rows.map(r=>'<tr style="border-top:1px solid #ddd"><td style="padding:6px"><input type="checkbox" id="rc-ck-'+r.k+'" '+(r.m&&!r.done?'checked':'disabled')+'></td>'+
-     '<td style="padding:6px">'+r.it.desc+(r.it.colour&&r.it.colour!=="-"?" ("+r.it.colour+")":"")+(r.m?'':'<br><b style="color:#c0392b;font-size:11px">Not found in Godown (name/brand mismatch) – cannot add automatically</b>')+'</td>'+
-     '<td style="padding:6px">'+r.it.qty+' '+(r.it.unit||'')+'</td><td style="padding:6px">'+(rc[r.k]||0)+'</td>'+
-     '<td style="padding:6px"><input type="number" min="0" step="any" id="rc-q-'+r.k+'" value="'+r.rem+'" '+(r.m&&!r.done?'':'disabled')+' style="width:90px"></td></tr>').join("")+
+  h.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:940px;width:100%;max-height:92vh;overflow:auto;padding:14px">'+
+   '<b style="font-size:15px">Goods received – '+_rcEsc(x.no)+' ('+_rcEsc(x.supplier)+')</b>'+
+   '<div style="font-size:11.5px;color:#555;margin:6px 0">Enter the quantity that <b>actually arrived</b> in <i>Received now</i>. Less than the balance = <b>partial receipt</b> (the rest stays pending). Untick items that did not arrive. Stock IN is added to the <b>Godown</b>.</div>'+
+   '<div style="display:flex;gap:8px;margin:6px 0"><button type="button" onclick="rcFill()">Receive full balance (all)</button><button type="button" onclick="rcClear()">Clear all</button></div>'+
+   '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th></th><th style="padding:6px">Item</th><th style="padding:6px">Ordered</th><th style="padding:6px">Already recd</th><th style="padding:6px">Balance</th><th style="padding:6px">Received now</th><th style="padding:6px">This delivery</th></tr>'+
+   rows.map(r=>'<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><input type="checkbox" id="rc-ck-'+r.k+'" '+(r.done?'disabled':(r.m?'checked':''))+' onchange="rcCalc('+r.k+')"></td>'+
+     '<td style="padding:6px">'+_rcEsc(r.it.desc)+(r.it.colour&&r.it.colour!=="-"?" ("+_rcEsc(r.it.colour)+")":"")+picker(r)+'</td>'+
+     '<td style="padding:6px">'+r.it.qty+' '+_rcEsc(r.it.unit||'')+'</td><td style="padding:6px">'+(rc[r.k]||0)+'</td><td style="padding:6px"><b>'+r.rem+'</b></td>'+
+     '<td style="padding:6px"><input type="number" min="0" step="any" id="rc-q-'+r.k+'" value="'+(r.done?0:r.rem)+'" '+(r.done?'disabled':'')+' oninput="rcCalc('+r.k+')" style="width:90px"></td>'+
+     '<td style="padding:6px" id="rc-st-'+r.k+'">'+(r.done?'<span style="color:#1b7a4a">Complete</span>':'')+'</td></tr>').join("")+
    '</table></div>'+
+   '<div id="rc-sum" style="margin:8px 0;font-size:12px;font-weight:600"></div>'+
    '<div style="margin:10px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><label>Date <input type="date" id="rc-date" value="'+new Date().toISOString().slice(0,10)+'"></label>'+
-   '<label>By <input id="rc-by" value="'+(localStorage.getItem("sge_operator")||"")+'" style="width:110px"></label>'+
-   '<label><input type="checkbox" id="rc-close"> Close this indent (no more deliveries expected)</label></div>'+
+   '<label>By <input id="rc-by" value="'+_rcEsc(localStorage.getItem("sge_operator")||"")+'" style="width:110px"></label>'+
+   '<label><input type="checkbox" id="rc-close"> Close this indent – no more deliveries expected (pending balance is dropped)</label></div>'+
    '<div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById(\'rcvBox\').remove()">Cancel</button>'+
    '<button id="rc-ok" onclick="confirmReceive()" style="background:#1b7a4a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700">✔ Confirm &amp; add Stock IN</button></div></div>';
   document.body.appendChild(h);
+  rows.forEach(r=>rcCalc(r.k));
+}
+function rcFill(){ if(!_rcv) return; _rcv.rows.forEach(r=>{ if(r.done) return; document.getElementById("rc-q-"+r.k).value=r.rem; document.getElementById("rc-ck-"+r.k).checked=true; rcCalc(r.k); }); }
+function rcClear(){ if(!_rcv) return; _rcv.rows.forEach(r=>{ if(r.done) return; document.getElementById("rc-q-"+r.k).value=0; document.getElementById("rc-ck-"+r.k).checked=false; rcCalc(r.k); }); }
+function rcCalc(k){
+  if(!_rcv) return;
+  const r=_rcv.rows.find(z=>z.k===k); if(!r||r.done) return;
+  const c=document.getElementById("rc-st-"+k); if(!c) return;
+  const ck=document.getElementById("rc-ck-"+k).checked;
+  const q=parseFloat(document.getElementById("rc-q-"+k).value)||0;
+  if(!ck||q<=0) c.innerHTML='<span style="color:#888">Not received</span>';
+  else if(q>r.rem+1e-9) c.innerHTML='<span style="color:#c62828">More than ordered (+'+(+(q-r.rem).toFixed(2))+')</span>';
+  else if(q>=r.rem-1e-9) c.innerHTML='<span style="color:#1b7a4a">✔ Full</span>';
+  else c.innerHTML='<span style="color:#b8860b">Partial – balance '+(+(r.rem-q).toFixed(2))+'</span>';
+  let f=0,p=0,n=0;
+  _rcv.rows.forEach(z=>{ if(z.done) return;
+    const ok=document.getElementById("rc-ck-"+z.k).checked, qq=parseFloat(document.getElementById("rc-q-"+z.k).value)||0;
+    if(!ok||qq<=0) n++; else if(qq>=z.rem-1e-9) f++; else p++; });
+  const s=document.getElementById("rc-sum");
+  if(s) s.innerHTML='This delivery: <span style="color:#1b7a4a">'+f+' full</span> · <span style="color:#b8860b">'+p+' partial</span> · <span style="color:#888">'+n+' not received</span>'+((p+n)?' — indent will stay <b>PARTIAL RECEIVED</b> until the balance arrives (or tick Close).':' — indent will become <b>GOODS RECEIVED</b>.');
 }
 async function confirmReceive(){
   if(!_rcv) return;
-  const {x,rows}=_rcv, date=document.getElementById("rc-date").value, by=document.getElementById("rc-by").value.trim();
-  const todo=rows.filter(r=>r.m&&!r.done&&document.getElementById("rc-ck-"+r.k).checked)
-    .map(r=>({...r,q:parseFloat(document.getElementById("rc-q-"+r.k).value)||0})).filter(r=>r.q>0);
+  const {x,rows,inv}=_rcv, date=document.getElementById("rc-date").value, by=document.getElementById("rc-by").value.trim();
+  const todo=[], missing=[];
+  rows.forEach(r=>{
+    if(r.done) return;
+    if(!document.getElementById("rc-ck-"+r.k).checked) return;
+    const q=parseFloat(document.getElementById("rc-q-"+r.k).value)||0; if(q<=0) return;
+    let m=r.m;
+    if(!m){ const s=document.getElementById("rc-m-"+r.k); const v=s?s.value:""; m=v?inv.find(i=>String(i.id)===v):null; }
+    if(!m){ missing.push(r.it.desc); return; }
+    todo.push({...r,m,q});
+  });
+  if(missing.length){ alert("Pick the matching Godown item for:\n"+missing.join("\n")); return; }
   const close=document.getElementById("rc-close").checked;
   if(!todo.length&&!close){ alert("Nothing to add. Enter a quantity, or tick 'Close this indent'."); return; }
-  if(!confirm("Add Stock IN to GODOWN for "+todo.length+" item(s)?\n\n"+todo.map(r=>r.it.desc+" : "+r.q).join("\n")+"\n\nThis cannot be undone from here.")) return;
+  const lines=todo.map(r=>{ const b=+(r.rem-r.q).toFixed(2); return "• "+r.it.desc+" : "+r.q+(b>0?"   (balance "+b+" still pending)":b<0?"   (+"+(-b)+" more than ordered)":"   (complete)"); });
+  const msg=todo.length?"Add Stock IN to GODOWN for "+todo.length+" item(s)?\n\n"+lines.join("\n")+"\n\nThis cannot be undone from here."+(close?"\n\nThe indent will be CLOSED.":""):"Close this indent without adding any stock?";
+  if(!confirm(msg)) return;
   const btn=document.getElementById("rc-ok"); btn.disabled=true; btn.textContent="Adding…";
   const rc={...(x.received||{})}; const fails=[];
   for(const r of todo){
-    const txn={item_id:r.m.id,type:"IN",qty:r.q,date,supplier:x.supplier,note:"Indent "+x.no+" – bill pending"};
+    const b=+(r.rem-r.q).toFixed(2);
+    const txn={item_id:r.m.id,type:"IN",qty:r.q,date,supplier:x.supplier,note:"Indent "+x.no+(b>0?" – partial receipt, balance "+b:" – received")+" – bill pending"};
     if(by){ txn.operator=by; localStorage.setItem("sge_operator",by); }
     try{
       const res=await fetch(_SB+"transactions",{method:"POST",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(txn)});
@@ -3728,7 +3772,7 @@ async function confirmReceive(){
   await fetch(_IB+"?no=eq."+encodeURIComponent(x.no),{method:"PATCH",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify({received:rc,status})});
   document.getElementById("rcvBox").remove(); _rcv=null;
   if(fails.length) alert("Some items failed and were NOT added:\n"+fails.join("\n"));
-  else alert("Stock IN added. Status: "+status);
+  else alert("Stock IN added. Status: "+status+(status==="PARTIAL RECEIVED"?"\nThe balance stays in PENDING INDENTS – use 'Receive balance' when it arrives.":""));
   if(typeof refreshStockQuiet==="function") refreshStockQuiet();
   if(typeof load==="function"){ try{load(true);}catch(e){} }
   indRefresh();
@@ -3745,13 +3789,21 @@ function renderIndentTracker(){
   const col={"BILL PENDING":"#c0392b","PARTIAL RECEIVED":"#b8860b","GOODS RECEIVED":"#e65100","BILLED":"#1b7a4a"};
   const a=_indRows.slice().sort((x,y)=>(x.status==="BILLED")-(y.status==="BILLED"));
   const rows=a.map(x=>{
-    const rc=x.received||{}; const items=(x.items||[]).map((i,k)=>i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"")+(rc[k]?" <span style=\"color:#1b7a4a\">(recd "+rc[k]+")</span>":"")).join("<br>");
-    const btns=x.status==="BILLED"?"":(x.status==="BILL PENDING"||x.status==="PARTIAL RECEIVED"?'<button onclick="openReceive(\''+x.no+'\')">Goods received</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
-    return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+col[x.status]+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
+    const rc=x.received||{};
+    const items=(x.items||[]).map((i,k)=>{
+      const r=rc[k]||0, bal=+(i.qty-r).toFixed(2);
+      let t=i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"");
+      if(r>0) t+=' <span style="color:#1b7a4a">(recd '+r+')</span>';
+      if(r>0&&bal>0) t+=' <span style="color:#b8860b;font-weight:700">(balance '+bal+')</span>';
+      return t;
+    }).join("<br>");
+    const canRecv=x.status==="BILL PENDING"||x.status==="PARTIAL RECEIVED";
+    const btns=x.status==="BILLED"?"":(canRecv?'<button onclick="openReceive(\''+x.no+'\')">'+(x.status==="PARTIAL RECEIVED"?'Receive balance':'Goods received')+'</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
+    return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+(col[x.status]||"#333")+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
   }).join("");
   m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">📋 Indents – Bill Pending Tracker (live)</b><button onclick="document.getElementById(\'indTrk\').remove()">✕ Close</button></div>'+
    (_indErr?'<div style="background:#fdecea;color:#a32;padding:8px;border-radius:6px;font-size:12px;margin-bottom:8px">Database table not ready: '+_indErr+'<br>Run the SQL for the "indents" table in Supabase once.</div>':'')+
-   '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Goods received? Enter Stock IN in the Godown (note: indent no. + "bill pending"). When the bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
+   '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Material arrived (fully <b>or partly</b>)? Click <b>Goods received</b> and enter the quantity that came – Stock IN is added to the Godown and the balance stays pending as <b>PARTIAL RECEIVED</b>. When the supplier bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
    (a.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th style="padding:6px">Indent</th><th style="padding:6px">Supplier</th><th style="padding:6px">Items</th><th style="padding:6px">Status</th><th style="padding:6px">Action</th></tr>'+rows+'</table></div>':'<p>No indents raised yet.</p>')+'</div>';
 }
 window.addEventListener("load",()=>{
