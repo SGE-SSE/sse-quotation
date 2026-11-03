@@ -1628,7 +1628,7 @@ function buildIndentDocPages(){
   const dateStr=d.toLocaleDateString("en-IN");
   const party=(custName.value||"").trim();
   const showMRP=!!(document.getElementById("showMRP")&&document.getElementById("showMRP").checked);   // existing "Show MRP & Discount" tick
-  const showRates=true;   // Net Rate + Amount always shown
+  const showRates=(window._indRates!==false);   // chosen in the "With Rates / Without Rates" prompt
   const showGST=showRates && !!(document.getElementById("gstToggle")&&document.getElementById("gstToggle").checked);   // uses the existing "Apply GST 18%" tick
   const num=v=>parseFloat(String(v==null?"":v).replace(/[₹,\s]/g,""))||0;
   const fm=n=>n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1686,7 +1686,27 @@ function buildIndentDocPages(){
       </div>`;
   }).join("");
 }
-function printIndentDocument(){
+/* Ask once per print / PDF: should the indent show Rate + Amount (with rates) or quantities only (without rates)? */
+function askIndentRates(run){
+  let m=document.getElementById("indRateAsk"); if(m) m.remove();
+  m=document.createElement("div"); m.id="indRateAsk"; m.className="no-print";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px";
+  m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:420px;width:100%;padding:18px;text-align:center">'+
+    '<b style="font-size:15px">Indent – how do you want it?</b>'+
+    '<div style="font-size:12px;color:#666;margin:6px 0 14px">Choose whether the indent shows Net Rate and Amount.</div>'+
+    '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'+
+    '<button id="indRY" style="background:#185FA5;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-weight:700;cursor:pointer">💰 With Rates</button>'+
+    '<button id="indRN" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-weight:700;cursor:pointer">📋 Without Rates</button></div>'+
+    '<div style="margin-top:12px"><button id="indRC" style="background:none;border:1px solid #bbb;border-radius:6px;padding:6px 14px;cursor:pointer">Cancel</button></div></div>';
+  document.body.appendChild(m);
+  const go=v=>{ window._indRates=v; m.remove(); run(); };
+  document.getElementById("indRY").onclick=()=>go(true);
+  document.getElementById("indRN").onclick=()=>go(false);
+  document.getElementById("indRC").onclick=()=>m.remove();
+}
+function printIndentDocument(){ askIndentRates(_printIndentDocument); }
+function exportIndentDocumentPDF(){ askIndentRates(_exportIndentDocumentPDF); }
+function _printIndentDocument(){
   const pages=buildIndentDocPages();
   if(!pages){ alert("Add at least one item before printing the Indent."); return; }
   const holder=window.open("","_blank");
@@ -1702,7 +1722,7 @@ function printIndentDocument(){
     </body></html>`);
   holder.document.close();
 }
-function exportIndentDocumentPDF(){
+function _exportIndentDocumentPDF(){
   const pages=buildIndentDocPages();
   if(!pages){ alert("Add at least one item before exporting the Indent."); return; }
   const el=document.getElementById("printArea");
