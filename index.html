@@ -1229,11 +1229,23 @@ function onDocStatusChange(){
   // enforces that only a Confirmed, not-yet-reduced quotation can proceed.
 }
 
+/* BRAND ALIASES: different spellings of the SAME brand. Left side = alternate name, right side = main name.
+   Add a new line whenever another brand is written two ways. Letters/numbers only, case does not matter. */
+const BRAND_ALIASES={
+  "POLYCAB PVC":"POLYCAB",
+  "SUDHAKAR PVC":"SUDHAKAR"
+};
+const _BRAND_ALIAS_KEYS=(function(){const m={};Object.keys(BRAND_ALIASES).forEach(k=>{m[normStr(k)]=normStr(BRAND_ALIASES[k]);});return m;})();
+function normBrand(b){ const k=normStr(b); return _BRAND_ALIAS_KEYS[k]!==undefined?_BRAND_ALIAS_KEYS[k]:k; }
 function normKey(brand,name){
-  return normStr(brand)+"|"+normStr(name);
+  return normBrand(brand)+"|"+normStr(name);
 }
 function normStr(s){
-  return String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+  /* Loose key: ignores case, spaces, dashes, dots, slashes etc. so "1.5 SQMM" == "1.5SQMM",
+     and treats a blank brand like "Unknown Brand" (same as the Godown page does). */
+  let t=String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(t==="UNKNOWNBRAND"||t==="NA"||t==="NONE") t="";
+  return t;
 }
 
 async function loadInventoryStock(){
@@ -1249,8 +1261,8 @@ async function loadInventoryStock(){
       // Read from the SAME view the Godown page uses (item_stock_fast) so the stock figure is
       // always identical to what the Godown shows (opening + IN - OUT, incl. returns).
       // The raw "items" table has no live running stock, which is why returns showed 0 here.
-      let res = await invSb.from(invSource).select("*").range(from, from+pageSize-1);
-      if(res.error && invSource==="item_stock_fast"){ invSource="items"; res = await invSb.from("items").select("*").range(from, from+pageSize-1); }
+      let res = await invSb.from(invSource).select("*").order("name",{ascending:true}).order("id",{ascending:true}).range(from, from+pageSize-1);
+      if(res.error && invSource==="item_stock_fast"){ invSource="items"; res = await invSb.from("items").select("*").order("name",{ascending:true}).order("id",{ascending:true}).range(from, from+pageSize-1); }
       const page=res.data, error=res.error;
       if(error) throw error;
       data=data.concat(page||[]);
@@ -1258,12 +1270,15 @@ async function loadInventoryStock(){
       from+=pageSize;
     }
     inventoryMap = {};
+    const _seenIds=new Set();
     (data||[]).forEach(i=>{
+      if(i.id!=null){ if(_seenIds.has(i.id)) return; _seenIds.add(i.id); }
       const k=normKey(i.brand,i.name);
-      if(!inventoryMap[k]) inventoryMap[k]={stock:0,unit:i.unit||"",byLoc:{}};
+      if(!inventoryMap[k]) inventoryMap[k]={stock:0,unit:i.unit||"",byLoc:{},ids:{}};
+      if(i.id!=null) inventoryMap[k].ids[String(i.location||"GODOWN").trim().toUpperCase()]=i.id;
       const s=Math.max(0, parseFloat(i.stock)||0);
       inventoryMap[k].stock+=s;
-      const loc=i.location||"GODOWN";
+      const loc=String(i.location||"GODOWN").trim().toUpperCase();
       inventoryMap[k].byLoc[loc]=(inventoryMap[k].byLoc[loc]||0)+s;
     });
     inventoryLoaded=true;
@@ -1364,7 +1379,7 @@ async function autoAddUntrackedToInventory(untracked){
       const { error } = await invSb.from("items").insert(payload);
       if(error) throw error;
       added.push(u);
-      inventoryMap[normKey(u.brand,u.desc)]={stock:0,unit,byLoc:{GODOWN:0}};
+      inventoryMap[normKey(u.brand,u.desc)]={stock:0,unit,byLoc:{GODOWN:0},ids:{}};
     }catch(e){ console.warn("Auto-add to inventory failed for",u.desc,":",e.message); }
   }
   return added;
@@ -1477,10 +1492,21 @@ async function findInventoryItemId(brand,name){
      with the wrong item id would deduct from a different brand's stock
      entirely, so an unmatched item must come back null (and get
      reported as "untracked") rather than guessing. */
-  const { data, error } = await invSb.from("items").select("id,name,brand")
-    .ilike("name",name).ilike("brand",brand).limit(1);
+  const m=findInventoryMatch(brand,name);
+  if(m && m.ids){
+    const L=String(arguments[2]||"").trim().toUpperCase();
+    if(L && m.ids[L]) return m.ids[L];
+    const any=Object.values(m.ids)[0];
+    if(!L && any) return any;
+  }
+  const esc=v=>String(v||"").replace(/[\\%_]/g,"\\$&");
+  const { data, error } = await invSb.from("items").select("id,name,brand,location")
+    .ilike("name",esc(name)).ilike("brand",esc(brand)).limit(20);
   if(error) throw error;
-  return (data && data.length) ? data[0].id : null;
+  if(!data||!data.length) return null;
+  const L2=String(arguments[2]||"").trim().toUpperCase();
+  const hit=(L2&&data.find(d=>String(d.location||"GODOWN").trim().toUpperCase()===L2))||data[0];
+  return hit.id;
 }
 
 async function insertStockMovementOut(itemId,location,qty,note){
@@ -1546,7 +1572,7 @@ async function reduceStockFromQuotation(btn){
   try{
     for(const r of plan){
       try{
-        const itemId=await findInventoryItemId(r.brand,r.desc);
+        const itemId=await findInventoryItemId(r.brand,r.desc,location);
         if(!itemId){ failed.push(r.desc+" — item id not found"); continue; }
         await insertStockMovementOut(itemId,location,r.qty,"Reduced via Quotation tool");
         done++;
@@ -3688,27 +3714,37 @@ async function indDel(no){
 }
 /* ---- Goods received: confirm screen, adds Stock IN to GODOWN (supports partial delivery) ---- */
 const _SB="https://ibawonlchzxmocoxkirz.supabase.co/rest/v1/";
-const _nk=s=>String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+const _nb=b=>(typeof normBrand==="function")?normBrand(b):_nk(b);
+const _nk=s=>{let t=String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); if(t==="UNKNOWNBRAND"||t==="NA"||t==="NONE") t=""; return t;};
 let _rcv=null;
 const _rcEsc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 async function openReceive(no){
   const x=_indRows.find(r=>r.no===no); if(!x) return;
   let inv=[];
   try{
-    const res=await fetch(_SB+"item_stock_fast?select=id,name,brand,location&limit=5000",{headers:_IH});
-    inv=(await res.json()).filter(i=>String(i.location||"GODOWN").trim().toUpperCase()==="GODOWN");
+    /* Supabase caps one response at 1000 rows (limit=5000 is ignored), so page with a stable order. */
+    let all=[], from=0; const seen=new Set();
+    while(true){
+      const res=await fetch(_SB+"item_stock_fast?select=id,name,brand,location&order=name,id",{headers:{..._IH,Range:from+"-"+(from+999)}});
+      if(!res.ok) throw new Error(await res.text());
+      const page=await res.json();
+      page.forEach(r=>{ if(!seen.has(r.id)){ seen.add(r.id); all.push(r); } });
+      if(page.length<1000) break;
+      from+=1000;
+    }
+    inv=all.filter(i=>String(i.location||"GODOWN").trim().toUpperCase()==="GODOWN");
   }catch(e){ alert("Could not read Godown items: "+e.message); return; }
   const rc=x.received||{};
   const rows=(x.items||[]).map((it,k)=>{
-    const cand=inv.filter(i=>_nk(i.name)===_nk(it.desc)&&(!it.line||_nk(i.brand)===_nk(it.line)));
-    const m=cand.length===1?cand[0]:null;
+    const cand=inv.filter(i=>_nk(i.name)===_nk(it.desc)&&(!it.line||_nb(i.brand)===_nb(it.line)));
+    const m=(cand.length>=1&&new Set(cand.map(c=>_nb(c.brand))).size===1)?cand[0]:null;
     const rem=Math.max(0,+(it.qty-(rc[k]||0)).toFixed(2));
     return {k,it,m,rem,done:rem<=0};
   });
   _rcv={x,rows,inv};
   const picker=r=>{
     if(r.m||r.done) return "";
-    let pool=inv.filter(i=>!r.it.line||_nk(i.brand)===_nk(r.it.line));
+    let pool=inv.filter(i=>!r.it.line||_nb(i.brand)===_nb(r.it.line));
     if(!pool.length) pool=inv;
     pool=pool.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
     return '<select id="rc-m-'+r.k+'" style="width:100%;margin-top:4px;font-size:11.5px"><option value="">— name not matched: pick the Godown item —</option>'+
