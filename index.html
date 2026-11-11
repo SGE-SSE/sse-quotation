@@ -75,7 +75,9 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 .cmp-totals-box td{padding:6px 8px}
 
 .no-print{}.entry-only{}.pdf-hide{display:none!important}
+.ret-print-only{display:none}
 @media print{
+  .ret-print-only:not(:empty){display:block!important}
   @page{size:A4 portrait;margin:8mm}
   .no-print,.entry-only{display:none!important}
   #docTypeBanner{display:block!important}
@@ -105,6 +107,7 @@ button{padding:6px 14px;font-size:12px;font-weight:700;border:none;border-radius
 /* Mirrors @media print above, toggled via JS on body before html2canvas capture
    so the direct-download PDF renders identically to the browser print output. */
 body.pdf-export-mode .no-print,body.pdf-export-mode .entry-only{display:none!important}
+body.pdf-export-mode .ret-print-only:not(:empty){display:block!important}
 body.pdf-export-mode #docTypeBanner{display:block!important}
 body.pdf-export-mode{background:#fff!important;padding:0;margin:0}
 body.pdf-export-mode .card{box-shadow:none!important;border-radius:0!important;max-width:100%!important;overflow:visible!important}
@@ -214,6 +217,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="DC" onchange="switchDocType(this.value)"> Delivery Challan</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="IND" onchange="switchDocType(this.value)"> Indent</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="RET" onchange="switchDocType(this.value)"> Customer Return</label>
 
   </div>
   <div class="header-grid">
@@ -279,6 +283,40 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     </div>
     <div style="font-size:11px;color:#8a5a00;margin-top:6px">ℹ️ Indent quantity can be higher than the quotation quantity — use ✏️ Edit on any row to change it. Extra over quotation is flagged on the indent.</div>
   </div>
+  <div id="retBox" class="no-print" style="display:none;margin-top:10px;padding:10px 12px;background:#fdecea;border:1.5px solid #e57373;border-radius:7px">
+    <div class="customer-grid">
+      <div>
+        <label>↩️ Return Against <span style="color:#c0392b">*</span></label>
+        <select id="retMode" onchange="onRetModeChange()" style="font-weight:700">
+          <option value="">— Select —</option>
+          <option value="CB">🧾 Cash Bill (prices from bill)</option>
+          <option value="NOBILL">✍️ No Cash Bill (enter items &amp; prices)</option>
+        </select>
+      </div>
+      <div>
+        <label>Reason for Return</label>
+        <select id="retReason" onchange="updateRetPrintLine()">
+          <option value="">— Select —</option>
+          <option>Defective / Damaged</option>
+          <option>Wrong Item Supplied</option>
+          <option>Excess Quantity</option>
+          <option>Customer Cancelled / Not Required</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div id="retCbWrap" style="position:relative;display:none">
+        <label>Cash Bill <span style="color:#c0392b">*</span> <span style="font-weight:400;font-style:italic">(search by customer name or bill no.)</span></label>
+        <input type="text" id="retCbSearch" autocomplete="off" placeholder="Type customer name or Cash Bill no. to pick from list…" oninput="onRetCbInput()" onfocus="onRetCbInput()" onblur="setTimeout(hideRetCbSuggest,180)">
+        <div id="retCbSuggest" style="display:none;position:absolute;z-index:60;left:0;right:0;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <div id="retCbInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px;align-items:center;gap:10px;flex-wrap:wrap">
+      <span id="retCbInfoText" style="flex:1;font-weight:600;color:#14573a"></span>
+      <button type="button" onclick="loadRetFromCashBill()" style="background:#1b7a4a;color:#fff">⬇ Load customer, items &amp; prices from this Cash Bill</button>
+    </div>
+    <div id="retHint" style="font-size:11px;color:#8a2c2c;margin-top:6px"></div>
+  </div>
+  <div id="retPrintLine" class="ret-print-only" style="margin-top:8px;padding:6px 10px;border:1.5px solid #1a3c6e;background:#eef4fb;font-size:12.5px;font-weight:700"></div>
   <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
     <div class="customer-grid">
       <div><label>Site</label><input type="text" id="dcSite" placeholder="Site / project name"></div>
@@ -2106,7 +2144,7 @@ function getFinancialYear(dateObj){
 
 /* Starting serial for each document type's numbering. Everything defaults to 1;
    Proforma Invoice is set to start its own series at 100 (100, 101, 102...). */
-const DOC_SERIAL_START = { QTN:1, CB:1, PI:100, DC:1058 };
+const DOC_SERIAL_START = { QTN:1, CB:1, PI:100, DC:1058, RET:1 };
 
 /* Counts existing quotations for THIS customer + doc_type within the financial
    year, so each customer's numbering starts fresh (per DOC_SERIAL_START) and increments on its own. */
@@ -2168,6 +2206,16 @@ async function saveQuotation(){
     if(!f){ alert("Please select who this Indent is raised for — Customer Order or Office Stock."); document.getElementById("indFor").focus(); return; }
     if(f==="CUSTOMER" && !document.getElementById("indForName").value.trim()){ alert("Please enter the Customer Name / Site this Indent is for."); document.getElementById("indForName").focus(); return; }
   }
+  if(currentDocType==="RET"){
+    const m=document.getElementById("retMode").value;
+    if(!m){ alert("Please select what this return is against — Cash Bill or No Cash Bill."); document.getElementById("retMode").focus(); return; }
+    if(m==="CB" && !retPick){ alert("Please pick the Cash Bill this return is against."); document.getElementById("retCbSearch").focus(); return; }
+    if(!custName.value.trim()){ alert("Please enter the Customer Name."); custName.focus(); return; }
+    for(const r of tbody.rows){
+      const bq=parseFloat(r.dataset.qtnQty), rq=parseFloat(r.cells[7].innerText);
+      if(!isNaN(bq) && bq>0 && !isNaN(rq) && rq>bq){ alert("Returned qty ("+rq+") is more than the qty on the Cash Bill ("+bq+") for:\n"+r.cells[3].innerText.trim()+"\n\nUse ✏️ Edit to correct it."); return; }
+    }
+  }
   if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
   if(currentQuotationId){
     document.getElementById("saveChoiceDocNo").textContent=qno.value||"";
@@ -2211,6 +2259,8 @@ async function performUpdateExistingQuotation(){
       });
     }else if(currentDocType==="IND"){
       remarksVal=indRemarksJSON();
+    }else if(currentDocType==="RET"){
+      remarksVal=retRemarksJSON();
     }else{
       remarksVal=document.getElementById("remarksInput")?.value || "";
     }
@@ -2296,7 +2346,7 @@ async function performInsertNewQuotation(){
               // not-yet-billed record, same reasoning as stock_reduced above.
               billed:false, billedRefNo:"", billedDate:""
             })
-          : (currentDocType==="IND" ? indRemarksJSON() : (document.getElementById("remarksInput")?.value || "")),
+          : (currentDocType==="IND" ? indRemarksJSON() : currentDocType==="RET" ? retRemarksJSON() : (document.getElementById("remarksInput")?.value || "")),
         items: collectItemsFromTable(),
         sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
@@ -2339,7 +2389,8 @@ async function performInsertNewQuotation(){
          stock so the indent banner can warn about shortages/untracked
          items. Actually creating Inventory items now only happens
          when the "ADD ITEMS TO INVENTORY" button is pressed. */
-      if(currentDocType==="IND"){ recordIndentFromDoc(docNo); }   // Indent -> Pending Indents (BILL PENDING -> RECEIVED -> BILLED)
+      if(currentDocType==="RET"){ /* returns never trigger stock-shortage / indent warnings */ }
+      else if(currentDocType==="IND"){ recordIndentFromDoc(docNo); }   // Indent -> Pending Indents (BILL PENDING -> RECEIVED -> BILLED)
       else{
       const final=computeShortfalls();
       showIndentBanner(final, docNo, 0);
@@ -2532,11 +2583,11 @@ async function bulkDiscFind(){
   const type=document.getElementById("bdType").value, from=document.getElementById("bdFrom").value, to=document.getElementById("bdTo").value;
   const quotedOnly=document.getElementById("bdQuotedOnly").checked;
   const cols="id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable,doc_status,stock_reduced";
-  let qy=sb.from("quotations").select(cols).neq("doc_type","DC").neq("doc_type","IND").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+  let qy=sb.from("quotations").select(cols).neq("doc_type","DC").neq("doc_type","IND").neq("doc_type","RET").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
   if(type!=="ALL") qy=qy.eq("doc_type",type);
   let { data, error } = await qy;
   if(error && isMissingColumnError(error)){
-    let q2=sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable").neq("doc_type","DC").neq("doc_type","IND").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
+    let q2=sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,items,gst_applied,cash_disc_pct,sub_total,net_payable").neq("doc_type","DC").neq("doc_type","IND").neq("doc_type","RET").not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(3000);
     if(type!=="ALL") q2=q2.eq("doc_type",type);
     ({ data, error } = await q2);
   }
@@ -2671,9 +2722,9 @@ async function loadQuotDashboard(force){
   document.getElementById("qdFilterBar").style.display="";
   if(force||!_qdLoaded){
     list.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">Loading…</div>`;
-    let { data, error } = await sb.from("quotations").select("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,doc_status,stock_reduced,created_at").neq("doc_type","DC").order("created_at",{ascending:false}).limit(3000);
+    let { data, error } = await sb.from("quotations").select("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,doc_status,stock_reduced,created_at").neq("doc_type","DC").neq("doc_type","RET").order("created_at",{ascending:false}).limit(3000);
     if(error && isMissingColumnError(error)){
-      ({ data, error } = await sb.from("quotations").select("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,created_at").neq("doc_type","DC").order("created_at",{ascending:false}).limit(3000));
+      ({ data, error } = await sb.from("quotations").select("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,created_at").neq("doc_type","DC").neq("doc_type","RET").order("created_at",{ascending:false}).limit(3000));
     }
     if(error){ list.innerHTML=`<div style="text-align:center;color:#c0392b;padding:30px 10px">Error loading quotations.</div>`; return; }
     _qdRows=(data||[]).map(r=>({...r, status:r.doc_status||"Quoted", isCmp:/-CMP-/i.test(r.doc_no||"")}));
@@ -2754,7 +2805,7 @@ async function previewQuotDash(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${_previewTableHTML(q)}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="openQuotFromDash(${q.id},${isCmp})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="renderQuotDashboard()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -2967,7 +3018,7 @@ async function previewHistoryQuotation(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${table}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="backToHistoryList()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -3066,7 +3117,7 @@ function _delDetailsHTML(e){
     itemsHTML=`<div style="font-size:11px;color:#6a1b9a;font-weight:700;margin-top:6px">Brands compared: ${_esc(br.join(" · ")||"—")}</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px"><tr style="background:#f0f4fb"><th style="text-align:left;padding:4px;border:1px solid #dde5f2">#</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Item</th><th style="padding:4px;border:1px solid #dde5f2">Qty</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Rates</th></tr>`+
       it.rows.map((r,i)=>`<tr><td style="padding:4px;border:1px solid #dde5f2">${i+1}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(r.desc)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:center">${_esc(r.qty)} ${_esc(r.unit)}</td><td style="padding:4px;border:1px solid #dde5f2">${(r.rate||[]).map((v,k)=>(v>0&&(br[k]||it.brands?.[k]))?`${_esc(it.brands[k])}: ₹${(+v).toFixed(2)}`:"").filter(Boolean).join(" &nbsp;|&nbsp; ")}</td></tr>`).join("")+`</table>`;
   }
-  const remarks=(q.doc_type==="DC"||q.doc_type==="IND")?"":(q.remarks||"");
+  const remarks=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":(q.remarks||"");
   const kv=(k,v)=>v?`<div><span style="color:#5a6a85">${k}:</span> <b>${_esc(v)}</b></div>`:"";
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:11.5px;margin-top:8px">
       ${kv("Document date",q.doc_date||e.doc_date)}${kv("Status was",e.doc_status)}
@@ -3122,7 +3173,18 @@ async function reopenQuotation(id){
   if(document.getElementById("docStatus")) document.getElementById("docStatus").value=q.doc_status||"Quoted";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC"||q.doc_type==="IND")?"":(q.remarks||"");
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":(q.remarks||"");
+  if(q.doc_type==="RET"){
+    try{
+      const rj=JSON.parse(q.remarks||"{}");
+      document.getElementById("retMode").value=rj.retMode||"";
+      document.getElementById("retReason").value=rj.retReason||"";
+      retPick=rj.retRef?{id:rj.retRefId||"",doc_no:rj.retRef,cust_name:q.cust_name||""}:null;
+      document.getElementById("retCbSearch").value=rj.retRef||"";
+      showRetCbInfo(); onRetModeChange();
+      if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=rj.remarks||"";
+    }catch(e){}
+  }
   if(q.doc_type==="IND"){
     try{
       const ij=JSON.parse(q.remarks||"{}");
@@ -3616,7 +3678,8 @@ const DOC_TYPES={
   CB:{label:"CASH BILL",noLabel:"Cash Bill No",dateLabel:"Cash Bill Date",section:"Cash Bill Details",addTitle:"Add Item",itemsTitle:"Cash Bill Items",prefix:"SSE/CB",storageKey:"SSE_CB",file:"SSE_CashBill"},
   PI:{label:"PROFORMA INVOICE",noLabel:"Proforma No",dateLabel:"Invoice Date",section:"Proforma Details",addTitle:"Add Item to Invoice",itemsTitle:"Invoice Items",prefix:"SSE/PI",storageKey:"SSE_PI",file:"SSE_Proforma"},
   DC:{label:"DELIVERY CHALLAN",noLabel:"DC No",dateLabel:"DC Date",section:"Delivery Challan Details",addTitle:"Add Item to Delivery Challan",itemsTitle:"Delivery Challan Items",prefix:"SSE/DC",storageKey:"SSE_DC",file:"SSE_DeliveryChallan"},
-  IND:{label:"MATERIAL INDENT",noLabel:"Indent No",dateLabel:"Indent Date",section:"Indent Details",addTitle:"Add Item to Indent",itemsTitle:"Indent Items",prefix:"SSE/IND",storageKey:"SSE_IND",file:"SSE_Indent"}
+  IND:{label:"MATERIAL INDENT",noLabel:"Indent No",dateLabel:"Indent Date",section:"Indent Details",addTitle:"Add Item to Indent",itemsTitle:"Indent Items",prefix:"SSE/IND",storageKey:"SSE_IND",file:"SSE_Indent"},
+  RET:{label:"CUSTOMER RETURN / CREDIT NOTE",noLabel:"Return No",dateLabel:"Return Date",section:"Return Details",addTitle:"Add Returned Item",itemsTitle:"Returned Items",prefix:"SSE/RET",storageKey:"SSE_RET",file:"SSE_Return"}
 };
 let currentDocType="QTN";
 function switchDocType(type){
@@ -3636,6 +3699,8 @@ function switchDocType(type){
   document.body.classList.toggle("dc-mode", type==="DC");
   const indBox=document.getElementById("indForBox"); if(indBox) indBox.style.display=(type==="IND")?"":"none";
   if(type!=="IND") resetIndFor();
+  const retBox=document.getElementById("retBox"); if(retBox) retBox.style.display=(type==="RET")?"":"none";
+  if(type!=="RET") resetRetBox(); else onRetModeChange();
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
   if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
@@ -3714,6 +3779,89 @@ function indRemarksJSON(){
   return JSON.stringify({indFor:(document.getElementById("indFor")||{}).value||"",
     indForName:((document.getElementById("indForName")||{}).value||"").trim(),
     indRef:indPick?indPick.doc_no:"", indRefId:indPick?indPick.id:"",
+    remarks:(document.getElementById("remarksInput")||{}).value||""});
+}
+/* ---- CUSTOMER RETURN (credit note): prices come from the original Cash Bill, or are typed in when there is no bill ---- */
+let retCbList=null, retCbLoadedAt=0, retPick=null;   // retPick={id,doc_no,cust_name}
+function resetRetBox(){
+  ["retMode","retReason","retCbSearch"].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+  retPick=null; showRetCbInfo(); onRetModeChange(true);
+}
+function onRetModeChange(silent){
+  const m=(document.getElementById("retMode")||{}).value||"";
+  const w=document.getElementById("retCbWrap"); if(w) w.style.display=(m==="CB")?"":"none";
+  if(m!=="CB"){ retPick=null; const e=document.getElementById("retCbSearch"); if(e) e.value=""; showRetCbInfo(); }
+  const h=document.getElementById("retHint");
+  if(h) h.textContent = m==="CB" ? "ℹ️ After loading the bill, use ✏️ Edit on a row to set the RETURNED quantity, and 🗑 delete the rows that are not being returned."
+                       : m==="NOBILL" ? "ℹ️ No Cash Bill — add each returned item with its price using the Add Item form below."
+                       : "";
+  updateRetPrintLine();
+}
+function updateRetPrintLine(){
+  const el=document.getElementById("retPrintLine"); if(!el) return;
+  if(currentDocType!=="RET"){ el.textContent=""; return; }
+  const m=(document.getElementById("retMode")||{}).value||"", rs=(document.getElementById("retReason")||{}).value||"";
+  let t="";
+  if(m==="CB" && retPick) t="RETURN AGAINST CASH BILL: "+retPick.doc_no;
+  else if(m==="NOBILL") t="RETURN WITHOUT CASH BILL";
+  if(t && rs) t+="   |   REASON: "+rs;
+  el.textContent=t;
+}
+async function loadRetCbList(force){
+  if(!force && retCbList && Date.now()-retCbLoadedAt<60000) return retCbList;
+  try{
+    let r=await sb.from("quotations").select("id,doc_no,doc_date,cust_name,doc_status,net_payable").eq("doc_type","CB").order("created_at",{ascending:false}).limit(2000);
+    if(r.error && isMissingColumnError(r.error)) r=await sb.from("quotations").select("id,doc_no,doc_date,cust_name,net_payable").eq("doc_type","CB").order("created_at",{ascending:false}).limit(2000);
+    if(r.error) throw r.error;
+    retCbList=(r.data||[]).filter(x=>x.doc_status!=="Cancelled"); retCbLoadedAt=Date.now();
+  }catch(e){ console.warn("Cash Bill list not loaded:",e.message||e); if(!retCbList) retCbList=[]; }
+  return retCbList;
+}
+function hideRetCbSuggest(){ const b=document.getElementById("retCbSuggest"); if(b) b.style.display="none"; }
+async function onRetCbInput(){
+  const inp=document.getElementById("retCbSearch"), box=document.getElementById("retCbSuggest"); if(!inp||!box) return;
+  const list=await loadRetCbList(false);
+  const q=(inp.value||"").trim().toLowerCase();
+  const m=list.filter(x=>!q||String(x.cust_name||"").toLowerCase().includes(q)||String(x.doc_no||"").toLowerCase().includes(q)).slice(0,40);
+  if(!m.length||(retPick&&inp.value===retPick.doc_no)){ box.style.display="none"; return; }
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  box.innerHTML=m.map(x=>`<div data-id="${esc(x.id)}" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #eef1f6;font-size:12px"><b>${esc(x.cust_name||"—")}</b><br><span style="color:#5a6a85;font-size:11px">${esc(x.doc_no)} · ${esc(x.doc_date||"")}${x.net_payable?" · ₹"+esc(x.net_payable):""}</span></div>`).join("");
+  [...box.children].forEach(el=>{
+    el.onmouseover=()=>el.style.background="#f0f4fb"; el.onmouseout=()=>el.style.background="#fff";
+    el.onpointerdown=ev=>{ ev.preventDefault(); const x=list.find(z=>String(z.id)===el.getAttribute("data-id")); if(x) pickRetCb(x); };
+  });
+  box.style.display="block";
+}
+function pickRetCb(x){
+  retPick={id:x.id,doc_no:x.doc_no,cust_name:x.cust_name||""};
+  document.getElementById("retCbSearch").value=x.doc_no;
+  hideRetCbSuggest(); showRetCbInfo(); updateRetPrintLine();
+}
+function showRetCbInfo(){
+  const b=document.getElementById("retCbInfo"); if(!b) return;
+  if(!retPick){ b.style.display="none"; return; }
+  document.getElementById("retCbInfoText").textContent="✔ Linked to Cash Bill "+retPick.doc_no+" — "+retPick.cust_name;
+  b.style.display="flex";
+}
+async function loadRetFromCashBill(){
+  if(!retPick) return;
+  const { data:q, error }=await sb.from("quotations").select("cust_name,cust_gst,cust_addr,gst_applied,cash_disc_pct,items").eq("id",retPick.id).single();
+  if(error||!q){ alert("Could not load that Cash Bill."); return; }
+  const its=q.items||[];
+  if(!its.length){ alert("That Cash Bill has no items."); return; }
+  if(tbody.rows.length && !confirm("This will REPLACE the "+tbody.rows.length+" item(s) already in this return with the "+its.length+" item(s) of "+retPick.doc_no+". Continue?")) return;
+  custName.value=q.cust_name||""; custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
+  gstToggle.checked=!!q.gst_applied;
+  const cd=document.getElementById("cashDiscPct"); if(cd) cd.value=q.cash_disc_pct||0;
+  tbody.innerHTML="";
+  its.forEach(it=>appendSavedItemRow({...it,qtnQty:it.qty}));   // qtnQty = quantity on the original bill (used to stop over-returns)
+  renumber(); calc();
+  document.getElementById("saveStatus").textContent="Loaded "+its.length+" item(s) with prices from "+retPick.doc_no+" — set the returned qty with ✏️ Edit and delete rows not being returned.";
+}
+function retRemarksJSON(){
+  return JSON.stringify({retMode:(document.getElementById("retMode")||{}).value||"",
+    retRef:retPick?retPick.doc_no:"", retRefId:retPick?retPick.id:"",
+    retReason:(document.getElementById("retReason")||{}).value||"",
     remarks:(document.getElementById("remarksInput")||{}).value||""});
 }
 function generateQuotationNo(){
