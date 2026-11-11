@@ -257,6 +257,28 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <div><label>Kind Attn</label><input type="text" id="custAttn" placeholder="Contact Person" oninput="syncPartyFields('regular')"></div>
     <div><label id="custPhoneLabel">Customer Phone</label><input type="text" id="custPhone" placeholder="Contact number"></div>
   </div>
+  <div id="indForBox" style="display:none;margin-top:10px;padding:10px 12px;background:#fff3e0;border:1.5px solid #f0b429;border-radius:7px">
+    <div class="customer-grid">
+      <div>
+        <label>📌 Indent Raised For <span style="color:#c0392b">*</span></label>
+        <select id="indFor" onchange="onIndForChange()" style="font-weight:700">
+          <option value="">— Select —</option>
+          <option value="CUSTOMER">👤 Customer Order</option>
+          <option value="OFFICE">🏢 Office Stock</option>
+        </select>
+      </div>
+      <div id="indForNameWrap" style="position:relative">
+        <label id="indForNameLbl">Customer Name / Site <span style="color:#c0392b">*</span> <span style="font-weight:400;font-style:italic">(search Quotation list)</span></label>
+        <input type="text" id="indForName" autocomplete="off" placeholder="Type customer name or quotation no. to pick from list…" oninput="onIndForNameInput()" onfocus="onIndForNameInput()" onblur="setTimeout(hideIndQtnSuggest,180)">
+        <div id="indQtnSuggest" style="display:none;position:absolute;z-index:60;left:0;right:0;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <div id="indQtnInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px;align-items:center;gap:10px;flex-wrap:wrap">
+      <span id="indQtnInfoText" style="flex:1;font-weight:600;color:#14573a"></span>
+      <button type="button" onclick="loadIndItemsFromQtn()" style="background:#1b7a4a;color:#fff">⬇ Load items from this quotation</button>
+    </div>
+    <div style="font-size:11px;color:#8a5a00;margin-top:6px">ℹ️ Indent quantity can be higher than the quotation quantity — use ✏️ Edit on any row to change it. Extra over quotation is flagged on the indent.</div>
+  </div>
   <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
     <div class="customer-grid">
       <div><label>Site</label><input type="text" id="dcSite" placeholder="Site / project name"></div>
@@ -1624,10 +1646,10 @@ function recordIndentFromDoc(docNo){
     const qty=parseFloat(c[7].innerText)||0; if(!qty) return;
     const colourRaw=c[4].innerText.trim();
     its.push({line:c[1].innerText.trim(), code:(c[2].innerText||"").trim().replace(/^-$/,""), desc:c[3].innerText.trim(),
-      colour:(colourRaw&&colourRaw!=='-'&&colourRaw!=='—')?colourRaw:"-", unit:c[6].innerText.trim(), qty});
+      colour:(colourRaw&&colourRaw!=='-'&&colourRaw!=='—')?colourRaw:"-", unit:c[6].innerText.trim(), qty, qtnQty:(r.dataset&&r.dataset.qtnQty)||""});
   });
   if(!its.length) return;
-  recordIndent(docNo, (custName.value||"").trim()||"INDENT", its, "", "");
+  recordIndent(docNo, (custName.value||"").trim()||"INDENT", its, (indPick&&indPick.doc_no)||"", getIndForLabel());
 }
 /* ---- INDENT document: prints in the plain indent layout (no prices) — same look as the indent
    raised from the stock-shortage banner. One page per supplier group; uses the document's own Indent No. ---- */
@@ -1641,7 +1663,7 @@ function buildIndentDocPages(){
     const dsx=r.dataset||{};
     const mrpV=(dsx.mrpRaw!==undefined&&dsx.mrpRaw!=="")?dsx.mrpRaw:(c[8]?c[8].innerText.trim():"-");           // true MRP even if hidden by brand toggle
     const discV=(dsx.discMode==="net")?"-":((dsx.discRaw!==undefined&&dsx.discRaw!=="")?dsx.discRaw:(c[9]?c[9].innerText.trim():"-"));
-    rows.push({line:c[1].innerText.trim()||"-", code:code||"-", desc:c[3].innerText.trim(),
+    rows.push({qtnQty:dsx.qtnQty||"", line:c[1].innerText.trim()||"-", code:code||"-", desc:c[3].innerText.trim(),
       colour:(colourRaw&&colourRaw!=="—")?colourRaw:"-", unit:c[6].innerText.trim(), qty,
       mrp:mrpV||"-", disc:discV||"-", rate:c[10]?c[10].innerText.trim():"-", amt:c[12]?c[12].innerText.trim():"-"});
   });
@@ -1687,6 +1709,7 @@ function buildIndentDocPages(){
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
           <tr><td style="padding:3px 0"><b>Indent No:</b> ${esc(docNo||"-")}</td><td style="padding:3px 0"><b>Date:</b> ${dateStr}</td></tr>
+          
         </table>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr style="background:#f0f4fa">
@@ -1885,6 +1908,7 @@ function buildIndentPages(lastShortfalls,lastUntracked,tag){
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
           <tr><td style="padding:3px 0"><b>Indent No:</b> ${indentNo}</td><td style="padding:3px 0"><b>Date:</b> ${now.toLocaleDateString("en-IN")}</td></tr>
+          
         </table>
         ${orderSection}
         <div style="margin-top:26px;font-size:12px"><b>Supplier:</b> _____________________________ &nbsp;&nbsp; <b>Expected Date:</b> ______________</div>
@@ -2116,7 +2140,8 @@ function collectItemsFromTable(){
       sno: r.cells[0].innerText, brand: r.dataset.brand || r.cells[1].innerText, itemCode: (r.cells[2].innerText||'').trim(), description: r.cells[3].innerText,
       colour: r.cells[4].innerText, hsn: r.cells[5].innerText, unit: r.cells[6].innerText,
       qty: r.cells[7].innerText, mrp: mrpRaw, discount: discRaw, discMode: r.dataset.discMode||'pct',
-      rate: r.cells[10].innerText, perMtr: r.cells[11].innerText, amount: r.cells[12].innerText
+      rate: r.cells[10].innerText, perMtr: r.cells[11].innerText, amount: r.cells[12].innerText,
+      qtnQty: r.dataset.qtnQty||""
     };
   });
 }
@@ -2137,6 +2162,11 @@ async function saveQuotation(){
     alert("Please enter the Customer Phone Number before saving a Cash Bill.");
     document.getElementById("custPhone")?.focus();
     return;
+  }
+  if(currentDocType==="IND"){
+    const f=document.getElementById("indFor").value;
+    if(!f){ alert("Please select who this Indent is raised for — Customer Order or Office Stock."); document.getElementById("indFor").focus(); return; }
+    if(f==="CUSTOMER" && !document.getElementById("indForName").value.trim()){ alert("Please enter the Customer Name / Site this Indent is for."); document.getElementById("indForName").focus(); return; }
   }
   if(!tbody.rows.length){ alert("Add at least one item before saving."); return; }
   if(currentQuotationId){
@@ -2179,6 +2209,8 @@ async function performUpdateExistingQuotation(){
         reason:document.getElementById("dcReason")?.value||"Direct to Customer",
         billed:preserve.billed, billedRefNo:preserve.billedRefNo, billedDate:preserve.billedDate
       });
+    }else if(currentDocType==="IND"){
+      remarksVal=indRemarksJSON();
     }else{
       remarksVal=document.getElementById("remarksInput")?.value || "";
     }
@@ -2264,7 +2296,7 @@ async function performInsertNewQuotation(){
               // not-yet-billed record, same reasoning as stock_reduced above.
               billed:false, billedRefNo:"", billedDate:""
             })
-          : (document.getElementById("remarksInput")?.value || ""),
+          : (currentDocType==="IND" ? indRemarksJSON() : (document.getElementById("remarksInput")?.value || "")),
         items: collectItemsFromTable(),
         sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
@@ -2722,7 +2754,7 @@ async function previewQuotDash(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${_previewTableHTML(q)}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="openQuotFromDash(${q.id},${isCmp})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="renderQuotDashboard()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -2935,7 +2967,7 @@ async function previewHistoryQuotation(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${table}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="backToHistoryList()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -3034,7 +3066,7 @@ function _delDetailsHTML(e){
     itemsHTML=`<div style="font-size:11px;color:#6a1b9a;font-weight:700;margin-top:6px">Brands compared: ${_esc(br.join(" · ")||"—")}</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px"><tr style="background:#f0f4fb"><th style="text-align:left;padding:4px;border:1px solid #dde5f2">#</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Item</th><th style="padding:4px;border:1px solid #dde5f2">Qty</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Rates</th></tr>`+
       it.rows.map((r,i)=>`<tr><td style="padding:4px;border:1px solid #dde5f2">${i+1}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(r.desc)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:center">${_esc(r.qty)} ${_esc(r.unit)}</td><td style="padding:4px;border:1px solid #dde5f2">${(r.rate||[]).map((v,k)=>(v>0&&(br[k]||it.brands?.[k]))?`${_esc(it.brands[k])}: ₹${(+v).toFixed(2)}`:"").filter(Boolean).join(" &nbsp;|&nbsp; ")}</td></tr>`).join("")+`</table>`;
   }
-  const remarks=(q.doc_type==="DC")?"":(q.remarks||"");
+  const remarks=(q.doc_type==="DC"||q.doc_type==="IND")?"":(q.remarks||"");
   const kv=(k,v)=>v?`<div><span style="color:#5a6a85">${k}:</span> <b>${_esc(v)}</b></div>`:"";
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:11.5px;margin-top:8px">
       ${kv("Document date",q.doc_date||e.doc_date)}${kv("Status was",e.doc_status)}
@@ -3065,6 +3097,15 @@ function renderDeletedQuotations(){
   }).join("");
 }
 
+function appendSavedItemRow(it){
+    const r=tbody.insertRow();
+    const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
+    if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
+    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount; r.dataset.discMode=it.discMode||'pct';
+    const discCellInit=(it.discMode==='net')?'-':it.discount;
+    r.innerHTML=`<td></td><td>${it.brand}</td><td class="icode">${escItemCode(it.itemCode)||"-"}</td><td>${it.description}</td><td style="${(it.colour&&it.colour!=='-'&&it.colour!=='—')?getColourStyle(it.colour):''}">${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
+  if(it.qtnQty!==undefined&&it.qtnQty!=="") r.dataset.qtnQty=it.qtnQty;
+}
 async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
   if(error){ alert("Could not load that quotation."); return; }
@@ -3081,7 +3122,17 @@ async function reopenQuotation(id){
   if(document.getElementById("docStatus")) document.getElementById("docStatus").value=q.doc_status||"Quoted";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC")?"":(q.remarks||"");
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC"||q.doc_type==="IND")?"":(q.remarks||"");
+  if(q.doc_type==="IND"){
+    try{
+      const ij=JSON.parse(q.remarks||"{}");
+      document.getElementById("indFor").value=ij.indFor||"";
+      document.getElementById("indForName").value=ij.indForName||"";
+      indPick=ij.indRef?{id:ij.indRefId||"",doc_no:ij.indRef,cust_name:ij.indForName||""}:null; showIndQtnInfo();
+      onIndForChange();
+      if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=ij.remarks||"";
+    }catch(e){ /* older indent saved before this field existed — leave blank */ }
+  }
   if(q.doc_type==="DC"){
     try{
       const dc=JSON.parse(q.remarks||"{}");
@@ -3098,14 +3149,7 @@ async function reopenQuotation(id){
   }
   if(typeof updateTCDisplay==="function") updateTCDisplay();
   tbody.innerHTML="";
-  (q.items||[]).forEach(it=>{
-    const r=tbody.insertRow();
-    const perMtrNum=parseFloat(it.perMtr), rateNum=parseFloat(it.rate);
-    if(!isNaN(perMtrNum)&&perMtrNum>0&&!isNaN(rateNum)&&rateNum>0) r.dataset.coilLen=(rateNum/perMtrNum).toFixed(2);
-    r.dataset.brand=it.brand; r.dataset.mrpRaw=(it.mrp===undefined||it.mrp===null)?'-':it.mrp; r.dataset.discRaw=(it.discount===undefined||it.discount===null)?'-':it.discount; r.dataset.discMode=it.discMode||'pct';
-    const discCellInit=(it.discMode==='net')?'-':it.discount;
-    r.innerHTML=`<td></td><td>${it.brand}</td><td class="icode">${escItemCode(it.itemCode)||"-"}</td><td>${it.description}</td><td style="${(it.colour&&it.colour!=='-'&&it.colour!=='—')?getColourStyle(it.colour):''}">${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
-  });
+  (q.items||[]).forEach(it=>appendSavedItemRow(it));
   renumber(); calc();
   closePartyHistory();
   if(document.getElementById("dcDashboardModal")) closeDcDashboard();
@@ -3590,9 +3634,87 @@ function switchDocType(type){
   const dcBox=document.getElementById("dcExtraBox");
   if(dcBox) dcBox.style.display=(type==="DC")?"":"none";
   document.body.classList.toggle("dc-mode", type==="DC");
+  const indBox=document.getElementById("indForBox"); if(indBox) indBox.style.display=(type==="IND")?"":"none";
+  if(type!=="IND") resetIndFor();
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
   if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
+}
+/* ---- INDENT: "For whom" (Customer order / Office stock) ---- */
+function onIndForChange(){
+  const v=document.getElementById("indFor").value, w=document.getElementById("indForNameWrap");
+  if(w) w.style.display=(v==="OFFICE")?"none":"";
+  if(v==="OFFICE") document.getElementById("indForName").value="";
+}
+function resetIndFor(){
+  const a=document.getElementById("indFor"), b=document.getElementById("indForName");
+  if(a) a.value=""; if(b) b.value=""; indPick=null; showIndQtnInfo(); onIndForChange();
+}
+/* Quotation list picker: Customer name / site is fetched from saved quotations (QTN / PI / CB) */
+let indQtnList=null, indQtnLoadedAt=0, indPick=null;   // indPick={id,doc_no,cust_name}
+async function loadIndQtnList(force){
+  if(!force && indQtnList && Date.now()-indQtnLoadedAt<60000) return indQtnList;
+  try{
+    let r=await sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name,doc_status").in("doc_type",["QTN","PI","CB"]).not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(2000);
+    if(r.error && isMissingColumnError(r.error)) r=await sb.from("quotations").select("id,doc_type,doc_no,doc_date,cust_name").in("doc_type",["QTN","PI","CB"]).not("doc_no","ilike","%-CMP-%").order("created_at",{ascending:false}).limit(2000);
+    if(r.error) throw r.error;
+    indQtnList=(r.data||[]).filter(q=>q.doc_status!=="Cancelled"); indQtnLoadedAt=Date.now();
+  }catch(e){ console.warn("Quotation list not loaded:",e.message||e); if(!indQtnList) indQtnList=[]; }
+  return indQtnList;
+}
+function hideIndQtnSuggest(){ const b=document.getElementById("indQtnSuggest"); if(b) b.style.display="none"; }
+async function onIndForNameInput(){
+  const inp=document.getElementById("indForName"), box=document.getElementById("indQtnSuggest"); if(!inp||!box) return;
+  if(indPick && inp.value.trim()!==indPick.cust_name){ indPick=null; showIndQtnInfo(); }   // typed over the picked name -> manual entry
+  const list=await loadIndQtnList(false);
+  const q=(inp.value||"").trim().toLowerCase();
+  const m=list.filter(x=>!q||String(x.cust_name||"").toLowerCase().includes(q)||String(x.doc_no||"").toLowerCase().includes(q)).slice(0,40);
+  if(!m.length||(indPick&&m.length===1)){ box.style.display="none"; return; }
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  box.innerHTML=m.map(x=>`<div data-id="${esc(x.id)}" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #eef1f6;font-size:12px"><b>${esc(x.cust_name||"—")}</b><br><span style="color:#5a6a85;font-size:11px">${esc(x.doc_no)} · ${esc(x.doc_type)} · ${esc(x.doc_date||"")}</span></div>`).join("");
+  [...box.children].forEach(el=>{
+    el.onmouseover=()=>el.style.background="#f0f4fb"; el.onmouseout=()=>el.style.background="#fff";
+    el.onpointerdown=ev=>{ ev.preventDefault(); const x=list.find(z=>String(z.id)===el.getAttribute("data-id")); if(x) pickIndQtn(x); };
+  });
+  box.style.display="block";
+}
+function pickIndQtn(x){
+  indPick={id:x.id,doc_no:x.doc_no,cust_name:x.cust_name||""};
+  document.getElementById("indForName").value=indPick.cust_name;
+  hideIndQtnSuggest(); showIndQtnInfo();
+}
+function showIndQtnInfo(){
+  const b=document.getElementById("indQtnInfo"); if(!b) return;
+  if(!indPick){ b.style.display="none"; return; }
+  document.getElementById("indQtnInfoText").textContent="✔ Linked to quotation "+indPick.doc_no+" — "+indPick.cust_name;
+  b.style.display="flex";
+}
+/* Add the quotation's items into the indent table (qty stays editable; quotation qty is remembered) */
+async function loadIndItemsFromQtn(){
+  if(!indPick){ return; }
+  const { data:q, error }=await sb.from("quotations").select("items").eq("id",indPick.id).single();
+  if(error||!q){ alert("Could not load items from that quotation."); return; }
+  const its=q.items||[];
+  if(!its.length){ alert("That quotation has no items."); return; }
+  if(tbody.rows.length && !confirm("Add "+its.length+" item(s) from "+indPick.doc_no+" to the items already in this indent?")) return;
+  its.forEach(it=>appendSavedItemRow({...it,qtnQty:it.qty}));
+  renumber(); calc();
+  document.getElementById("saveStatus").textContent="Loaded "+its.length+" item(s) from "+indPick.doc_no+" — change quantities with ✏️ Edit if you need more than the quotation qty.";
+}
+/* text used everywhere: "OFFICE STOCK" or the customer / site name ("" when not an indent) */
+function getIndForLabel(){
+  if(currentDocType!=="IND") return "";
+  const v=(document.getElementById("indFor")||{}).value;
+  if(v==="OFFICE") return "OFFICE STOCK";
+  if(v==="CUSTOMER") return ((document.getElementById("indForName")||{}).value||"").trim();
+  return "";
+}
+/* IND documents keep their "for whom" + remarks together as JSON in the existing remarks column */
+function indRemarksJSON(){
+  return JSON.stringify({indFor:(document.getElementById("indFor")||{}).value||"",
+    indForName:((document.getElementById("indForName")||{}).value||"").trim(),
+    indRef:indPick?indPick.doc_no:"", indRefId:indPick?indPick.id:"",
+    remarks:(document.getElementById("remarksInput")||{}).value||""});
 }
 function generateQuotationNo(){
   return "(assigned on Save)";
@@ -3678,7 +3800,7 @@ async function _indPost(r){
 }
 async function recordIndent(no,supplier,items,qno,cust){
   const r={no,supplier,qno:qno||"",cust:cust||"",status:"BILL PENDING",bill_no:"",
-    items:items.map(x=>({line:x.line||"",code:x.code||"",desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty})),received:{}};
+    items:items.map(x=>({line:x.line||"",code:x.code||"",desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty,qtnQty:x.qtnQty||""})),received:{}};
   try{ await _indPost(r); }catch(e){ const q=_qGet(); q.push(r); _qSet(q); }
   indRefresh();
 }
@@ -3849,18 +3971,19 @@ function renderIndentTracker(){
     const items=(x.items||[]).map((i,k)=>{
       const r=rc[k]||0, bal=+(i.qty-r).toFixed(2);
       let t=i.desc+(i.colour&&i.colour!=="-"?" ("+i.colour+")":"")+" – "+i.qty+" "+(i.unit||"");
+      if(i.qtnQty!==undefined&&i.qtnQty!==""&&parseFloat(i.qtnQty)>0&&parseFloat(i.qtnQty)!==+i.qty) t+=' <span style="color:#6a1b9a;font-size:10.5px">(qtn '+i.qtnQty+(+i.qty>parseFloat(i.qtnQty)?', +'+(+i.qty-parseFloat(i.qtnQty)).toFixed(2)+' extra':'')+')</span>';
       if(r>0) t+=' <span style="color:#1b7a4a">(recd '+r+')</span>';
       if(r>0&&bal>0) t+=' <span style="color:#b8860b;font-weight:700">(balance '+bal+')</span>';
       return t;
     }).join("<br>");
     const canRecv=x.status==="BILL PENDING"||x.status==="PARTIAL RECEIVED";
     const btns=x.status==="BILLED"?"":(canRecv?'<button onclick="openReceive(\''+x.no+'\')">'+(x.status==="PARTIAL RECEIVED"?'Receive balance':'Goods received')+'</button> ':'')+'<button onclick="indSet(\''+x.no+'\',\'BILLED\')">Bill received</button> ';
-    return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+(col[x.status]||"#333")+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
+    return '<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><b>'+x.no+'</b><br><small>'+new Date(x.created_at).toLocaleDateString("en-IN")+'</small></td><td style="padding:6px">'+x.supplier+'</td><td style="padding:6px">'+(x.cust?(x.cust==="OFFICE STOCK"?'<span style="background:#e3f2fd;color:#0d47a1;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">🏢 OFFICE STOCK</span>':'<span style="background:#fff3e0;color:#8a5a00;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700">👤 '+_rcEsc(x.cust)+'</span>')+(x.qno?'<br><small>Ref: '+_rcEsc(x.qno)+'</small>':''):'<span style="color:#999">—</span>')+'</td><td style="padding:6px;font-size:11px">'+items+'</td><td style="padding:6px"><b style="color:'+(col[x.status]||"#333")+'">'+x.status+'</b>'+(x.bill_no?'<br><small>Bill: '+x.bill_no+'</small>':'')+'</td><td style="padding:6px;white-space:nowrap">'+btns+'<button onclick="indDel(\''+x.no+'\')">🗑</button></td></tr>';
   }).join("");
   m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">📋 Indents – Bill Pending Tracker (live)</b><button onclick="document.getElementById(\'indTrk\').remove()">✕ Close</button></div>'+
    (_indErr?'<div style="background:#fdecea;color:#a32;padding:8px;border-radius:6px;font-size:12px;margin-bottom:8px">Database table not ready: '+_indErr+'<br>Run the SQL for the "indents" table in Supabase once.</div>':'')+
    '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Material arrived (fully <b>or partly</b>)? Click <b>Goods received</b> and enter the quantity that came – Stock IN is added to the Godown and the balance stays pending as <b>PARTIAL RECEIVED</b>. When the supplier bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
-   (a.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th style="padding:6px">Indent</th><th style="padding:6px">Supplier</th><th style="padding:6px">Items</th><th style="padding:6px">Status</th><th style="padding:6px">Action</th></tr>'+rows+'</table></div>':'<p>No indents raised yet.</p>')+'</div>';
+   (a.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th style="padding:6px">Indent</th><th style="padding:6px">Supplier</th><th style="padding:6px">For (Customer / Office)</th><th style="padding:6px">Items</th><th style="padding:6px">Status</th><th style="padding:6px">Action</th></tr>'+rows+'</table></div>':'<p>No indents raised yet.</p>')+'</div>';
 }
 window.addEventListener("load",()=>{
   if(!document.getElementById("pendIndBtn")){
