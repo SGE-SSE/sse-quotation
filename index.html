@@ -555,7 +555,8 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <button class="btn-edit-prices" onclick="openPriceEditor()">✏️ EDIT PRICES</button>
   <button class="btn-prices" onclick="addAllItemsToInventory(this)" style="background:#185FA5;color:#fff">🏭 ADD ITEMS TO INVENTORY</button>
   <button class="btn-prices" onclick="checkInventoryNow(this)" style="background:#8a5a00;color:#fff">🔍 CHECK INVENTORY</button>
-  <button class="btn-prices" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
+  <button class="btn-prices" id="reduceStockBtn" onclick="reduceStockFromQuotation(this)" style="background:#c0392b;color:#fff">➖ REDUCE STOCK</button>
+  <button class="btn-prices" id="retStockBtn" onclick="addReturnToStock(this)" style="background:#6a1b9a;color:#fff;display:none">↩️ ADD RETURN TO STOCK</button>
   <span id="priceStatus" class="no-print" style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px"></span>
   <button type="button" class="btn-prices no-print" id="pendIndBtn" onclick="openIndentTracker()" style="background:#e65100;color:#fff">📋 PENDING INDENTS</button>
   <button type="button" class="btn-prices no-print" onclick="refreshStockNow(this)" style="background:#2e7d32;color:#fff">🔄 REFRESH STOCK</button>
@@ -574,7 +575,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <!-- REDUCE STOCK — LOCATION PICKER -->
 <div id="reduceStockOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;width:100%;max-width:340px;border-radius:10px;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">
-    <strong style="font-size:15px;color:#1a3c6e;display:block;margin-bottom:16px">Reduce stock from which location?</strong>
+    <strong id="reduceStockTitle" style="font-size:15px;color:#1a3c6e;display:block;margin-bottom:16px">Reduce stock from which location?</strong>
     <div style="display:flex;gap:10px;justify-content:center">
       <button id="reduceStockGodown" style="background:#1a3c6e;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">GODOWN</button>
       <button id="reduceStockOffice" style="background:#1b7a4a;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">OFFICE</button>
@@ -1529,9 +1530,10 @@ async function addAllItemsToInventory(btn){
    'stock_movements'") in the confirmation popup — send me that exact
    text and I'll correct the table/column names in one edit. */
 
-function pickReduceLocation(){
+function pickReduceLocation(title){
   return new Promise(resolve=>{
     const overlay=document.getElementById("reduceStockOverlay");
+    document.getElementById("reduceStockTitle").textContent=title||"Reduce stock from which location?";
     overlay.style.display="flex";
     const cleanup=(val)=>{ overlay.style.display="none"; resolve(val); };
     document.getElementById("reduceStockGodown").onclick=()=>cleanup("GODOWN");
@@ -1585,7 +1587,65 @@ async function insertStockMovementOut(itemId,location,qty,note){
   if(error) throw error;
 }
 
+/* ===== CUSTOMER RETURN -> STOCK IN =====
+   Puts the returned items back into Inventory as Stock IN (same "transactions" table the Indent
+   "Goods received" step uses). Manual, all-or-nothing on matching, and blocked after one success so
+   a return can never be added twice (reuses the stock_reduced flag on the saved return). */
+async function addReturnToStock(btn){
+  if(currentDocType!=="RET"){ alert("This button is only for Customer Return documents."); return; }
+  if(!currentQuotationId){ alert("Please Save this return first — stock can only be added for a saved return (so the system can remember it's been done)."); return; }
+  if(currentStockReduced){
+    const when=currentStockReducedAt?new Date(currentStockReducedAt).toLocaleDateString("en-IN"):"earlier";
+    alert("The items of this return were already added back to stock on "+when+(currentStockReducedLocation?" at "+currentStockReducedLocation:"")+". Blocked to prevent adding them twice.");
+    return;
+  }
+  const rows=collectRowsForReduce();
+  if(!rows.length){ alert("No items in this return."); return; }
+  const location=await pickReduceLocation("Add returned items to which location?");
+  if(!location) return;
+  if(!inventoryLoaded){ try{ await loadInventoryStock(); }catch(e){} }
+  const plan=[], problems=[];
+  for(const r of rows){
+    let id=null;
+    try{ id=await findInventoryItemId(r.brand,r.desc,location); }catch(e){ problems.push(r.desc+" — "+(e.message||e)); continue; }
+    if(!id){ problems.push(r.desc+" ("+(r.brand||"no brand")+") — not found in Inventory at "+location); continue; }
+    plan.push({...r,id});
+  }
+  if(problems.length){
+    alert("Cannot add to stock — these item(s) are not in Inventory at "+location+":\n\n• "+problems.join("\n• ")+"\n\nUse 🏭 ADD ITEMS TO INVENTORY first (or choose the other location), then try again. No stock was changed.");
+    return;
+  }
+  if(!confirm("Add Stock IN to "+location+" for "+plan.length+" returned item(s)?\n\n"+plan.map(r=>"• "+r.desc+" : "+r.qty).join("\n")+"\n\nThis cannot be undone from here.")) return;
+  const original=btn?btn.textContent:"";
+  if(btn){ btn.disabled=true; btn.textContent="⏳ Adding…"; }
+  const date=(qdate.value||new Date().toISOString().slice(0,10)), cust=(custName.value||"").trim(), retNo=qno.value||"";
+  const note="Customer Return "+retNo+(retBills&&retBills.length?" | Against "+retBills.map(b=>b.doc_no).join(", "):"");
+  const op=localStorage.getItem("sge_operator")||"";
+  let done=0; const failed=[];
+  try{
+    for(const r of plan){
+      const txn={item_id:r.id,type:"IN",qty:r.qty,date,customer:cust,note};
+      if(op) txn.operator=op;
+      try{
+        const res=await fetch(_SB+"transactions",{method:"POST",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(txn)});
+        if(!res.ok) throw new Error(await res.text());
+        done++;
+      }catch(e){ failed.push(r.desc+" — "+String(e.message||e).slice(0,90)); }
+    }
+    if(done){
+      try{ await loadInventoryStock(); }catch(e){}
+      const nowIso=new Date().toISOString();
+      const { error: markErr } = await sb.from("quotations").update({ stock_reduced:true, stock_reduced_at:nowIso, stock_reduced_location:location }).eq("id", currentQuotationId);
+      if(!markErr){ currentStockReduced=true; currentStockReducedAt=nowIso; currentStockReducedLocation=location; }
+    }
+    let msg=done+" item(s) added back to "+location+" stock ✓";
+    if(failed.length) msg+="\n\n"+failed.length+" FAILED (not added — add these manually via Stock IN):\n"+failed.join("\n");
+    alert(msg);
+  }finally{ if(btn){ btn.disabled=false; btn.textContent=original; } }
+}
+
 async function reduceStockFromQuotation(btn){
+  if(currentDocType==="RET"){ alert("This is a Customer Return — use ↩️ ADD RETURN TO STOCK (returned goods come back INTO stock)."); return; }
   if(currentDocType==="IND"){ alert("This is an Indent (a purchase request) — stock is added when the material is received (📋 PENDING INDENTS → Goods received), never reduced."); return; }
   const rows=collectRowsForReduce();
   if(!rows.length){ alert("No items in the quotation table to reduce."); return; }
@@ -2398,7 +2458,9 @@ async function performInsertNewQuotation(){
          stock so the indent banner can warn about shortages/untracked
          items. Actually creating Inventory items now only happens
          when the "ADD ITEMS TO INVENTORY" button is pressed. */
-      if(currentDocType==="RET"){ /* returns never trigger stock-shortage / indent warnings */ }
+      if(currentDocType==="RET"){   /* returns never trigger stock-shortage / indent warnings — instead offer to put the goods back into stock */
+        setTimeout(()=>{ if(confirm("Return saved as "+docNo+".\n\nAdd the returned items back to Inventory stock now?\n(The credit note reaches the customer's ledger from the Inventory app → Cash Transactions → link cash bills & credit notes.)")) addReturnToStock(document.getElementById("retStockBtn")); },250);
+      }
       else if(currentDocType==="IND"){ recordIndentFromDoc(docNo); }   // Indent -> Pending Indents (BILL PENDING -> RECEIVED -> BILLED)
       else{
       const final=computeShortfalls();
@@ -2972,7 +3034,9 @@ async function loadPartyQuotations(partyId, partyName){
     const label=s==="Confirmed"?"✅ Confirmed":s==="Cancelled"?"❌ Cancelled":"📄 Quoted";
     return `<span style="${style};font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">${label}</span>`;
   };
-  const stockBadge=reduced=>reduced
+  const stockBadge=(reduced,dt)=>dt==="RET"
+    ? (reduced?`<span style="background:#f3e5f5;color:#6a1b9a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Returned to Stock</span>`:`<span style="background:#fff3e0;color:#8a5a00;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">↩ Not yet in Stock</span>`)
+    : reduced
     ? `<span style="background:#e3f6ea;color:#1b7a4a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Stock Reduced</span>`
     : `<span style="background:#f0f1f4;color:#666;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">📄 Quotation Only</span>`;
   list.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#5a6a85;margin-bottom:10px">${partyName} &mdash; ${data.length} ${label.toLowerCase()}(s)</div>
@@ -2983,7 +3047,7 @@ async function loadPartyQuotations(partyId, partyName){
         <span style="font-size:13.5px;font-weight:800;color:#1a1a2e">₹ ${(+q.net_payable).toLocaleString("en-IN")}</span>
       </div>
       <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 6px">${q.doc_type} &bull; ${q.doc_date}</div>
-      <div style="display:flex;gap:6px;margin-bottom:9px">${statusBadge(q.doc_status)}${stockBadge(q.stock_reduced)}</div>
+      <div style="display:flex;gap:6px;margin-bottom:9px">${statusBadge(q.doc_status)}${stockBadge(q.stock_reduced,q.doc_type)}</div>
       <div style="display:flex;gap:8px">
         <button onclick="previewHistoryQuotation(${q.id})" style="flex:1;background:#1a3c6e;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">👁 Preview</button>
         <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open &amp; Edit</button>
@@ -3711,6 +3775,8 @@ function switchDocType(type){
   if(type!=="IND") resetIndFor();
   const retBox=document.getElementById("retBox"); if(retBox) retBox.style.display=(type==="RET")?"":"none";
   if(type!=="RET") resetRetBox(); else onRetModeChange();
+  const rsb=document.getElementById("retStockBtn"), rdb=document.getElementById("reduceStockBtn");
+  if(rsb) rsb.style.display=(type==="RET")?"":"none"; if(rdb) rdb.style.display=(type==="RET")?"none":"";
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
   if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
