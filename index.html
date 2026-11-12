@@ -304,17 +304,26 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
           <option>Other</option>
         </select>
       </div>
-      <div id="retCbWrap" style="position:relative;display:none">
-        <label>Cash Bill <span style="color:#c0392b">*</span> <span style="font-weight:400;font-style:italic">(search by customer name or bill no.)</span></label>
-        <input type="text" id="retCbSearch" autocomplete="off" placeholder="Type customer name or Cash Bill no. to pick from list…" oninput="onRetCbInput()" onfocus="onRetCbInput()" onblur="setTimeout(hideRetCbSuggest,180)">
-        <div id="retCbSuggest" style="display:none;position:absolute;z-index:60;left:0;right:0;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div>
+      <div id="retCbWrap" style="display:none;align-self:end">
+        <button type="button" onclick="openRetPicker()" style="background:#1a3c6e;color:#fff;width:100%">➕ Pick items from a Cash Bill</button>
       </div>
     </div>
-    <div id="retCbInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="retCbInfoText" style="flex:1;font-weight:600;color:#14573a"></span>
-      <button type="button" onclick="loadRetFromCashBill()" style="background:#1b7a4a;color:#fff">⬇ Load customer, items &amp; prices from this Cash Bill</button>
-    </div>
+    <div id="retCbInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px"></div>
     <div id="retHint" style="font-size:11px;color:#8a2c2c;margin-top:6px"></div>
+  </div>
+  <div id="retPickModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:3100;align-items:flex-start;justify-content:center;padding:14px;overflow-y:auto">
+    <div style="background:#fff;border-radius:10px;max-width:860px;width:100%;margin-top:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b style="font-size:15px;color:#1a3c6e">↩️ Pick returned items from a Cash Bill</b>
+        <button type="button" onclick="closeRetPicker()" style="background:#888;color:#fff">✖ Close</button>
+      </div>
+      <div style="position:relative">
+        <label style="font-size:12px;font-weight:600">Search Cash Bill (customer name or bill no.)</label>
+        <input type="text" id="retCbSearch" autocomplete="off" placeholder="Type to search…" oninput="onRetCbInput()" onfocus="onRetCbInput()" onblur="setTimeout(hideRetCbSuggest,180)" style="width:100%;box-sizing:border-box">
+        <div id="retCbSuggest" style="display:none;position:absolute;z-index:70;left:0;right:0;background:#fff;border:1px solid #c5d3e8;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div>
+      </div>
+      <div id="retPickBody" style="margin-top:10px;font-size:12px;color:#5a6a85">Pick a Cash Bill above, then tick only the items being returned. Repeat for other bills — items from every bill are collected in this one return.</div>
+    </div>
   </div>
   <div id="retPrintLine" class="ret-print-only" style="margin-top:8px;padding:6px 10px;border:1.5px solid #1a3c6e;background:#eef4fb;font-size:12.5px;font-weight:700"></div>
   <div id="dcExtraBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c5d3e8">
@@ -2179,7 +2188,7 @@ function collectItemsFromTable(){
       colour: r.cells[4].innerText, hsn: r.cells[5].innerText, unit: r.cells[6].innerText,
       qty: r.cells[7].innerText, mrp: mrpRaw, discount: discRaw, discMode: r.dataset.discMode||'pct',
       rate: r.cells[10].innerText, perMtr: r.cells[11].innerText, amount: r.cells[12].innerText,
-      qtnQty: r.dataset.qtnQty||""
+      qtnQty: r.dataset.qtnQty||"", srcBill: r.dataset.srcBill||""
     };
   });
 }
@@ -2209,7 +2218,7 @@ async function saveQuotation(){
   if(currentDocType==="RET"){
     const m=document.getElementById("retMode").value;
     if(!m){ alert("Please select what this return is against — Cash Bill or No Cash Bill."); document.getElementById("retMode").focus(); return; }
-    if(m==="CB" && !retPick){ alert("Please pick the Cash Bill this return is against."); document.getElementById("retCbSearch").focus(); return; }
+    if(m==="CB" && !retBills.length){ alert("Please pick the returned items from at least one Cash Bill (use the ➕ Pick items button)."); return; }
     if(!custName.value.trim()){ alert("Please enter the Customer Name."); custName.focus(); return; }
     for(const r of tbody.rows){
       const bq=parseFloat(r.dataset.qtnQty), rq=parseFloat(r.cells[7].innerText);
@@ -3156,6 +3165,7 @@ function appendSavedItemRow(it){
     const discCellInit=(it.discMode==='net')?'-':it.discount;
     r.innerHTML=`<td></td><td>${it.brand}</td><td class="icode">${escItemCode(it.itemCode)||"-"}</td><td>${it.description}</td><td style="${(it.colour&&it.colour!=='-'&&it.colour!=='—')?getColourStyle(it.colour):''}">${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   if(it.qtnQty!==undefined&&it.qtnQty!=="") r.dataset.qtnQty=it.qtnQty;
+  if(it.srcBill){ r.dataset.srcBill=it.srcBill; r.title="From Cash Bill "+it.srcBill; }
 }
 async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
@@ -3179,8 +3189,8 @@ async function reopenQuotation(id){
       const rj=JSON.parse(q.remarks||"{}");
       document.getElementById("retMode").value=rj.retMode||"";
       document.getElementById("retReason").value=rj.retReason||"";
-      retPick=rj.retRef?{id:rj.retRefId||"",doc_no:rj.retRef,cust_name:q.cust_name||""}:null;
-      document.getElementById("retCbSearch").value=rj.retRef||"";
+      retBills=Array.isArray(rj.retRefs)?rj.retRefs.map(b=>({id:b.id||"",doc_no:b.doc_no,cust_name:q.cust_name||""}))
+              :(rj.retRef?[{id:rj.retRefId||"",doc_no:rj.retRef,cust_name:q.cust_name||""}]:[]);
       showRetCbInfo(); onRetModeChange();
       if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=rj.remarks||"";
     }catch(e){}
@@ -3781,18 +3791,18 @@ function indRemarksJSON(){
     indRef:indPick?indPick.doc_no:"", indRefId:indPick?indPick.id:"",
     remarks:(document.getElementById("remarksInput")||{}).value||""});
 }
-/* ---- CUSTOMER RETURN (credit note): prices come from the original Cash Bill, or are typed in when there is no bill ---- */
-let retCbList=null, retCbLoadedAt=0, retPick=null;   // retPick={id,doc_no,cust_name}
+/* ---- CUSTOMER RETURN (credit note): items picked from ONE OR MORE Cash Bills, or typed in when there is no bill ---- */
+let retCbList=null, retCbLoadedAt=0, retBills=[], retCur=null;   // retBills=[{id,doc_no,cust_name}] bills used in this return; retCur=bill open in the picker
 function resetRetBox(){
   ["retMode","retReason","retCbSearch"].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
-  retPick=null; showRetCbInfo(); onRetModeChange(true);
+  retBills=[]; retCur=null; showRetCbInfo(); onRetModeChange(true);
 }
-function onRetModeChange(silent){
+function onRetModeChange(){
   const m=(document.getElementById("retMode")||{}).value||"";
   const w=document.getElementById("retCbWrap"); if(w) w.style.display=(m==="CB")?"":"none";
-  if(m!=="CB"){ retPick=null; const e=document.getElementById("retCbSearch"); if(e) e.value=""; showRetCbInfo(); }
+  if(m!=="CB"){ retBills=[]; showRetCbInfo(); }
   const h=document.getElementById("retHint");
-  if(h) h.textContent = m==="CB" ? "ℹ️ After loading the bill, use ✏️ Edit on a row to set the RETURNED quantity, and 🗑 delete the rows that are not being returned."
+  if(h) h.textContent = m==="CB" ? "ℹ️ Use the button to tick only the items being returned from each Cash Bill (you can pick from 2, 3 or more bills). Use ✏️ Edit on a row to change a quantity."
                        : m==="NOBILL" ? "ℹ️ No Cash Bill — add each returned item with its price using the Add Item form below."
                        : "";
   updateRetPrintLine();
@@ -3802,10 +3812,17 @@ function updateRetPrintLine(){
   if(currentDocType!=="RET"){ el.textContent=""; return; }
   const m=(document.getElementById("retMode")||{}).value||"", rs=(document.getElementById("retReason")||{}).value||"";
   let t="";
-  if(m==="CB" && retPick) t="RETURN AGAINST CASH BILL: "+retPick.doc_no;
+  if(m==="CB" && retBills.length) t="RETURN AGAINST CASH BILL"+(retBills.length>1?"S":"")+": "+retBills.map(b=>b.doc_no).join(", ");
   else if(m==="NOBILL") t="RETURN WITHOUT CASH BILL";
   if(t && rs) t+="   |   REASON: "+rs;
   el.textContent=t;
+}
+function showRetCbInfo(){
+  const b=document.getElementById("retCbInfo"); if(!b) return;
+  if(!retBills.length){ b.style.display="none"; b.innerHTML=""; return; }
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  b.innerHTML="<b style='color:#14573a'>✔ Bills used in this return:</b> "+retBills.map(x=>"<span style='display:inline-block;background:#fff;border:1px solid #9fd3b5;border-radius:12px;padding:2px 9px;margin:2px 3px;font-weight:600'>"+esc(x.doc_no)+"</span>").join("");
+  b.style.display="block";
 }
 async function loadRetCbList(force){
   if(!force && retCbList && Date.now()-retCbLoadedAt<60000) return retCbList;
@@ -3818,49 +3835,91 @@ async function loadRetCbList(force){
   return retCbList;
 }
 function hideRetCbSuggest(){ const b=document.getElementById("retCbSuggest"); if(b) b.style.display="none"; }
+function openRetPicker(){
+  const m=document.getElementById("retPickModal"); m.style.display="flex";
+  retCur=null; document.getElementById("retCbSearch").value="";
+  document.getElementById("retPickBody").innerHTML="Pick a Cash Bill above, then tick only the items being returned. Repeat for other bills — items from every bill are collected in this one return.";
+  setTimeout(()=>document.getElementById("retCbSearch").focus(),50);
+}
+function closeRetPicker(){ document.getElementById("retPickModal").style.display="none"; hideRetCbSuggest(); }
 async function onRetCbInput(){
   const inp=document.getElementById("retCbSearch"), box=document.getElementById("retCbSuggest"); if(!inp||!box) return;
   const list=await loadRetCbList(false);
   const q=(inp.value||"").trim().toLowerCase();
-  const m=list.filter(x=>!q||String(x.cust_name||"").toLowerCase().includes(q)||String(x.doc_no||"").toLowerCase().includes(q)).slice(0,40);
-  if(!m.length||(retPick&&inp.value===retPick.doc_no)){ box.style.display="none"; return; }
+  const custF=(document.getElementById("custName").value||"").trim().toLowerCase();
+  let m=list.filter(x=>!q||String(x.cust_name||"").toLowerCase().includes(q)||String(x.doc_no||"").toLowerCase().includes(q));
+  if(!q && custF) m=m.filter(x=>String(x.cust_name||"").toLowerCase().includes(custF));   // empty search: show this customer's bills first
+  m=m.slice(0,40);
+  if(!m.length){ box.style.display="none"; return; }
   const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
   box.innerHTML=m.map(x=>`<div data-id="${esc(x.id)}" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #eef1f6;font-size:12px"><b>${esc(x.cust_name||"—")}</b><br><span style="color:#5a6a85;font-size:11px">${esc(x.doc_no)} · ${esc(x.doc_date||"")}${x.net_payable?" · ₹"+esc(x.net_payable):""}</span></div>`).join("");
   [...box.children].forEach(el=>{
     el.onmouseover=()=>el.style.background="#f0f4fb"; el.onmouseout=()=>el.style.background="#fff";
-    el.onpointerdown=ev=>{ ev.preventDefault(); const x=list.find(z=>String(z.id)===el.getAttribute("data-id")); if(x) pickRetCb(x); };
+    el.onpointerdown=ev=>{ ev.preventDefault(); const x=list.find(z=>String(z.id)===el.getAttribute("data-id")); if(x) showRetBillItems(x); };
   });
   box.style.display="block";
 }
-function pickRetCb(x){
-  retPick={id:x.id,doc_no:x.doc_no,cust_name:x.cust_name||""};
+async function showRetBillItems(x){
+  hideRetCbSuggest();
   document.getElementById("retCbSearch").value=x.doc_no;
-  hideRetCbSuggest(); showRetCbInfo(); updateRetPrintLine();
-}
-function showRetCbInfo(){
-  const b=document.getElementById("retCbInfo"); if(!b) return;
-  if(!retPick){ b.style.display="none"; return; }
-  document.getElementById("retCbInfoText").textContent="✔ Linked to Cash Bill "+retPick.doc_no+" — "+retPick.cust_name;
-  b.style.display="flex";
-}
-async function loadRetFromCashBill(){
-  if(!retPick) return;
-  const { data:q, error }=await sb.from("quotations").select("cust_name,cust_gst,cust_addr,gst_applied,cash_disc_pct,items").eq("id",retPick.id).single();
-  if(error||!q){ alert("Could not load that Cash Bill."); return; }
+  const body=document.getElementById("retPickBody"); body.innerHTML="Loading items…";
+  const { data:q, error }=await sb.from("quotations").select("id,doc_no,cust_name,cust_gst,cust_addr,gst_applied,cash_disc_pct,items").eq("id",x.id).single();
+  if(error||!q){ body.innerHTML="<span style='color:#c0392b'>Could not load that Cash Bill.</span>"; return; }
+  retCur=q;
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
   const its=q.items||[];
-  if(!its.length){ alert("That Cash Bill has no items."); return; }
-  if(tbody.rows.length && !confirm("This will REPLACE the "+tbody.rows.length+" item(s) already in this return with the "+its.length+" item(s) of "+retPick.doc_no+". Continue?")) return;
-  custName.value=q.cust_name||""; custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
-  gstToggle.checked=!!q.gst_applied;
-  const cd=document.getElementById("cashDiscPct"); if(cd) cd.value=q.cash_disc_pct||0;
-  tbody.innerHTML="";
-  its.forEach(it=>appendSavedItemRow({...it,qtnQty:it.qty}));   // qtnQty = quantity on the original bill (used to stop over-returns)
-  renumber(); calc();
-  document.getElementById("saveStatus").textContent="Loaded "+its.length+" item(s) with prices from "+retPick.doc_no+" — set the returned qty with ✏️ Edit and delete rows not being returned.";
+  if(!its.length){ body.innerHTML="That Cash Bill has no items."; return; }
+  body.innerHTML=`<div style="font-weight:700;color:#1a3c6e;margin-bottom:6px">${esc(q.doc_no)} — ${esc(q.cust_name||"")}</div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="background:#1a3c6e;color:#fff"><th style="padding:5px;width:34px"><input type="checkbox" onclick="document.querySelectorAll('.retChk').forEach(c=>{c.checked=this.checked})"></th><th style="padding:5px;text-align:left">Item</th><th style="padding:5px">Billed Qty</th><th style="padding:5px">Rate</th><th style="padding:5px;width:90px">Return Qty</th></tr>
+    ${its.map((it,i)=>`<tr style="border-bottom:1px solid #e3e8f0"><td style="padding:5px;text-align:center"><input type="checkbox" class="retChk" data-i="${i}"></td><td style="padding:5px">${esc(it.brand||"")} ${esc(it.itemCode&&it.itemCode!=="-"?"["+it.itemCode+"] ":"")}${esc(it.description)}${(it.colour&&it.colour!=="-"&&it.colour!=="—")?" · "+esc(it.colour):""}</td><td style="padding:5px;text-align:center">${esc(it.qty)} ${esc(it.unit||"")}</td><td style="padding:5px;text-align:center">${esc(it.rate)}</td><td style="padding:5px"><input type="number" class="retQ" data-i="${i}" value="${esc(it.qty)}" min="0" step="any" style="width:80px"></td></tr>`).join("")}
+  </table></div>
+  <div style="margin-top:10px;text-align:right"><button type="button" onclick="addPickedRetItems()" style="background:#1b7a4a;color:#fff">✔ Add ticked items to this return</button></div>`;
+}
+function addPickedRetItems(){
+  if(!retCur) return;
+  const its=retCur.items||[], picks=[];
+  document.querySelectorAll(".retChk").forEach(c=>{ if(c.checked) picks.push(+c.dataset.i); });
+  if(!picks.length){ alert("Tick at least one item to return."); return; }
+  const dups=[], bad=[];
+  const keyOf=(bill,code,desc)=>bill+"|"+(code||"").trim()+"|"+(desc||"").trim();
+  const have=new Set([...tbody.rows].map(r=>keyOf(r.dataset.srcBill||"",(r.cells[2].innerText||"").trim().replace(/^-$/,""),r.cells[3].innerText)));
+  const toAdd=[];
+  for(const i of picks){
+    const it=its[i], billed=parseFloat(it.qty)||0;
+    const rq=parseFloat(document.querySelector('.retQ[data-i="'+i+'"]').value);
+    if(isNaN(rq)||rq<=0){ bad.push(it.description+" (enter a return qty)"); continue; }
+    if(billed>0 && rq>billed){ bad.push(it.description+" (return qty "+rq+" is more than billed "+billed+")"); continue; }
+    if(have.has(keyOf(retCur.doc_no,(it.itemCode||"").replace(/^-$/,""),it.description))){ dups.push(it.description); continue; }
+    toAdd.push({it,rq,billed});
+  }
+  if(bad.length){ alert("Please fix:\n• "+bad.join("\n• ")); return; }
+  if(!toAdd.length){ alert("These items are already in this return."+(dups.length?"\n• "+dups.join("\n• "):"")); return; }
+  // Customer / GST settings come from the first bill; later bills for a different customer need a confirmation
+  const curCust=(custName.value||"").trim().toUpperCase(), billCust=(retCur.cust_name||"").trim().toUpperCase();
+  if(!tbody.rows.length && !retBills.length){
+    custName.value=retCur.cust_name||custName.value; custGST.value=retCur.cust_gst||custGST.value; custAddr.value=retCur.cust_addr||custAddr.value;
+    gstToggle.checked=!!retCur.gst_applied;
+    const cd=document.getElementById("cashDiscPct"); if(cd) cd.value=retCur.cash_disc_pct||0;
+  }else{
+    if(curCust && billCust && curCust!==billCust && !confirm("This Cash Bill is for \""+retCur.cust_name+"\" but this return is for \""+custName.value+"\". Add anyway?")) return;
+    if(!!retCur.gst_applied!==!!gstToggle.checked) alert("Note: this bill's GST setting differs from the one used in this return. The return keeps its current GST setting.");
+  }
+  toAdd.forEach(({it,rq,billed})=>{
+    const per=(billed>0 && !isNaN(parseFloat(it.amount)))?parseFloat(it.amount)/billed:NaN;
+    const amt=isNaN(per)?it.amount:(per*rq).toFixed(2);
+    appendSavedItemRow({...it,qty:rq,amount:amt,qtnQty:it.qty,srcBill:retCur.doc_no});
+  });
+  if(!retBills.some(b=>String(b.id)===String(retCur.id))) retBills.push({id:retCur.id,doc_no:retCur.doc_no,cust_name:retCur.cust_name||""});
+  renumber(); calc(); showRetCbInfo(); updateRetPrintLine();
+  document.getElementById("saveStatus").textContent="Added "+toAdd.length+" item(s) from "+retCur.doc_no+(dups.length?" ("+dups.length+" already present, skipped)":"")+". Pick from another bill or close this window.";
+  document.getElementById("retPickBody").innerHTML="<div style='color:#14573a;font-weight:700'>✔ Added "+toAdd.length+" item(s) from "+retCur.doc_no+". Search another Cash Bill above to add more, or close this window.</div>";
+  document.getElementById("retCbSearch").value=""; retCur=null;
 }
 function retRemarksJSON(){
   return JSON.stringify({retMode:(document.getElementById("retMode")||{}).value||"",
-    retRef:retPick?retPick.doc_no:"", retRefId:retPick?retPick.id:"",
+    retRefs:retBills.map(b=>({id:b.id,doc_no:b.doc_no})),
+    retRef:retBills.map(b=>b.doc_no).join(", "),
     retReason:(document.getElementById("retReason")||{}).value||"",
     remarks:(document.getElementById("remarksInput")||{}).value||""});
 }
