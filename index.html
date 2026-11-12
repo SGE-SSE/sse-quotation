@@ -507,6 +507,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   <tr style="background:#fff8e1"><td style="padding:5px 10px;text-align:left;color:#7a5000;border:1px solid #c5d3e8">GST 18%</td><td style="padding:5px 10px;text-align:right;color:#7a5000;font-weight:600;border:1px solid #c5d3e8" id="gst">0.00</td></tr>
   <tr style="background:#1a3c6e"><td style="padding:6px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298"><b>Grand Total</b></td><td style="padding:6px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:700;border:1px solid #2a5298" id="gt">0.00</td></tr>
   <tr style="background:#fff3e0"><td style="padding:5px 10px;text-align:left;color:#7a4000;font-style:italic;border:1px solid #c5d3e8">Round Off</td><td style="padding:5px 10px;text-align:right;color:#7a4000;font-style:italic;border:1px solid #c5d3e8" id="roundOff">0.00</td></tr>
+  <tr id="writeOffRow" style="display:none;background:#fff3e0"><td style="padding:5px 10px;text-align:left;color:#7a4000;font-style:italic;border:1px solid #c5d3e8">Written Off (Round Off allowed)</td><td style="padding:5px 10px;text-align:right;color:#7a4000;font-style:italic;font-weight:600;border:1px solid #c5d3e8" id="writeOffAmtCell">0.00</td></tr>
   <tr style="background:#1b7a4a"><td style="padding:7px 10px;text-align:left;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038"><b>Net Payable</b></td><td style="padding:7px 10px;text-align:right;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:13px;border:1px solid #156038" id="netPayable"><b>0</b></td></tr>
   <tr style="background:#f5f8fd"><td style="padding:4px 10px;text-align:left;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Freight</td><td style="padding:4px 10px;text-align:right;color:#5a6a85;font-style:italic;font-size:10px;border:1px solid #c5d3e8">Extra — As Actuals</td></tr>
 </table>
@@ -540,6 +541,11 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   </div>
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">💰 Cash Disc %:</span>
   <input type="number" id="cashDiscPct" min="0" max="100" step="0.01" placeholder="0" oninput="calc()" style="width:60px;font-size:11.5px">
+  <span id="writeOffWrap" class="no-print" style="display:none;align-items:center;gap:6px">
+    <span style="font-size:11.5px;font-weight:700;color:#8a5a00">✂️ Written-off ₹:</span>
+    <input type="number" id="writeOffInput" min="0" step="0.01" placeholder="0" oninput="calc()" style="width:80px;font-size:11.5px;background:#fff8e1">
+    <button type="button" onclick="applyRoundOffPrompt()" style="background:#8a5a00;color:#fff;font-size:11px;padding:4px 9px" title="Customer bargained after billing? Enter the final amount he pays — the difference is written off on this bill">ROUND OFF</button>
+  </span>
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📅 Validity:</span>
   <input type="text" id="validityInput" value="7 DAYS" oninput="updateTCDisplay()" style="width:90px;font-weight:700;text-transform:uppercase;font-size:11.5px">
   <span style="font-size:11.5px;font-weight:700;color:#1a3c6e">📝 Remarks:</span>
@@ -2345,7 +2351,7 @@ async function performUpdateExistingQuotation(){
       sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
       taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
       gst_amt: +(gst.innerText||0), grand_total: +(gt.innerText||0),
-      round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
+      round_off: +((parseFloat(document.getElementById("roundOff")?.innerText)||0)-getWriteOff()).toFixed(2),
       net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
       // doc_no, party_id's serial, stock_reduced*, and (below) doc_status
       // are handled separately/conditionally — never blindly overwritten.
@@ -2420,7 +2426,7 @@ async function performInsertNewQuotation(){
         sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
         gst_amt: +(gst.innerText||0), grand_total: +(gt.innerText||0),
-        round_off: parseFloat(document.getElementById("roundOff")?.innerText)||0,
+        round_off: +((parseFloat(document.getElementById("roundOff")?.innerText)||0)-getWriteOff()).toFixed(2),
         net_payable: +(document.getElementById("netPayable")?.innerText.replace(/[^\d.-]/g,"")||0)
       };
       // doc_status / stock_reduced* only exist once the Supabase migration has
@@ -3286,7 +3292,12 @@ async function reopenQuotation(id){
   if(typeof updateTCDisplay==="function") updateTCDisplay();
   tbody.innerHTML="";
   (q.items||[]).forEach(it=>appendSavedItemRow(it));
+  { const wi=document.getElementById("writeOffInput"); if(wi) wi.value=""; }
   renumber(); calc();
+  if(["QTN","CB","PI"].includes(q.doc_type)){   // restore the written-off amount: bill total minus what was saved as Net Payable
+    const rounded=Math.round(parseFloat(document.getElementById("gt").innerText)||0), saved=parseFloat(q.net_payable);
+    if(!isNaN(saved) && rounded-saved>=1 && saved>=0){ document.getElementById("writeOffInput").value=+(rounded-saved).toFixed(2); calc(); }
+  }
   closePartyHistory();
   if(document.getElementById("dcDashboardModal")) closeDcDashboard();
   const stockNote=currentStockReduced?` — stock already reduced${currentStockReducedAt?" on "+new Date(currentStockReducedAt).toLocaleDateString("en-IN"):""}${currentStockReducedLocation?" at "+currentStockReducedLocation:""}.`:"";
@@ -3395,6 +3406,7 @@ function convertCmpToRegular(){
   gstToggle.checked=!!document.getElementById("cmpShowGST").checked;
   if(document.getElementById("docStatus")) document.getElementById("docStatus").value="Confirmed";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value="";
+  if(document.getElementById("writeOffInput")) document.getElementById("writeOffInput").value="";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=document.getElementById("validityInputCmp")?.value||"7 DAYS";
   if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=document.getElementById("remarksInputCmp")?.value||"";
   if(typeof updateTCDisplay==="function") updateTCDisplay();
@@ -3775,6 +3787,8 @@ function switchDocType(type){
   if(type!=="IND") resetIndFor();
   const retBox=document.getElementById("retBox"); if(retBox) retBox.style.display=(type==="RET")?"":"none";
   if(type!=="RET") resetRetBox(); else onRetModeChange();
+  const wow=document.getElementById("writeOffWrap");
+  if(wow){ const on=["QTN","CB","PI"].includes(type); wow.style.display=on?"inline-flex":"none"; if(!on){ const wi=document.getElementById("writeOffInput"); if(wi&&wi.value){ wi.value=""; calc(); } } }
   const rsb=document.getElementById("retStockBtn"), rdb=document.getElementById("reduceStockBtn");
   if(rsb) rsb.style.display=(type==="RET")?"":"none"; if(rdb) rdb.style.display=(type==="RET")?"none":"";
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
@@ -5129,6 +5143,27 @@ function saveMrpSettings(){
   closeMrpSettings();
 }
 
+/* Written-off amount: customer bargains AFTER the bill (e.g. 24,380 -> pays 24,000). It is deducted from Net Payable on the
+   bill itself, so the bill, the dashboard and the customer ledger all show the real amount (24,000) and nothing stays pending. */
+function getWriteOff(rounded){
+  const el=document.getElementById("writeOffInput"); if(!el) return 0;
+  let w=parseFloat(el.value)||0; if(w<0) w=0;
+  if(rounded==null) rounded=Math.round(parseFloat(document.getElementById("gt")?.innerText)||0);
+  if(w>rounded) w=rounded;
+  return +w.toFixed(2);
+}
+function applyRoundOffPrompt(){
+  const rounded=Math.round(parseFloat(document.getElementById("gt").innerText)||0);
+  if(!rounded){ alert("Add items first."); return; }
+  const cur=getWriteOff(rounded), full=rounded;   // amount before any write-off
+  const sugg=Math.floor(full/100)*100===full?full-100:Math.floor(full/100)*100;
+  const v=prompt("Bill amount is ₹ "+full.toLocaleString("en-IN")+".\n\nEnter the FINAL amount the customer will pay.\n(The difference is written off on this bill. Enter "+full+" to remove a write-off.)", cur>0?String(full-cur):String(sugg));
+  if(v===null) return;
+  const fin=parseFloat(String(v).replace(/[^\d.]/g,""));
+  if(isNaN(fin)||fin<0||fin>full){ alert("Enter an amount between 0 and "+full+"."); return; }
+  document.getElementById("writeOffInput").value=(full-fin)>0?(+(full-fin).toFixed(2)):"";
+  calc();
+}
 function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[12].innerText);
   sub.innerText=s.toFixed(2);
@@ -5142,7 +5177,10 @@ function calc(){
   gt.innerText=grandTotal.toFixed(2);
   const rounded=Math.round(grandTotal),roundOff=rounded-grandTotal;
   document.getElementById("roundOff").innerText=(roundOff>=0?"+":"")+roundOff.toFixed(2);
-  document.getElementById("netPayable").innerHTML="<b>₹ "+rounded.toLocaleString("en-IN")+"</b>";
+  const wo=getWriteOff(rounded);
+  const woRow=document.getElementById("writeOffRow");
+  if(woRow){ woRow.style.display=wo>0?"":"none"; document.getElementById("writeOffAmtCell").innerText="- "+wo.toFixed(2); }
+  document.getElementById("netPayable").innerHTML="<b>₹ "+(rounded-wo).toLocaleString("en-IN",{maximumFractionDigits:2})+"</b>";
   applyMrpVisibility();
   const anyMrpVisibleReg=[...tbody.rows].some(r=>{
     if(r.dataset.mrpRaw===undefined||r.dataset.mrpRaw==='-'||r.dataset.mrpRaw==='') return false;
