@@ -279,9 +279,9 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     </div>
     <div id="indQtnInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px;align-items:center;gap:10px;flex-wrap:wrap">
       <span id="indQtnInfoText" style="flex:1;font-weight:600;color:#14573a"></span>
-      <button type="button" onclick="loadIndItemsFromQtn()" style="background:#1b7a4a;color:#fff">⬇ Load items from this quotation</button>
+      <button type="button" onclick="openIndItemPicker()" style="background:#1b7a4a;color:#fff">☑ Pick items from this quotation</button>
     </div>
-    <div style="font-size:11px;color:#8a5a00;margin-top:6px">ℹ️ Indent quantity can be higher than the quotation quantity — use ✏️ Edit on any row to change it. Extra over quotation is flagged on the indent.</div>
+    <div style="font-size:11px;color:#8a5a00;margin-top:6px">ℹ️ Tick only the items you need to indent. The indent quantity can be higher than the quotation quantity — type the quantity you need in the picker (or use ✏️ Edit on a row later).</div>
   </div>
   <div id="retBox" class="no-print" style="display:none;margin-top:10px;padding:10px 12px;background:#fdecea;border:1.5px solid #e57373;border-radius:7px">
     <div class="customer-grid">
@@ -310,6 +310,15 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     </div>
     <div id="retCbInfo" style="display:none;margin-top:8px;padding:8px 10px;background:#e8f5ee;border:1px solid #9fd3b5;border-radius:6px;font-size:12px"></div>
     <div id="retHint" style="font-size:11px;color:#8a2c2c;margin-top:6px"></div>
+  </div>
+  <div id="indPickModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:3100;align-items:flex-start;justify-content:center;padding:14px;overflow-y:auto">
+    <div style="background:#fff;border-radius:10px;max-width:860px;width:100%;margin-top:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b id="indPickTitle" style="font-size:15px;color:#1a3c6e">☑ Pick items for this Indent</b>
+        <button type="button" onclick="closeIndItemPicker()" style="background:#888;color:#fff">✖ Close</button>
+      </div>
+      <div id="indPickBody" style="font-size:12px;color:#5a6a85">Loading…</div>
+    </div>
   </div>
   <div id="retPickModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:3100;align-items:flex-start;justify-content:center;padding:14px;overflow-y:auto">
     <div style="background:#fff;border-radius:10px;max-width:860px;width:100%;margin-top:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3)">
@@ -3845,17 +3854,53 @@ function showIndQtnInfo(){
   document.getElementById("indQtnInfoText").textContent="✔ Linked to quotation "+indPick.doc_no+" — "+indPick.cust_name;
   b.style.display="flex";
 }
-/* Add the quotation's items into the indent table (qty stays editable; quotation qty is remembered) */
-async function loadIndItemsFromQtn(){
+/* Pick particular items of the linked quotation (not the whole quotation) into the indent — quantity is editable and may exceed the quotation qty */
+let indPickItems=[];
+function closeIndItemPicker(){ document.getElementById("indPickModal").style.display="none"; }
+async function openIndItemPicker(){
   if(!indPick){ return; }
+  const m=document.getElementById("indPickModal"), body=document.getElementById("indPickBody");
+  m.style.display="flex"; body.innerHTML="Loading items…";
+  document.getElementById("indPickTitle").textContent="☑ Pick items from "+indPick.doc_no;
   const { data:q, error }=await sb.from("quotations").select("items").eq("id",indPick.id).single();
-  if(error||!q){ alert("Could not load items from that quotation."); return; }
-  const its=q.items||[];
-  if(!its.length){ alert("That quotation has no items."); return; }
-  if(tbody.rows.length && !confirm("Add "+its.length+" item(s) from "+indPick.doc_no+" to the items already in this indent?")) return;
-  its.forEach(it=>appendSavedItemRow({...it,qtnQty:it.qty}));
-  renumber(); calc();
-  document.getElementById("saveStatus").textContent="Loaded "+its.length+" item(s) from "+indPick.doc_no+" — change quantities with ✏️ Edit if you need more than the quotation qty.";
+  if(error||!q){ body.innerHTML="<span style='color:#c0392b'>Could not load items from that quotation.</span>"; return; }
+  indPickItems=q.items||[];
+  if(!indPickItems.length){ body.innerHTML="That quotation has no items."; return; }
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  const keyOf=(code,desc)=>String(code||"").replace(/^-$/,"").trim()+"|"+String(desc||"").trim();
+  const have=new Set([...tbody.rows].map(r=>keyOf(r.cells[2].innerText,r.cells[3].innerText)));
+  body.innerHTML=`<div style="margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="text" id="indPickFilter" placeholder="Filter items…" oninput="filterIndPick()" style="flex:1;min-width:160px">
+    <button type="button" onclick="document.querySelectorAll('.indChk:not(:disabled)').forEach(c=>{if(c.closest('tr').style.display!=='none')c.checked=true})" style="background:#1a3c6e;color:#fff;font-size:11px">Select all shown</button>
+    <button type="button" onclick="document.querySelectorAll('.indChk').forEach(c=>c.checked=false)" style="background:#888;color:#fff;font-size:11px">Clear</button></div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="background:#1a3c6e;color:#fff"><th style="padding:5px;width:34px"></th><th style="padding:5px;text-align:left">Item</th><th style="padding:5px">Qtn Qty</th><th style="padding:5px;width:100px">Indent Qty</th></tr>
+    ${indPickItems.map((it,i)=>{ const dup=have.has(keyOf(it.itemCode,it.description));
+      const txt=(esc(it.brand||"")+" "+esc(it.itemCode&&it.itemCode!=="-"?"["+it.itemCode+"] ":"")+esc(it.description)+((it.colour&&it.colour!=="-"&&it.colour!=="—")?" · "+esc(it.colour):""));
+      return `<tr class="indRow" data-t="${txt.toLowerCase()}" style="border-bottom:1px solid #e3e8f0${dup?";background:#f3f3f3;color:#888":""}"><td style="padding:5px;text-align:center"><input type="checkbox" class="indChk" data-i="${i}" ${dup?"disabled":""}></td><td style="padding:5px">${txt}${dup?" <i>(already in this indent)</i>":""}</td><td style="padding:5px;text-align:center">${esc(it.qty)} ${esc(it.unit||"")}</td><td style="padding:5px"><input type="number" class="indQ" data-i="${i}" value="${esc(it.qty)}" min="0" step="any" style="width:90px" ${dup?"disabled":""} oninput="if(parseFloat(this.value)>0)this.closest('tr').querySelector('.indChk').checked=true"></td></tr>`; }).join("")}
+  </table></div>
+  <div style="margin-top:10px;text-align:right"><button type="button" onclick="addPickedIndItems()" style="background:#1b7a4a;color:#fff">✔ Add ticked items to this indent</button></div>`;
+}
+function filterIndPick(){
+  const q=(document.getElementById("indPickFilter").value||"").trim().toLowerCase();
+  document.querySelectorAll(".indRow").forEach(r=>{ r.style.display=(!q||r.dataset.t.includes(q))?"":"none"; });
+}
+function addPickedIndItems(){
+  const picks=[...document.querySelectorAll(".indChk")].filter(c=>c.checked&&!c.disabled).map(c=>+c.dataset.i);
+  if(!picks.length){ alert("Tick at least one item."); return; }
+  const bad=[], add=[];
+  picks.forEach(i=>{
+    const it=indPickItems[i], q=parseFloat(document.querySelector('.indQ[data-i="'+i+'"]').value);
+    if(isNaN(q)||q<=0){ bad.push(it.description+" (enter a quantity)"); return; }
+    add.push({it,q});
+  });
+  if(bad.length){ alert("Please fix:\\n• "+bad.join("\\n• ")); return; }
+  add.forEach(({it,q})=>{
+    const billed=parseFloat(it.qty)||0, per=(billed>0&&!isNaN(parseFloat(it.amount)))?parseFloat(it.amount)/billed:NaN;
+    appendSavedItemRow({...it,qty:q,amount:isNaN(per)?it.amount:(per*q).toFixed(2),qtnQty:it.qty});
+  });
+  renumber(); calc(); closeIndItemPicker();
+  document.getElementById("saveStatus").textContent="Added "+add.length+" item(s) from "+indPick.doc_no+" to the indent.";
 }
 /* text used everywhere: "OFFICE STOCK" or the customer / site name ("" when not an indent) */
 function getIndForLabel(){
