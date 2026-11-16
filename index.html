@@ -369,7 +369,8 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <label>Item</label>
 <input type="text" id="itemSearch" placeholder="🔍 Search item — checks ALL brands..." autocomplete="off"
   style="width:100%;padding:8px 10px;margin-bottom:4px;font-size:12.5px;border:1.5px solid #c5d3e8;border-radius:5px;box-sizing:border-box"
-  oninput="filterItemDropdown()" onfocus="filterItemDropdown()">
+  oninput="itemBrandFilter='';filterItemDropdown()" onfocus="filterItemDropdown()">
+<select id="itemBrandChips" onchange="itemBrandFilter=this.value;filterItemDropdown()" style="display:none;width:100%;margin:0 0 6px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:5px;background:#fff;font-weight:600"></select>
 <select id="item" size="1"></select>
 <div id="stockBadge" style="font-size:11.5px;font-weight:600;margin:-2px 0 8px 1px"></div>
 
@@ -735,7 +736,11 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     </div>
     <div style="padding:14px 18px;border-bottom:1px solid #eee">
       <input type="text" id="itemSearchInput" placeholder="Type item name… e.g. 100 watt flood light" autocomplete="off"
-        oninput="onItemSearchInput()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
+        oninput="itemSearchBrand='';itemSearchType='';onItemSearchInput()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+        <select id="itemSearchTypeSel" onchange="itemSearchType=this.value;runItemSearch()" style="flex:1;min-width:140px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:6px;background:#fff;color:#1a1a2e;font-weight:600"><option value="">All documents</option></select>
+        <select id="itemSearchBrandSel" onchange="itemSearchBrand=this.value;runItemSearch()" style="flex:1;min-width:140px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:6px;background:#fff;color:#1a1a2e;font-weight:600"><option value="">All brands</option></select>
+      </div>
       <div id="itemSearchMeta" style="font-size:11px;color:#888;margin-top:6px"></div>
     </div>
     <div id="itemSearchList" style="overflow-y:auto;padding:14px 18px;flex:1;font-size:13px;color:#888;text-align:center">Type an item name above to search.</div>
@@ -2928,10 +2933,17 @@ async function previewQuotDash(id){
    Comparison docs, each row has "desc" + a rate PER brand). */
 let itemSearchCache = null;
 let itemSearchTimer = null;
+let itemSearchBrand = "";   // brand chosen in the popup's Brand drop-down ("" = all brands)
+let itemSearchType  = "";   // document type chosen in the popup's Document drop-down ("" = all)
+const ITEM_DOC_LABELS = { QTN:"Quotation", CB:"Cash Bill", PI:"Proforma Invoice", DC:"Delivery Challan", IND:"Indent", RET:"Return" };
+const itemDocLabel = t => ITEM_DOC_LABELS[t] || t || "Other";
 
 async function openItemSearch(){
   document.getElementById("itemSearchModal").style.display="flex";
   document.getElementById("itemSearchInput").value="";
+  itemSearchBrand=""; itemSearchType="";
+  document.getElementById("itemSearchBrandSel").innerHTML='<option value="">All brands</option>';
+  document.getElementById("itemSearchTypeSel").innerHTML='<option value="">All documents</option>';
   document.getElementById("itemSearchMeta").innerText="";
   document.getElementById("itemSearchList").innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">Type an item name above to search.</div>`;
   setTimeout(()=>document.getElementById("itemSearchInput").focus(),150);
@@ -2965,7 +2977,7 @@ function runItemSearch(){
   // finds "100W LED FLOOD LIGHT" because every typed word appears somewhere
   // in the description, just not in the order typed.
   const qWords = qRaw.split(/\s+/).filter(Boolean);
-  const matchesAllWords = desc => qWords.every(w=>desc.includes(w));
+  const matchesAllWords = (desc,brandTxt) => qWords.every(w=>desc.includes(w)||(brandTxt||"").includes(w));
 
   // Every match becomes one hit: { docId, docNo, docType, isCmp, custName,
   // date, qty, unit, rate/brandRates, amount }
@@ -2974,11 +2986,13 @@ function runItemSearch(){
     const items = q_doc.items;
     if(Array.isArray(items)){
       items.forEach(row=>{
-        const desc = (row.description||"").toLowerCase();
-        if(matchesAllWords(desc)){
+        const desc = (row.description||row.desc||"").toLowerCase();
+        const rowBrand = (row.brand||"").toString().trim();
+        if(matchesAllWords(desc,rowBrand.toLowerCase())){
           hits.push({
+            brand:rowBrand, brandList:rowBrand?[rowBrand]:[],
             docId:q_doc.id, docNo:q_doc.doc_no, docType:q_doc.doc_type, isCmp:false,
-            custName:q_doc.cust_name, date:q_doc.doc_date, desc:row.description,
+            custName:q_doc.cust_name, date:q_doc.doc_date, desc:(row.description||row.desc),
             qty:row.qty, unit:row.unit, rate:row.rate, amount:row.amount
           });
         }
@@ -2986,10 +3000,12 @@ function runItemSearch(){
     }else if(items && items.type==="comparison" && Array.isArray(items.rows)){
       items.rows.forEach(row=>{
         const desc = (row.desc||"").toLowerCase();
-        if(matchesAllWords(desc)){
-          const brandNames = items.brands||[];
-          const rateLines = brandNames.map((b,i)=> (row.rate&&row.rate[i]>0) ? `${b}: ₹${row.rate[i]}` : null).filter(Boolean).join(" · ");
+        const brandNames = items.brands||[];
+        const priced = brandNames.map((b,i)=>({b,i})).filter(x=>row.rate&&row.rate[x.i]>0);
+        if(matchesAllWords(desc,priced.map(x=>x.b).join(" ").toLowerCase())){
+          const rateLines = priced.map(x=>`${x.b}: ₹${row.rate[x.i]}`).join(" · ");
           hits.push({
+            brand:"", brandList:priced.map(x=>x.b), priced, rateRaw:row.rate,
             docId:q_doc.id, docNo:q_doc.doc_no, docType:q_doc.doc_type, isCmp:true,
             custName:q_doc.cust_name, date:q_doc.doc_date, desc:row.desc,
             qty:row.qty, unit:row.unit, rateLines
@@ -2999,18 +3015,42 @@ function runItemSearch(){
     }
   });
 
+  // Document-type drop-down (Quotation / Cash Bill / Proforma / DC …) with counts
+  const typeCount={};
+  hits.forEach(h=>{ typeCount[h.docType]=(typeCount[h.docType]||0)+1; });
+  const typeKeys=Object.keys(typeCount).sort();
+  if(itemSearchType && !typeCount[itemSearchType]) itemSearchType="";
+  const typeSel=document.getElementById("itemSearchTypeSel");
+  typeSel.innerHTML=`<option value="">All documents (${hits.length})</option>`+typeKeys.map(t=>`<option value="${t}"${t===itemSearchType?" selected":""}>${itemDocLabel(t)} (${typeCount[t]})</option>`).join("");
+  const byType = itemSearchType ? hits.filter(h=>h.docType===itemSearchType) : hits.slice();
+
+  // Brand drop-down — brands found in the matches (after the document filter), with counts
+  const brandCount={};
+  byType.forEach(h=>h.brandList.forEach(b=>{ brandCount[b]=(brandCount[b]||0)+1; }));
+  const brandKeys=Object.keys(brandCount).sort();
+  if(itemSearchBrand && !brandCount[itemSearchBrand]) itemSearchBrand="";
+  const brandSel_=document.getElementById("itemSearchBrandSel");
+  brandSel_.innerHTML=`<option value="">All brands</option>`+brandKeys.map(b=>`<option value="${b.replace(/"/g,'&quot;')}"${b===itemSearchBrand?" selected":""}>${b} (${brandCount[b]})</option>`).join("");
+  hits.length=0; byType.forEach(h=>hits.push(h));
+  if(itemSearchBrand){
+    const sb_=itemSearchBrand;
+    const kept=hits.filter(h=>h.brandList.includes(sb_));
+    kept.forEach(h=>{ if(h.isCmp){ h.rateLines=h.priced.filter(x=>x.b===sb_).map(x=>`${x.b}: ₹${h.rateRaw[x.i]}`).join(" · "); } });
+    hits.length=0; kept.forEach(h=>hits.push(h));
+  }
+
   if(!hits.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No quotation found with an item matching "<b>${qRaw}</b>".</div>`; return; }
 
   // Most recent first (cache is already newest-first, so preserve that order).
-  document.getElementById("itemSearchMeta").innerText = `${hits.length} match(es) for "${qRaw}" across ${itemSearchCache.length} document(s).`;
+  document.getElementById("itemSearchMeta").innerText = `${hits.length} match(es) for "${qRaw}" across ${itemSearchCache.length} document(s)${itemSearchType?" · "+itemDocLabel(itemSearchType):""}${itemSearchBrand?" · brand: "+itemSearchBrand:""}.`;
   list.innerHTML = `<div style="display:flex;flex-direction:column;gap:9px">` + hits.map(h=>`
     <div style="border:1px solid #c5d3e8;border-radius:9px;padding:10px 13px;background:#f8fafd">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-        <span style="font-size:13px;font-weight:800;color:#1a3c6e">${h.docNo}</span>
+        <span style="font-size:13px;font-weight:800;color:#1a3c6e">${h.docNo} <span style="font-size:10px;font-weight:700;background:#1a3c6e;color:#fff;padding:1px 7px;border-radius:10px;vertical-align:middle">${itemDocLabel(h.docType)}</span></span>
         <span style="font-size:11px;color:#5a6a85">${h.date||""}</span>
       </div>
       <div style="font-size:12.5px;font-weight:700;color:#1a1a2e;margin-top:2px">${h.custName||"—"}</div>
-      <div style="font-size:11.5px;color:#333;margin:4px 0 2px">${h.desc||""}</div>
+      <div style="font-size:11.5px;color:#333;margin:4px 0 2px">${h.brand?`<span style="display:inline-block;background:#6a1b9a;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:5px">${h.brand}</span>`:""}${h.desc||""}</div>
       <div style="font-size:11px;color:#5a6a85;margin-bottom:8px">
         Qty: <b>${h.qty||"-"} ${h.unit||""}</b>
         ${h.isCmp ? (h.rateLines?" · "+h.rateLines:"") : (h.rate?" · Rate: ₹"+h.rate+(h.amount?" · Amt: ₹"+h.amount:""):"")}
@@ -4079,7 +4119,7 @@ const tbody=document.querySelector("#qt tbody");
 
 brandSel.onchange=()=>{
   itemSel.innerHTML="<option value=''>Select Item</option>";
-  document.getElementById("itemSearch").value="";
+  document.getElementById("itemSearch").value=""; itemBrandFilter=""; { const _cb=document.getElementById("itemBrandChips"); if(_cb){ _cb.innerHTML=""; _cb.style.display="none"; } }
   mrp.value=net.value=disc.value="";
   document.getElementById("indCopperBox").style.display="none";
   if(!brandSel.value) return;
@@ -4102,22 +4142,40 @@ brandSel.onchange=()=>{
 // once — so "150X3.5CORE ALU CABLE" finds it under whichever brand(s) carry
 // it, grouped by brand — regardless of what's currently selected in Brand.
 // Picking a result auto-switches Brand to match (see itemSel.onchange below).
+let itemBrandFilter="";
 function filterItemDropdown(){
   const q=(document.getElementById("itemSearch").value||"").trim().toLowerCase();
+  const chipBox=document.getElementById("itemBrandChips");
   itemSel.innerHTML="<option value=''>Select Item</option>";
   if(!q){
+    itemBrandFilter=""; if(chipBox){ chipBox.innerHTML=""; chipBox.style.display="none"; }
     if(!brandSel.value) return;
     (items[brandSel.value]||[]).forEach(i=>{
       const o=document.createElement("option"); o.textContent=i.name; o.value=i.mrp; o.dataset.brand=brandSel.value; itemSel.appendChild(o);
     });
     return;
   }
+  // Word order doesn't matter, and a typed word can match the item name OR the brand
+  // (e.g. "1sqmm 90 polycab" narrows straight to that brand).
+  const words=q.split(/\s+/).filter(Boolean);
+  const found=[]; // [{brand, matches}]
   Object.keys(items).sort().forEach(brand=>{
-    const matches=(items[brand]||[]).filter(i=>i.name.toLowerCase().includes(q));
-    if(!matches.length) return;
-    const grp=document.createElement("optgroup"); grp.label=brand;
-    matches.forEach(i=>{
-      const o=document.createElement("option"); o.textContent=i.name; o.value=i.mrp; o.dataset.brand=brand; grp.appendChild(o);
+    const bl=brand.toLowerCase();
+    const matches=(items[brand]||[]).filter(i=>{ const t=i.name.toLowerCase(); return words.every(w=>t.includes(w)||bl.includes(w)); });
+    if(matches.length) found.push({brand,matches});
+  });
+  if(itemBrandFilter && !found.some(f=>f.brand===itemBrandFilter)) itemBrandFilter="";
+  // Brand drop-down: every brand that carries a match, with its count. Hidden when only one brand matches.
+  if(chipBox){
+    if(found.length>1){
+      chipBox.innerHTML=`<option value="">All brands (${found.reduce((n,f)=>n+f.matches.length,0)} items)</option>`+found.map(f=>`<option value="${f.brand.replace(/"/g,'&quot;')}"${f.brand===itemBrandFilter?" selected":""}>${f.brand} (${f.matches.length})</option>`).join("");
+      chipBox.style.display="block";
+    }else{ chipBox.innerHTML=""; chipBox.style.display="none"; }
+  }
+  found.filter(f=>!itemBrandFilter||f.brand===itemBrandFilter).forEach(f=>{
+    const grp=document.createElement("optgroup"); grp.label=f.brand;
+    f.matches.forEach(i=>{
+      const o=document.createElement("option"); o.textContent=i.name; o.label=i.name+"  ["+f.brand+"]"; o.value=i.mrp; o.dataset.brand=f.brand; grp.appendChild(o);
     });
     itemSel.appendChild(grp);
   });
