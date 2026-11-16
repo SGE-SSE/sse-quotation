@@ -2274,6 +2274,24 @@ function partyCodeFromName(name){
   return firstWord.toUpperCase().replace(/[^A-Z0-9]/g,"");
 }
 
+// Cash Bill: Customer Phone + Kind Attn have no DB column, so they ride inside
+// the "remarks" text column as JSON (same trick DC/IND/RET use). Old plain-text
+// remarks still read fine via cbUnpack.
+function cbRemarksValue(){
+  const rem=document.getElementById("remarksInput")?.value||"";
+  if(currentDocType!=="CB") return rem;
+  return JSON.stringify({cbPhone:(document.getElementById("custPhone")?.value||"").trim(),
+    cbAttn:(document.getElementById("custAttn")?.value||"").trim(), remarks:rem});
+}
+function cbUnpack(q){
+  const out={remarks:q.remarks||"",phone:"",attn:""};
+  if(q.doc_type==="CB" && typeof q.remarks==="string" && q.remarks.trim().startsWith("{")){
+    try{ const j=JSON.parse(q.remarks);
+      if(j && ("cbPhone" in j || "cbAttn" in j)){ out.remarks=j.remarks||""; out.phone=j.cbPhone||""; out.attn=j.cbAttn||""; }
+    }catch(e){}
+  }
+  return out;
+}
 // Entry point for the Save button. A brand-new (never-saved) document just
 // saves normally. A REOPENED, already-saved document instead asks whether
 // to replace it in place (same doc_no, no new serial consumed) or save the
@@ -2347,7 +2365,7 @@ async function performUpdateExistingQuotation(){
     }else if(currentDocType==="RET"){
       remarksVal=retRemarksJSON();
     }else{
-      remarksVal=document.getElementById("remarksInput")?.value || "";
+      remarksVal=cbRemarksValue();
     }
 
     const corePayload = {
@@ -2431,7 +2449,7 @@ async function performInsertNewQuotation(){
               // not-yet-billed record, same reasoning as stock_reduced above.
               billed:false, billedRefNo:"", billedDate:""
             })
-          : (currentDocType==="IND" ? indRemarksJSON() : currentDocType==="RET" ? retRemarksJSON() : (document.getElementById("remarksInput")?.value || "")),
+          : (currentDocType==="IND" ? indRemarksJSON() : currentDocType==="RET" ? retRemarksJSON() : cbRemarksValue()),
         items: collectItemsFromTable(),
         sub_total: +(sub.innerText||0), cash_disc_amt: +cashAmt.toFixed(2),
         taxable: +(document.getElementById("taxableAmt")?.innerText || sub.innerText || 0),
@@ -2892,7 +2910,7 @@ async function previewQuotDash(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${_previewTableHTML(q)}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(cbUnpack(q).remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="openQuotFromDash(${q.id},${isCmp})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="renderQuotDashboard()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -3107,7 +3125,7 @@ async function previewHistoryQuotation(id){
       <div style="font-size:12px;font-weight:700;margin-top:4px">${_hEsc(q.cust_name||"")}</div>
     </div>
     <div style="overflow-x:auto;border:1px solid #c5d3e8;border-radius:8px">${table}</div>
-    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(q.remarks):""}</div>`:""}
+    ${(q.validity||(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET"))?`<div style="font-size:11.5px;color:#5a6a85;margin-top:8px">${q.validity?"Validity: "+_hEsc(q.validity)+"<br>":""}${(q.remarks&&q.doc_type!=="DC"&&q.doc_type!=="IND"&&q.doc_type!=="RET")?"Remarks: "+_hEsc(cbUnpack(q).remarks):""}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">📂 Open &amp; Edit</button>
       <button onclick="backToHistoryList()" style="flex:1;background:#eef3fb;color:#1a3c6e;border:1px solid #c5d3e8;border-radius:5px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700">← Back</button>
@@ -3206,7 +3224,7 @@ function _delDetailsHTML(e){
     itemsHTML=`<div style="font-size:11px;color:#6a1b9a;font-weight:700;margin-top:6px">Brands compared: ${_esc(br.join(" · ")||"—")}</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px"><tr style="background:#f0f4fb"><th style="text-align:left;padding:4px;border:1px solid #dde5f2">#</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Item</th><th style="padding:4px;border:1px solid #dde5f2">Qty</th><th style="text-align:left;padding:4px;border:1px solid #dde5f2">Rates</th></tr>`+
       it.rows.map((r,i)=>`<tr><td style="padding:4px;border:1px solid #dde5f2">${i+1}</td><td style="padding:4px;border:1px solid #dde5f2">${_esc(r.desc)}</td><td style="padding:4px;border:1px solid #dde5f2;text-align:center">${_esc(r.qty)} ${_esc(r.unit)}</td><td style="padding:4px;border:1px solid #dde5f2">${(r.rate||[]).map((v,k)=>(v>0&&(br[k]||it.brands?.[k]))?`${_esc(it.brands[k])}: ₹${(+v).toFixed(2)}`:"").filter(Boolean).join(" &nbsp;|&nbsp; ")}</td></tr>`).join("")+`</table>`;
   }
-  const remarks=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":(q.remarks||"");
+  const remarks=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":cbUnpack(q).remarks;
   const kv=(k,v)=>v?`<div><span style="color:#5a6a85">${k}:</span> <b>${_esc(v)}</b></div>`:"";
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:11.5px;margin-top:8px">
       ${kv("Document date",q.doc_date||e.doc_date)}${kv("Status was",e.doc_status)}
@@ -3263,7 +3281,8 @@ async function reopenQuotation(id){
   if(document.getElementById("docStatus")) document.getElementById("docStatus").value=q.doc_status||"Quoted";
   if(document.getElementById("cashDiscPct")) document.getElementById("cashDiscPct").value=q.cash_disc_pct||"";
   if(document.getElementById("validityInput")) document.getElementById("validityInput").value=q.validity||"7 DAYS";
-  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":(q.remarks||"");
+  if(document.getElementById("remarksInput")) document.getElementById("remarksInput").value=(q.doc_type==="DC"||q.doc_type==="IND"||q.doc_type==="RET")?"":cbUnpack(q).remarks;
+  if(q.doc_type!=="DC"){ const _cb=cbUnpack(q); if(document.getElementById("custPhone")) document.getElementById("custPhone").value=_cb.phone; if(document.getElementById("custAttn")) document.getElementById("custAttn").value=_cb.attn; }
   if(q.doc_type==="RET"){
     try{
       const rj=JSON.parse(q.remarks||"{}");
