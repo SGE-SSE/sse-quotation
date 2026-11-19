@@ -230,6 +230,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
         <option value="Confirmed">✅ Confirmed (Sale)</option>
         <option value="Cancelled">❌ Cancelled</option>
       </select>
+      <div id="cbPayBadge" style="margin-top:6px"></div>
     </div>
   </div>
 </div>
@@ -714,6 +715,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
         <input type="text" id="qdSearch" placeholder="Search number, customer…" oninput="renderQuotDashboard()" style="flex:1;min-width:160px;font-size:13px;padding:7px 10px;border:1px solid #c5d3e8;border-radius:6px">
         <select id="qdType" onchange="renderQuotDashboard()" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">All Types</option><option value="QTN">Quotation</option><option value="CB">Cash Bill</option><option value="PI">Proforma</option><option value="IND">Indent</option></select>
         <select id="qdKind" onchange="renderQuotDashboard()" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="ALL">Regular + Comparison</option><option value="REG">Regular only</option><option value="CMP">Price Comparison only</option></select>
+        <select id="qdPay" onchange="renderQuotDashboard()" title="Cash-bill payment status (auto from Inventory)" style="font-size:12px;padding:7px 8px;border:1px solid #c5d3e8;border-radius:6px"><option value="">All payments</option><option value="unpaid">⏳ Unpaid / pending</option><option value="part">◐ Part paid</option><option value="paid">💰 Paid</option></select>
         <input type="date" id="qdFrom" onchange="renderQuotDashboard()" title="From date" style="font-size:12px;padding:6px 8px;border:1px solid #c5d3e8;border-radius:6px">
         <input type="date" id="qdTo" onchange="renderQuotDashboard()" title="To date" style="font-size:12px;padding:6px 8px;border:1px solid #c5d3e8;border-radius:6px">
       </div>
@@ -2874,7 +2876,7 @@ function renderQuotDashboard(){
     const b=document.getElementById("qdChip_"+k), on=_qdStatus===k;
     b.style.background=on?col[k]:"#fff"; b.style.color=on?"#fff":col[k]; b.textContent=lbl[k]+" ("+cnt[k]+")";
   });
-  const rows=_qdStatus==="ALL"?base:base.filter(r=>r.status===_qdStatus);
+  const rows=(_qdStatus==="ALL"?base:base.filter(r=>r.status===_qdStatus)).filter(payFilterOK);
   if(!rows.length){ list.innerHTML=`<div style="text-align:center;color:#888;padding:30px 10px">No documents match these filters.</div>`; return; }
   const stBadge=s=>{
     const st=s==="Confirmed"?"background:#e3f6ea;color:#1b7a4a":s==="Cancelled"?"background:#fdeaea;color:#c0392b":"background:#eef3fb;color:#5a6a85";
@@ -2889,7 +2891,7 @@ function renderQuotDashboard(){
         <span style="font-size:13px;font-weight:800;color:#1a1a2e">${_qdInr(r.net_payable)}</span>
       </div>
       <div style="font-size:12.5px;font-weight:700;color:#1a1a2e;margin-top:2px">${_hEsc(r.cust_name||"—")}</div>
-      <div style="font-size:11px;color:#888;margin:2px 0 7px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">${_hEsc(r.doc_type)} · ${_hEsc(r.doc_date||"")}${r.isCmp?` <span style="background:#f3e8fa;color:#6a1b9a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">⚖️ Price Comparison</span>`:""} ${stBadge(r.status)}${r.stock_reduced?` <span style="background:#e3f6ea;color:#1b7a4a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">Stock Reduced</span>`:""}</div>
+      <div style="font-size:11px;color:#888;margin:2px 0 7px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">${_hEsc(r.doc_type)} · ${_hEsc(r.doc_date||"")}${r.isCmp?` <span style="background:#f3e8fa;color:#6a1b9a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">⚖️ Price Comparison</span>`:""} ${stBadge(r.status)}${payBadge(r)}${r.stock_reduced?` <span style="background:#e3f6ea;color:#1b7a4a;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px">Stock Reduced</span>`:""}</div>
       <div style="display:flex;gap:6px">
         <button onclick="previewQuotDash(${r.id})" style="flex:1;background:#1a3c6e;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">👁 Preview</button>
         <button onclick="openQuotFromDash(${r.id},${r.isCmp})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open &amp; Edit</button>
@@ -3121,7 +3123,7 @@ async function loadPartyQuotations(partyId, partyName){
         <span style="font-size:13.5px;font-weight:800;color:#1a1a2e">₹ ${(+q.net_payable).toLocaleString("en-IN")}</span>
       </div>
       <div style="font-size:11.5px;color:#5a6a85;margin:3px 0 6px">${q.doc_type} &bull; ${q.doc_date}</div>
-      <div style="display:flex;gap:6px;margin-bottom:9px">${statusBadge(q.doc_status)}${stockBadge(q.stock_reduced,q.doc_type)}</div>
+      <div style="display:flex;gap:6px;margin-bottom:9px">${statusBadge(q.doc_status)}${stockBadge(q.stock_reduced,q.doc_type)}${payBadge(q,partyName)}</div>
       <div style="display:flex;gap:8px">
         <button onclick="previewHistoryQuotation(${q.id})" style="flex:1;background:#1a3c6e;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">👁 Preview</button>
         <button onclick="${isCmp?'reopenCmpQuotation':'reopenQuotation'}(${q.id})" style="flex:1;background:#1b7a4a;color:#fff;border:none;border-radius:5px;padding:6px 0;cursor:pointer;font-size:11.5px;font-weight:700">📂 Open &amp; Edit</button>
@@ -3314,6 +3316,7 @@ async function reopenQuotation(id){
   currentPartyId=q.party_id; gstToggle.checked=q.gst_applied;
   // Restore this record's Status + stock-reduction history so REDUCE STOCK
   // enforces "Confirmed only, once only" against the actual saved state.
+  window._edPayQ={doc_type:q.doc_type,doc_no:q.doc_no,net_payable:q.net_payable,cust_name:q.cust_name,doc_status:q.doc_status};
   currentQuotationId=q.id;
   currentStockReduced=!!q.stock_reduced;
   currentStockReducedAt=q.stock_reduced_at||null;
@@ -6284,5 +6287,138 @@ function exportCmpPDF(){
   });
 }
 </script>
+<script>
+/* ===== AUTOMATIC PAID / UNPAID STATUS for Cash Bills =====
+   Read-only. Calculated live from the Inventory module (same rule as Cash Transactions → Pending bills):
+   paid = cash received & linked to the bill (cash_allocations) + customer-ledger credits on that bill (payments, discounts, returns). */
+(function(){
+const PAY={loaded:false,at:0,err:'',alloc:{},led:{}};
+const nrm=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,' ');
+const r2=n=>Math.round((+n||0)*100)/100;
+const nmatch=(c,p)=>{const n=nrm(c),q=nrm(p);return !!n&&!!q&&(n===q||(q.length>=3&&n.length>=3&&(n.includes(q)||q.includes(n))));};
+async function pages(tbl,sel,filt){
+  let out=[],from=0;
+  for(;;){
+    const {data,error}=await filt(invSb.from(tbl).select(sel)).order('id',{ascending:true}).range(from,from+999);
+    if(error)throw error;
+    out=out.concat(data||[]);
+    if(!data||data.length<1000)break;
+    from+=1000;
+  }
+  return out;
+}
+let inflight=null;
+async function payLoad(force){
+  if(!force&&PAY.loaded&&Date.now()-PAY.at<60000)return;
+  if(inflight)return inflight;
+  inflight=(async()=>{
+    try{
+      const [al,le]=await Promise.all([
+        pages('cash_allocations','ledger_type,bill_no,amount',q=>q.eq('ledger_type','CASHBILL')),
+        pages('ledger_entries','ledger_type,party_name,bill_no,credit',q=>q.eq('ledger_type','CUSTOMER').gt('credit',0))
+      ]);
+      PAY.alloc={};PAY.led={};
+      al.forEach(a=>{const k=nrm(a.bill_no);PAY.alloc[k]=(PAY.alloc[k]||0)+(+a.amount||0);});
+      le.forEach(e=>{if(!e.bill_no)return;const k=nrm(e.bill_no);(PAY.led[k]=PAY.led[k]||[]).push({p:e.party_name,c:+e.credit||0});});
+      PAY.loaded=true;PAY.err='';PAY.at=Date.now();
+    }catch(e){PAY.loaded=false;PAY.err=String((e&&e.message)||e);console.warn('Payment status not loaded:',PAY.err);}
+    inflight=null;
+  })();
+  return inflight;
+}
+/* returns null when no payment status applies (not a cash bill / cancelled / not loaded) */
+function payInfo(r,name){
+  if(!PAY.loaded||!r||r.doc_type!=='CB')return null;
+  if((r.doc_status||r.status||'Quoted')==='Cancelled'||/-CMP-/i.test(r.doc_no||''))return null;
+  const amt=r2(r.net_payable);if(amt<=0.005)return null;
+  const k=nrm(r.doc_no),cust=name||r.cust_name;
+  let paid=PAY.alloc[k]||0;
+  (PAY.led[k]||[]).forEach(x=>{if(nmatch(x.p,cust))paid+=x.c;});
+  paid=r2(paid);const pending=r2(amt-paid);
+  return {amt,paid,pending,st:pending<=0.005?'PAID':paid>0.005?'PART':'UNPAID'};
+}
+const inr=n=>'₹ '+(+n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+function badge(i,big){
+  if(!i)return '';
+  const sz=big?'font-size:12px;padding:3px 10px':'font-size:10.5px;padding:2px 7px';
+  const c=i.st==='PAID'?'background:#e3f6ea;color:#1b7a4a':i.st==='PART'?'background:#fff3e0;color:#b36b00':'background:#fdeaea;color:#c0392b';
+  const t=i.st==='PAID'?'💰 Paid':i.st==='PART'?'◐ Part paid · '+inr(i.pending)+' pending':'⏳ Unpaid · '+inr(i.pending);
+  return '<span title="Bill '+inr(i.amt)+' · Received '+inr(i.paid)+' · Pending '+inr(Math.max(0,i.pending))+'" style="'+c+';'+sz+';font-weight:700;border-radius:10px;white-space:nowrap">'+t+'</span>';
+}
+window.payBadge=(r,name)=>badge(payInfo(r,name));
+window.payFilterOK=r=>{
+  const el=document.getElementById('qdPay'),v=el?el.value:'';if(!v)return true;
+  const i=payInfo(r);if(!i)return false;
+  return v==='paid'?i.st==='PAID':v==='part'?i.st==='PART':i.st!=='PAID';
+};
+async function updateEditorPay(){
+  const el=document.getElementById('cbPayBadge');if(!el)return;
+  const q=window._edPayQ;
+  if(!q||q.doc_type!=='CB'){el.innerHTML='';return;}
+  el.innerHTML='<span style="font-size:11px;color:#888">Checking payment…</span>';
+  await payLoad(true);
+  const i=payInfo(q);
+  el.innerHTML=i?badge(i,true):(PAY.loaded?'':'<span style="font-size:11px;color:#c0392b">Payment status unavailable</span>');
+}
+/* hooks */
+const _lqd=loadQuotDashboard;
+loadQuotDashboard=async function(force){try{await payLoad(!!force);}catch(_){}return _lqd.apply(this,arguments);};
+const _lpq=loadPartyQuotations;
+loadPartyQuotations=async function(){try{await payLoad(false);}catch(_){}return _lpq.apply(this,arguments);};
+const _rq=reopenQuotation;
+reopenQuotation=async function(){const r=await _rq.apply(this,arguments);try{updateEditorPay();}catch(_){}return r;};
+const _sd=switchDocType;
+switchDocType=function(){window._edPayQ=null;const el=document.getElementById('cbPayBadge');if(el)el.innerHTML='';return _sd.apply(this,arguments);};
+})();
+</script>
+
+<script>
+/* ===== SERIAL NUMBER FIX =====
+   Old rule: next serial = (number of bills still in the database for this FY) + start.
+   If bills were deleted, the count drops (e.g. last bill 138, 30 deleted -> next became 108, clashing with live bills).
+   New rule: next serial = HIGHEST serial ever used in this FY + 1, looking at live bills AND the deleted-bills log,
+   and never lower than the old count-based number. */
+getNextDocSerial=async function(partyId,docType,fy){
+  const start=DOC_SERIAL_START[docType]||1;
+  const re=new RegExp('^SGE-SSE-'+docType+'-(\\d+)(?:\\D|$)');
+  const serialOf=no=>{const m=re.exec(String(no||'').trim());return m?parseInt(m[1],10):0;};
+  // old count-based number (lower bound)
+  let q=sb.from("quotations").select("id",{count:"exact",head:true}).eq("doc_type",docType).gte("doc_date",fy.startStr).lt("doc_date",fy.endExclusiveStr);
+  if(docType==="QTN")q=q.eq("party_id",partyId);
+  const {count,error}=await q;
+  if(error)throw error;
+  let maxSerial=0;
+  // highest serial among live bills of this FY
+  let from=0;
+  for(;;){
+    let qq=sb.from("quotations").select("id,doc_no").eq("doc_type",docType).gte("doc_date",fy.startStr).lt("doc_date",fy.endExclusiveStr).order("id",{ascending:true}).range(from,from+999);
+    if(docType==="QTN")qq=qq.eq("party_id",partyId);
+    const {data,error:e2}=await qq;
+    if(e2)throw e2;
+    (data||[]).forEach(r=>{maxSerial=Math.max(maxSerial,serialOf(r.doc_no));});
+    if(!data||data.length<1000)break;
+    from+=1000;
+  }
+  // numbers already issued to bills that were later deleted must not be reused
+  try{
+    const {data:dl}=await sb.from("deleted_quotations").select("doc_no,doc_type,doc_date,party_id").eq("doc_type",docType).limit(5000);
+    (dl||[]).forEach(r=>{
+      if(docType==="QTN"&&String(r.party_id)!==String(partyId))return;
+      const d=String(r.doc_date||"");if(d&&(d<fy.startStr||d>=fy.endExclusiveStr))return;
+      maxSerial=Math.max(maxSerial,serialOf(r.doc_no));
+    });
+  }catch(_){}
+  try{
+    (JSON.parse(localStorage.getItem("SSE_DELETED_LOG")||"[]")).forEach(r=>{
+      if(r.doc_type!==docType)return;
+      if(docType==="QTN"&&String(r.party_id)!==String(partyId))return;
+      const d=String(r.doc_date||"");if(d&&(d<fy.startStr||d>=fy.endExclusiveStr))return;
+      maxSerial=Math.max(maxSerial,serialOf(r.doc_no));
+    });
+  }catch(_){}
+  return Math.max(start+(count||0),maxSerial+1,start);
+};
+</script>
+
 </body>
 </html>
