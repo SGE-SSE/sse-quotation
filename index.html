@@ -1417,6 +1417,7 @@ function computeShortfalls(){
   [...tbody.rows].forEach(r=>{
     const cells=r.cells;
     if(!cells||cells.length<8) return;
+    if(r.dataset.retDisc) return;   /* discount line, not a returned item */
     const brand=cells[1].innerText.trim();
     const itemCode=(cells[2].innerText||"").trim().replace(/^-$/,"");
     const desc=cells[3].innerText.trim();
@@ -1572,6 +1573,7 @@ function collectRowsForReduce(){
   [...tbody.rows].forEach(r=>{
     const cells=r.cells;
     if(!cells||cells.length<8) return;
+    if(r.dataset.retDisc) return;   /* discount line, not a returned item */
     const brand=cells[1].innerText.trim();
     const desc=cells[3].innerText.trim();
     const qty=parseFloat(cells[7].innerText)||0;
@@ -2271,7 +2273,8 @@ function collectItemsFromTable(){
       colour: r.cells[4].innerText, hsn: r.cells[5].innerText, unit: r.cells[6].innerText,
       qty: r.cells[7].innerText, mrp: mrpRaw, discount: discRaw, discMode: r.dataset.discMode||'pct',
       rate: r.cells[10].innerText, perMtr: r.cells[11].innerText, amount: r.cells[12].innerText,
-      qtnQty: r.dataset.qtnQty||"", srcBill: r.dataset.srcBill||""
+      qtnQty: r.dataset.qtnQty||"", srcBill: r.dataset.srcBill||"",
+      retDisc: r.dataset.retDisc?true:undefined, retDiscAmt: r.dataset.retDiscAmt||undefined
     };
   });
 }
@@ -3306,6 +3309,7 @@ function appendSavedItemRow(it){
     r.innerHTML=`<td></td><td>${it.brand}</td><td class="icode">${escItemCode(it.itemCode)||"-"}</td><td>${it.description}</td><td style="${(it.colour&&it.colour!=='-'&&it.colour!=='—')?getColourStyle(it.colour):''}">${it.colour}</td><td>${it.hsn}</td><td>${it.unit}</td><td>${it.qty}</td><td class="mrpCol">${it.mrp}</td><td class="mrpCol">${discCellInit}</td><td>${it.rate}</td><td class="perMtrCell" style="${it.perMtr&&it.perMtr!=='-'?'':'display:none'}">${it.perMtr}</td><td>${it.amount}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   if(it.qtnQty!==undefined&&it.qtnQty!=="") r.dataset.qtnQty=it.qtnQty;
   if(it.srcBill){ r.dataset.srcBill=it.srcBill; r.title="From Cash Bill "+it.srcBill; }
+  if(it.retDisc){ r.dataset.retDisc="1"; r.dataset.retDiscAmt=it.retDiscAmt||""; r.style.background="#fff7e6"; r.title="Post-bill discount deducted from this return (not a returned item)"; }
 }
 async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
@@ -6418,6 +6422,236 @@ getNextDocSerial=async function(partyId,docType,fy){
   }catch(_){}
   return Math.max(start+(count||0),maxSerial+1,start);
 };
+</script>
+
+<script>
+/* ===== COIL LENGTH CONVERTER =====
+   Adds a "🔄 Length" button on every wire/coil line. Same total metres, new coil length:
+   the matching item (same product, other length) is taken from the PRICE LIST, its MRP is picked from the list,
+   the line's discount carries over, rate / per-metre / amount are recalculated exactly like a normal line. */
+(function(){
+const LRE=/\d{2,4}\s*MTR\b/i;
+const lenOf=n=>{const m=String(n||'').match(/(\d{2,4})\s*MTR\b/i);return m?+m[1]:0;};
+const key=n=>String(n||'').toUpperCase().replace(LRE,'').replace(/\s+/g,' ').trim();
+const inr=n=>'₹ '+(+n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function findCur(desc,brandText){
+  /* item names repeat across brands, so the line's BRAND decides which price-list group the item belongs to */
+  const bt=String(brandText||'').trim().toUpperCase();
+  let best=null;
+  Object.keys(items).forEach(b=>{
+    let same=false;try{same=String(getDisplayBrand(b)).toUpperCase()===bt;}catch(_){}
+    if(!same&&!String(b).toUpperCase().startsWith(bt))return;
+    (items[b]||[]).forEach(i=>{
+      const n=String(i.name||'').trim();
+      if(desc===n||desc.startsWith(n+' ')){if(!best||n.length>best.item.name.length)best={brand:b,item:i};}
+    });
+  });
+  return best;
+}
+const dispB=b=>{try{return getDisplayBrand(b);}catch(_){return b;}};
+const norm=n=>key(n).replace(/\bLF\b/g,'').replace(/\s+/g,' ').trim();
+const sizeOf=n=>{const m=String(n||'').match(/(\d+(?:\.\d+)?)\s*SQMM/i);return m?parseFloat(m[1]):null;};
+/* other coil lengths of the same product, searched across ALL price-list groups of the same brand:
+   tier 1 = identical name (only length differs, same group); tier 2 = same name ignoring LF, any group; tier 3 = same brand + same SQMM size (name differs - shown with a warning) */
+function siblings(cur){
+  const L=lenOf(cur.item.name),k1=key(cur.item.name),k2=norm(cur.item.name),sz=sizeOf(cur.item.name),db=dispB(cur.brand),found=[];
+  Object.keys(items).forEach(b=>{
+    if(dispB(b)!==db)return;
+    (items[b]||[]).forEach(i=>{
+      if(i===cur.item)return;
+      const l=lenOf(i.name);if(!l||l===L||!(+i.mrp>0))return;
+      let t=0;
+      if(b===cur.brand&&key(i.name)===k1)t=1;else if(norm(i.name)===k2)t=2;else if(sz!==null&&sizeOf(i.name)===sz)t=3;
+      if(t)found.push(Object.assign({},i,{_b:b,_t:t}));
+    });
+  });
+  const best={};found.forEach(i=>{const l=lenOf(i.name);if(!best[l]||i._t<best[l])best[l]=i._t;});
+  return found.filter(i=>i._t===best[lenOf(i.name)]).sort((a,c)=>lenOf(a.name)-lenOf(c.name)||a._t-c._t);
+}
+function ctx(r){
+  const c=r.cells,desc=c[3].innerText.trim(),cur=findCur(desc,c[1].innerText);
+  if(!cur)return {err:'This item was not found in the price list under brand \''+(r.cells[1].innerText.trim())+'\', so its other lengths cannot be picked.'};
+  const sibs=siblings(cur);
+  if(!sibs.length)return {err:'No other coil length of this item exists in the price list.'};
+  const unit=c[6].innerText.trim().toUpperCase(),curLen=lenOf(cur.item.name),qty=parseFloat(c[7].innerText)||0;
+  const mode=r.dataset.discMode==='net'?'net':'pct';
+  const rawMrp=parseFloat(r.dataset.mrpRaw),listMrp=+cur.item.mrp;
+  const oldCoilMrp=(!isNaN(rawMrp)&&rawMrp>0)?(unit==='MTRS'?rawMrp*curLen:rawMrp):listMrp;
+  let d=parseFloat(r.dataset.discRaw)||0;
+  if(mode==='net'){const rt=parseFloat(c[10].innerText)||0,coilRt=unit==='MTRS'?rt*curLen:rt;d=oldCoilMrp>0?(1-coilRt/oldCoilMrp)*100:0;}
+  return {cur,sibs,unit,curLen,qty,mode,d,suffix:desc.slice(cur.item.name.length),desc};
+}
+function vals(x,item,qty){
+  const L=lenOf(item.name),cm=+item.mrp,cr=cm-(cm*x.d/100);
+  const isM=x.unit==='MTRS',pm=(cr/L).toFixed(2),fr=isM?+pm:cr,dm=isM?(cm/L).toFixed(2):cm;
+  return {item,L,qty,cr,fr,dm,pm,amt:fr*qty};
+}
+function plan(x,sib,how){
+  const T=x.qty*x.curLen,L=lenOf(sib.name),notes=[],lines=[];
+  if(x.unit==='MTRS'){lines.push({item:sib,qty:x.qty});return {lines,notes,exact:true};}
+  const whole=Math.floor(T/L),rem=T-whole*L;
+  if(rem===0){lines.push({item:sib,qty:whole});return {lines,notes,exact:true};}
+  if(how==='up'){lines.push({item:sib,qty:whole+1});notes.push((L-rem)+' m more than the '+T+' m asked.');}
+  else if(how==='down'){if(whole>0)lines.push({item:sib,qty:whole});notes.push(rem+' m less than the '+T+' m asked.');}
+  else{
+    if(whole>0)lines.push({item:sib,qty:whole});
+    let left=rem;
+    const pu={};const pool=[x.cur.item].concat(x.sibs).filter(i=>lenOf(i.name)<L).filter(i=>{const l=lenOf(i.name);if(pu[l])return false;pu[l]=1;return true;}).sort((a,b)=>lenOf(b.name)-lenOf(a.name));
+    pool.forEach(i=>{const l=lenOf(i.name);if(left>=l){const n=Math.floor(left/l);lines.push({item:i,qty:n});left-=n*l;}});
+    if(left>0)notes.push(left+' m cannot be made from the available coil lengths.');
+  }
+  return {lines,notes,exact:false,rem,whole};
+}
+function setRow(r,x,v){
+  const c=r.cells,showMrp=c[8].innerText.trim()!=='-',showPm=c[11].style.display!=='none';
+  c[2].innerText=escItemCode(v.item.itemCode)||'-';
+  c[3].innerText=v.item.name+x.suffix;
+  if(v.item.hsn)c[5].innerText=v.item.hsn;
+  c[7].innerText=v.qty;
+  c[8].innerText=showMrp?v.dm:'-';
+  c[10].innerText=v.fr.toFixed(2);
+  c[11].innerText=showPm?v.pm:'-';
+  c[12].innerText=v.amt.toFixed(2);
+  r.dataset.mrpRaw=v.dm;r.dataset.coilLen=v.L;
+  if(x.mode==='net'){r.dataset.discRaw=v.cr.toFixed(2);c[9].innerText='-';}
+}
+let ov=null;
+function close(){if(ov){ov.remove();ov=null;}}
+function box(){close();ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:14px';
+  const b=document.createElement('div');b.style.cssText='background:#fff;color:#222;border-radius:10px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:16px 18px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.3)';
+  ov.appendChild(b);ov.addEventListener('click',e=>{if(e.target===ov)close();});document.body.appendChild(ov);return b;}
+const btn=(t,cb,primary)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='margin:3px 6px 3px 0;padding:7px 12px;border-radius:6px;cursor:pointer;border:1px solid '+(primary?'#185FA5':'#bbb')+';background:'+(primary?'#185FA5':'#f5f5f5')+';color:'+(primary?'#fff':'#222');b.onclick=cb;return b;};
+window.convLen=function(button){
+  const r=button.closest('tr'),x=ctx(r);
+  if(x.err){alert(x.err);return;}
+  const b=box();
+  const h=document.createElement('div');
+  h.innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px">🔄 Convert coil length</div>'+
+    '<div style="color:#555;margin-bottom:10px">'+x.cur.item.name+' <span style="color:#888">['+x.cur.brand+'  ·  MRP '+inr(x.cur.item.mrp)+']</span><br>Now: <b>'+x.qty+' '+(x.unit==='MTRS'?'metres':'coil(s) × '+x.curLen+' m = '+(x.qty*x.curLen)+' m')+'</b> · discount '+(x.d?x.d.toFixed(2).replace(/\.00$/,'')+'%':'none')+'</div>'+
+    '<div style="font-weight:600;margin-bottom:4px">Convert to:</div>';
+  b.appendChild(h);
+  const row=document.createElement('div');b.appendChild(row);
+  const out=document.createElement('div');out.style.marginTop='10px';b.appendChild(out);
+  x.sibs.forEach(s=>{const bt=btn(lenOf(s.name)+' m  ·  '+s.name+'  ·  MRP '+inr(s.mrp)+'   ['+s._b+']'+(s._t===3?'   ⚠ name differs, please check':''),()=>preview(x,r,s,out,'up'));bt.style.display='block';bt.style.textAlign='left';bt.style.width='100%';row.appendChild(bt);});
+  const foot=document.createElement('div');foot.style.marginTop='12px';foot.appendChild(btn('Close',close));b.appendChild(foot);
+};
+function preview(x,r,sib,out,how){
+  const p=plan(x,sib,how);out.innerHTML='';
+  const L=lenOf(sib.name),T=x.qty*x.curLen;
+  const before=(parseFloat(r.cells[12].innerText)||0);
+  let h='<div style="border-top:1px solid #ddd;padding-top:10px">';
+  if(x.unit==='MTRS')h+='<div style="margin-bottom:6px">Quantity stays <b>'+x.qty+' m</b>. The rate per metre changes to the '+L+' m item\'s price.</div>';
+  else if(p.exact)h+='<div style="margin-bottom:6px;color:#1b7a4a">'+T+' m ÷ '+L+' m = <b>'+(T/L)+' coil(s)</b>. Exact match.</div>';
+  else{
+    h+='<div style="margin-bottom:6px;color:#b36b00">'+T+' m does not divide into '+L+' m coils ('+p.whole+' coil(s) + '+p.rem+' m). Choose:</div><div id="cvHow" style="margin-bottom:8px"></div>';
+  }
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:#f1f1f1"><th style="text-align:left;padding:4px">Item</th><th style="padding:4px">Qty</th><th style="padding:4px;text-align:right">MRP</th><th style="padding:4px;text-align:right">Rate</th><th style="padding:4px;text-align:right">Amount</th></tr>';
+  let tot=0;
+  p.lines.forEach(l=>{const v=vals(x,l.item,l.qty);tot+=v.amt;h+='<tr><td style="padding:4px;border-bottom:1px solid #eee">'+l.item.name+x.suffix+'</td><td style="padding:4px;text-align:center;border-bottom:1px solid #eee">'+l.qty+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+(+l.item.mrp).toLocaleString('en-IN')+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.fr)+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.amt)+'</td></tr>';});
+  if(!p.lines.length)h+='<tr><td colspan="5" style="padding:6px;color:#c0392b">No full coil possible with this choice.</td></tr>';
+  h+='</table>';
+  if(p.notes.length)h+='<div style="margin-top:6px;color:#b36b00">'+p.notes.join(' ')+'</div>';
+  h+='<div style="margin-top:6px">Line total: '+inr(before)+' → <b>'+inr(tot)+'</b></div></div>';
+  out.innerHTML=h;
+  const hw=out.querySelector('#cvHow');
+  if(hw)[['up','Round up'],['down','Round down'],['split','Keep remainder in smaller coils']].forEach(o=>{const bb=btn(o[1],()=>preview(x,r,sib,out,o[0]),how===o[0]);hw.appendChild(bb);});
+  const act=document.createElement('div');act.style.marginTop='10px';
+  act.appendChild(btn('Apply to quotation',()=>{
+    if(!p.lines.length){alert('Nothing to apply. Choose another option.');return;}
+    const first=p.lines[0];setRow(r,x,vals(x,first.item,first.qty));
+    let after=r;
+    p.lines.slice(1).forEach(l=>{const c=r.cloneNode(true);after.parentNode.insertBefore(c,after.nextSibling);setRow(c,x,vals(x,l.item,l.qty));after=c;});
+    if(typeof renumber==='function')renumber();
+    if(typeof calc==='function')calc();
+    close();
+  },true));
+  act.appendChild(btn('Cancel',close));
+  out.appendChild(act);
+}
+/* add the button to wire/coil lines (also to lines loaded from saved bills, and after edits) */
+function addBtns(){
+  if(typeof tbody==='undefined'||!tbody)return;
+  [...tbody.rows].forEach(r=>{
+    const a=r.cells[13];
+    if(!a||a.querySelector('.btn-conv'))return;
+    if(!LRE.test(r.cells[3]?r.cells[3].innerText:''))return;
+    const b=document.createElement('button');b.type='button';b.className='btn-conv';b.textContent='🔄 Length';b.title='Convert coil length (90 / 180 / 300 m)';b.onclick=function(){convLen(this);};a.appendChild(b);
+  });
+}
+let t=null;
+const sched=()=>{clearTimeout(t);t=setTimeout(addBtns,60);};
+try{new MutationObserver(sched).observe(tbody,{childList:true,subtree:true,characterData:true});}catch(_){}
+addBtns();
+})();
+</script>
+
+<script>
+/* ===== RETURN vs POST-BILL DISCOUNT =====
+   When a return is made against a cash bill that had a post-bill discount (recorded in Cash Transactions),
+   that discount is deducted from the return's credit note - in full by default, or any amount you choose (0 = skip).
+   It is added as a "LESS: POST-BILL DISCOUNT" line on the return, so the printed return, the net payable and the
+   ledger credit note all agree. A bill's discount is adjusted only once across all its returns. */
+(function(){
+const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const inr=n=>'₹ '+(+n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=n=>Math.round((+n||0)*100)/100;
+async function billInfo(q,net){
+  /* payments & discount recorded for this cash bill in the Inventory module */
+  const out={paid:0,disc:0,prev:0,here:0};
+  const le=await invSb.from('ledger_entries').select('credit,remarks').eq('ledger_type','CUSTOMER').eq('bill_no',q.doc_no).gt('credit',0);
+  if(le.error)throw le.error;
+  (le.data||[]).forEach(e=>{const rm=String(e.remarks||'');if(/^DISCOUNT/i.test(rm))out.disc+=+e.credit||0;else if(!/^RET-SYNC/i.test(rm))out.paid+=+e.credit||0;});
+  try{const al=await invSb.from('cash_allocations').select('amount').eq('ledger_type','CASHBILL').eq('bill_no',q.doc_no);(al.data||[]).forEach(a=>out.paid+=+a.amount||0);}catch(_){}
+  /* discount already adjusted in earlier returns of this bill (so it is never deducted twice) */
+  const rt=await sb.from('quotations').select('id,items,doc_status').eq('doc_type','RET').limit(3000);
+  (rt.data||[]).forEach(d=>{
+    if((d.doc_status||'Quoted')==='Cancelled')return;
+    (Array.isArray(d.items)?d.items:[]).forEach(it=>{
+      if(it&&it.retDisc&&String(it.srcBill)===String(q.doc_no)){const v=parseFloat(it.retDiscAmt)||0;if(String(d.id)===String(window.currentQuotationId))out.here+=v;else out.prev+=v;}
+    });
+  });
+  out.paid=r2(out.paid);out.disc=r2(out.disc);out.prev=r2(out.prev);out.here=r2(out.here);out.net=r2(net);
+  return out;
+}
+const _srb=showRetBillItems;
+showRetBillItems=async function(x){
+  await _srb.apply(this,arguments);
+  if(!retCur||retCur.doc_no!==x.doc_no)return;
+  const body=document.getElementById('retPickBody');if(!body)return;
+  const box=document.createElement('div');box.id='retDiscBox';
+  box.style.cssText='margin:8px 0;padding:9px 11px;background:#fff8e6;border:1px solid #f0d68a;border-radius:8px;font-size:12px';
+  box.innerHTML='Checking payments &amp; discount on this bill…';
+  body.insertBefore(box,body.children[1]||null);
+  try{
+    const i=await billInfo(retCur,x.net_payable);
+    const remain=Math.max(0,r2(i.disc-i.prev-i.here));
+    let h='<div>💰 Bill <b>'+inr(i.net)+'</b> · Received <b>'+inr(i.paid)+'</b> · Post-bill discount given <b style="color:#b36b00">'+inr(i.disc)+'</b>'+((i.prev+i.here)>0?' · already adjusted in returns <b>'+inr(i.prev+i.here)+'</b>':'')+'</div>';
+    if(i.disc<=0.004)h+='<div style="color:#555;margin-top:3px">No post-bill discount recorded on this bill, so nothing is deducted.</div>';
+    else if(remain<=0.004&&i.here>0)h+='<div style="color:#555;margin-top:3px">This return already deducts the discount for this bill.</div>';
+    else if(remain<=0.004)h+='<div style="color:#555;margin-top:3px">The full discount of this bill was already adjusted in an earlier return.</div>';
+    else h+='<div style="margin-top:5px">Deduct from this return\'s credit note: ₹ <input id="retDiscAdj" type="number" min="0" max="'+remain+'" step="0.01" value="'+remain+'" style="width:110px;padding:3px 6px"> <span style="color:#666">(full discount by default · change the amount, or 0 to skip)</span></div>';
+    box.innerHTML=h;
+  }catch(e){
+    box.innerHTML='<div style="color:#c0392b">Could not read the discount from Inventory ('+esc(e.message||e)+').</div><div style="margin-top:4px">Deduct from this return\'s credit note: ₹ <input id="retDiscAdj" type="number" min="0" step="0.01" value="0" style="width:110px;padding:3px 6px"> <span style="color:#666">(enter manually if needed)</span></div>';
+  }
+};
+const _apr=addPickedRetItems;
+addPickedRetItems=function(){
+  const bill=retCur?retCur.doc_no:null,inp=document.getElementById('retDiscAdj');
+  let adj=inp?parseFloat(inp.value)||0:0;
+  if(inp&&inp.max&&adj>parseFloat(inp.max)+0.004){alert('The discount to deduct cannot be more than the discount given on this bill ('+inr(parseFloat(inp.max))+').');return;}
+  const before=tbody.rows.length,res=_apr.apply(this,arguments);
+  if(bill&&adj>0.004&&tbody.rows.length>before&&![...tbody.rows].some(r=>r.dataset.retDisc&&r.dataset.srcBill===bill)){
+    /* GST (18%) and the bill's cash-discount % are applied on top of line amounts, so the line is scaled to make the net credit drop by exactly the discount */
+    const f=(gstToggle.checked?1.18:1)*(1-((parseFloat((document.getElementById('cashDiscPct')||{}).value)||0)/100));
+    const amt=-r2(adj/(f||1));
+    appendSavedItemRow({brand:'-',itemCode:'-',description:'LESS: POST-BILL DISCOUNT ALLOWED ON '+bill,colour:'-',hsn:'-',unit:'-',qty:1,mrp:'-',discount:'-',discMode:'pct',rate:amt.toFixed(2),perMtr:'-',amount:amt.toFixed(2),qtnQty:'',srcBill:bill,retDisc:true,retDiscAmt:adj});
+    renumber();calc();
+    const st=document.getElementById('saveStatus');if(st)st.textContent+='  Post-bill discount '+inr(adj)+' deducted for '+bill+'.';
+  }
+  return res;
+};
+})();
 </script>
 
 </body>
