@@ -468,6 +468,8 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <tbody></tbody>
 </table>
 </div>
+<!-- IND COPPER WIRE: colour-wise + coil count summary (auto-filled) -->
+<div id="indWireSummary" style="display:none;margin:10px 14px 0;border:1px solid #c5d3e8;border-radius:6px;overflow:hidden;page-break-inside:avoid"></div>
 
 <!-- T&C + TOTALS -->
 <div style="margin:12px 14px 14px">
@@ -5294,6 +5296,64 @@ function applyRoundOffPrompt(){
   document.getElementById("writeOffInput").value=(full-fin)>0?(+(full-fin).toFixed(2)):"";
   calc();
 }
+
+/* ===== IND COPPER WIRE — COLOUR-WISE LINES + COIL COUNT (auto from the item table) ===== */
+const IND_SIZES=["1.0","1.5","2.5","4.0","6.0"];
+const IND_CLR_ORDER=["RED","YELLOW","BLUE","BLACK","GREEN"];
+function collectIndWire(){
+  const groups=new Map(), sizeTot={}; let total=0;
+  [...tbody.rows].forEach(r=>{
+    const desc=(r.cells[3]?.innerText||"").trim(), up=desc.toUpperCase();
+    if(!/IND\s*COPPER/.test(up)) return;
+    const unit=(r.cells[6]?.innerText||"").trim().toUpperCase();
+    const q=parseFloat(r.cells[7]?.innerText)||0; if(!q) return;
+    const len=parseFloat(r.dataset.coilLen)||(typeof getCoilLength==="function"?getCoilLength(desc):0)||0;
+    let coils=q;
+    if(unit==="MTRS"){ if(!len) return; coils=q/len; }
+    else if(unit!=="COIL") return;
+    const sm=up.match(/(\d+(?:\.\d+)?)\s*SQMM/); if(!sm) return;
+    const size=parseFloat(sm[1]).toFixed(1);
+    let clr=(r.cells[4]?.innerText||"").trim().toUpperCase(); if(!clr||clr==="-"||clr==="—") clr="—";
+    const brand=(r.dataset.brand||r.cells[1]?.innerText||"").trim();
+    // line label = description without the colour (colours are listed beside it)
+    const key=brand+"|"+desc;
+    if(!groups.has(key)) groups.set(key,{brand,desc,size,len,colours:{},coils:0});
+    const g=groups.get(key); g.colours[clr]=(g.colours[clr]||0)+coils; g.coils+=coils;
+    sizeTot[size]=(sizeTot[size]||0)+coils; total+=coils;
+  });
+  return {groups:[...groups.values()],sizeTot,total};
+}
+function _fmtCoils(n){ return +n.toFixed(2); }
+function indColourText(g){
+  const names=Object.keys(g.colours).sort((a,b)=>{const ia=IND_CLR_ORDER.indexOf(a),ib=IND_CLR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+  return names.map(c=>(c==="—"?"":c+"-")+_fmtCoils(g.colours[c])).join(", ");
+}
+function updateIndWireSummary(){
+  const box=document.getElementById("indWireSummary"); if(!box) return;
+  const d=collectIndWire();
+  if(!d.groups.length){ box.style.display="none"; box.innerHTML=""; return; }
+  const sorted=d.groups.slice().sort((a,b)=>parseFloat(a.size)-parseFloat(b.size)||a.len-b.len);
+  const td='style="border:1px solid #c5d3e8;padding:5px 8px;text-align:left"', tdc='style="border:1px solid #c5d3e8;padding:5px 8px;text-align:center;font-weight:700"';
+  const th='style="background:#1a3c6e;color:#fff;padding:6px 8px;border:1px solid #2a5298;font-size:11.5px"';
+  let h=`<div style="background:#1a3c6e;color:#fff;padding:6px 10px;font-size:12px;font-weight:800;letter-spacing:.5px">IND COPPER WIRE — COLOUR WISE (COILS)</div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;margin:0"><thead><tr><th ${th}>Item</th><th ${th}>Colour-wise Coils</th><th ${th} style="width:70px">Total</th></tr></thead><tbody>`;
+  sorted.forEach(g=>{ h+=`<tr><td ${td}>${g.brand&&g.brand!=="-"?"<b>"+g.brand+"</b> ":""}${g.desc}</td><td ${td}><b>${indColourText(g)}</b></td><td ${tdc}>${_fmtCoils(g.coils)}</td></tr>`; });
+  h+=`</tbody></table>
+  <div style="background:#f0f4fb;padding:6px 10px;border-top:2px solid #1a3c6e;font-size:12px;font-weight:700;color:#1a3c6e">TOTAL COIL COUNT — SIZE WISE: `+
+  IND_SIZES.concat(Object.keys(d.sizeTot).filter(s=>!IND_SIZES.includes(s))).filter(s=>d.sizeTot[s]).map(s=>`${s} SQMM = <span style="color:#c0392b">${_fmtCoils(d.sizeTot[s])}</span>`).join(" &nbsp;|&nbsp; ")+
+  ` &nbsp;&nbsp;➜&nbsp; <span style="background:#1a3c6e;color:#fff;padding:2px 8px;border-radius:4px">TOTAL IND COILS = ${_fmtCoils(d.total)}</span></div>`;
+  box.innerHTML=h; box.style.display="";
+}
+function indWireExcelRows(){
+  const d=collectIndWire(); if(!d.groups.length) return [];
+  const out=[[],["IND COPPER WIRE — COLOUR WISE (COILS)"],["Item","Colour-wise Coils","Total"]];
+  d.groups.sort((a,b)=>parseFloat(a.size)-parseFloat(b.size)||a.len-b.len).forEach(g=>out.push([(g.brand&&g.brand!=="-"?g.brand+" ":"")+g.desc,indColourText(g),_fmtCoils(g.coils)]));
+  out.push([]); out.push(["TOTAL COIL COUNT — SIZE WISE"]);
+  IND_SIZES.concat(Object.keys(d.sizeTot).filter(s=>!IND_SIZES.includes(s))).forEach(s=>{ if(d.sizeTot[s]) out.push([s+" SQMM",_fmtCoils(d.sizeTot[s])]); });
+  out.push(["TOTAL IND COILS",_fmtCoils(d.total)]);
+  return out;
+}
+
 function calc(){
   let s=0;[...tbody.rows].forEach(r=>s+=+r.cells[12].innerText);
   sub.innerText=s.toFixed(2);
@@ -5322,6 +5382,7 @@ function calc(){
   document.getElementById("perMtrHeader").style.display=hasIndCopper?"":"none";
   document.querySelectorAll(".perMtrCell").forEach(c=>c.style.display=hasIndCopper?"":"none");
   updateBrandDiscSummary();
+  updateIndWireSummary();
 }
 
 function updateBrandDiscSummary(){
@@ -5542,6 +5603,7 @@ function exportExcel(){
   const custAttnVal=document.getElementById("custAttn")?.value.trim()||"";
   let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Item Code","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,13).map(c=>c.innerText)));
+  data.push(...indWireExcelRows());
   data.push([]);
   data.push(["","","","","","","","","","","","Sub Total",sub.innerText]);
   const cashPctVal=parseFloat(document.getElementById("cashDiscPct")?.value)||0;
