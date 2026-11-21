@@ -5020,6 +5020,37 @@ function addItem(){
   renumber();calc();
 }
 
+/* ===== CUSTOM ITEM -> optionally save permanently into the Price List (price_items) ===== */
+let _custPLBusy=false;
+async function offerAddToPriceList(brandIn,nameIn,rateIn,hsnIn,codeIn,unitIn){
+  try{
+    if(_custPLBusy) return;
+    const brandTxt=(brandIn||"").trim(), name=(nameIn||"").trim();
+    if(!brandTxt||!name||/^(NA|N\/A|LOCAL)$/i.test(brandTxt)) return;           // no real brand -> nothing to file it under
+    const key=Object.keys(items||{}).find(b=>b.trim().toLowerCase()===brandTxt.toLowerCase());
+    if(!key) return;                                                              // brand not in price list -> don't create new brands by accident
+    const exists=(items[key]||[]).some(i=>String(i.name).trim().toLowerCase()===name.toLowerCase());
+    if(exists) return;                                                            // already in the price list
+    if(!confirm('Add "'+name+'" to the '+key+' price list permanently?\n\nOK = save it so you can pick it from the Item list next time.\nCancel = use it in this document only.')) return;
+    const mrpStr=prompt('MRP / list price to store for "'+name+'" ('+key+'):',String(+(+rateIn||0).toFixed(2)));
+    if(mrpStr===null) return;
+    const mrpVal=parseFloat(mrpStr)||0;
+    const code=(codeIn||"").trim(); const hsn=(hsnIn||"").trim(); const unit=(unitIn||"").trim().toUpperCase();
+    const newItem={name,mrp:mrpVal,hsn:hsn&&hsn!=="-"?hsn:""};
+    if(code&&code!=="-") newItem.itemCode=code;
+    if(unit) newItem.defaultUnit=unit;
+    _custPLBusy=true;
+    items[key].push(newItem);
+    try{
+      await savePricesToCloud();
+      refreshBrandDropdown(); populateCmpBrandLists();
+      alert('✓ Added "'+name+'" to the '+key+' price list.');
+    }catch(e){
+      items[key]=items[key].filter(i=>i!==newItem);                              // roll back if the save failed
+      alert("Could not save to the price list:\n\n"+e.message);
+    }finally{ _custPLBusy=false; }
+  }catch(e){ console.error("offerAddToPriceList",e); _custPLBusy=false; }
+}
 function toggleCustomItem(){customItemBox.style.display=customToggle.checked?"block":"none";}
 function addCustomItem(){
   const brand=c_brand.value||"NA",item=c_item.value,hsn=(c_hsn.value||"").trim(),unit=c_unit.value,qty=+c_qty.value,rate=+c_rate.value,codeV=escItemCode(document.getElementById("c_code").value)||"-";
@@ -5028,6 +5059,7 @@ function addCustomItem(){
   r.dataset.brand=brand; r.dataset.mrpRaw='-'; r.dataset.discRaw='-';
   r.innerHTML=`<td></td><td>${brand}</td><td class="icode">${codeV}</td><td>${item}</td><td>-</td><td>${hsn||"-"}</td><td>${unit}</td><td>${qty}</td><td class="mrpCol">-</td><td class="mrpCol">-</td><td>${rate.toFixed(2)}</td><td class="perMtrCell" style="display:none">-</td><td>${(qty*rate).toFixed(2)}</td><td class="no-print"><button class="btn-edit-row" onclick="editRow(this)">✏️ Edit</button><button onclick="delRow(this)">Delete</button></td>`;
   renumber();calc();c_item.value=c_rate.value=c_hsn.value=document.getElementById("c_code").value="";
+  setTimeout(()=>offerAddToPriceList(brand,item,rate,hsn,codeV,unit),60);
 }
 function delRow(b){b.closest("tr").remove();renumber();calc();}
 
@@ -5807,6 +5839,7 @@ function addCmpCustomItem(){
   document.getElementById("cmpC_qty").value="1";
   renderCmpTable();
   calcCmpTotals();
+  setTimeout(()=>offerAddToPriceList(brand,desc,rate,hsn,codeCC,unit),60);
 }
 
 /* Populate each brand's Item <select> from the master inventory list,
