@@ -5301,7 +5301,7 @@ function applyRoundOffPrompt(){
 const IND_SIZES=["1.0","1.5","2.5","4.0","6.0"];
 const IND_CLR_ORDER=["RED","YELLOW","BLUE","BLACK","GREEN"];
 function collectIndWire(){
-  const groups=new Map(), sizeTot={}; let total=0;
+  const groups=new Map(), sizeTot={}, sizeLen={}; let total=0;
   [...tbody.rows].forEach(r=>{
     const desc=(r.cells[3]?.innerText||"").trim(), up=desc.toUpperCase();
     if(!/IND\s*COPPER/.test(up)) return;
@@ -5320,10 +5320,21 @@ function collectIndWire(){
     if(!groups.has(key)) groups.set(key,{brand,desc,size,len,colours:{},coils:0});
     const g=groups.get(key); g.colours[clr]=(g.colours[clr]||0)+coils; g.coils+=coils;
     sizeTot[size]=(sizeTot[size]||0)+coils; total+=coils;
+    const lk=len?len+"MTR":"-"; (sizeLen[size]=sizeLen[size]||{})[lk]=(sizeLen[size][lk]||0)+coils;
   });
-  return {groups:[...groups.values()],sizeTot,total};
+  return {groups:[...groups.values()],sizeTot,sizeLen,total};
 }
 function _fmtCoils(n){ return +n.toFixed(2); }
+function indSizeLenEntries(d){
+  const sizes=IND_SIZES.concat(Object.keys(d.sizeTot).filter(s=>!IND_SIZES.includes(s))).filter(s=>d.sizeTot[s]);
+  const out=[];
+  sizes.forEach(s=>{ const o=d.sizeLen[s]||{}; Object.keys(o).sort((a,b)=>parseFloat(a)-parseFloat(b)).forEach(k=>out.push([s+" SQMM"+(k==="-"?"":" "+k),o[k]])); });
+  return out;
+}
+function indSizeLenText(d,s){
+  const o=d.sizeLen[s]||{};
+  return Object.keys(o).sort((a,b)=>parseFloat(a)-parseFloat(b)).map(k=>(k==="-"?"":k+"-")+_fmtCoils(o[k])).join(", ");
+}
 function indColourText(g){
   const names=Object.keys(g.colours).sort((a,b)=>{const ia=IND_CLR_ORDER.indexOf(a),ib=IND_CLR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
   return names.map(c=>(c==="—"?"":c+"-")+_fmtCoils(g.colours[c])).join(", ");
@@ -5340,7 +5351,7 @@ function updateIndWireSummary(){
   sorted.forEach(g=>{ h+=`<tr><td ${td}>${g.brand&&g.brand!=="-"?"<b>"+g.brand+"</b> ":""}${g.desc}</td><td ${td}><b>${indColourText(g)}</b></td><td ${tdc}>${_fmtCoils(g.coils)}</td></tr>`; });
   h+=`</tbody></table>
   <div style="background:#f0f4fb;padding:6px 10px;border-top:2px solid #1a3c6e;font-size:12px;font-weight:700;color:#1a3c6e">TOTAL COIL COUNT — SIZE WISE: `+
-  IND_SIZES.concat(Object.keys(d.sizeTot).filter(s=>!IND_SIZES.includes(s))).filter(s=>d.sizeTot[s]).map(s=>`${s} SQMM = <span style="color:#c0392b">${_fmtCoils(d.sizeTot[s])}</span>`).join(" &nbsp;|&nbsp; ")+
+  indSizeLenEntries(d).map(e=>`${e[0]} = <span style="color:#c0392b">${_fmtCoils(e[1])}</span>`).join(" &nbsp;|&nbsp; ")+
   ` &nbsp;&nbsp;➜&nbsp; <span style="background:#1a3c6e;color:#fff;padding:2px 8px;border-radius:4px">TOTAL IND COILS = ${_fmtCoils(d.total)}</span></div>`;
   box.innerHTML=h; box.style.display="";
 }
@@ -5349,7 +5360,7 @@ function indWireExcelRows(){
   const out=[[],["IND COPPER WIRE — COLOUR WISE (COILS)"],["Item","Colour-wise Coils","Total"]];
   d.groups.sort((a,b)=>parseFloat(a.size)-parseFloat(b.size)||a.len-b.len).forEach(g=>out.push([(g.brand&&g.brand!=="-"?g.brand+" ":"")+g.desc,indColourText(g),_fmtCoils(g.coils)]));
   out.push([]); out.push(["TOTAL COIL COUNT — SIZE WISE"]);
-  IND_SIZES.concat(Object.keys(d.sizeTot).filter(s=>!IND_SIZES.includes(s))).forEach(s=>{ if(d.sizeTot[s]) out.push([s+" SQMM",_fmtCoils(d.sizeTot[s])]); });
+  indSizeLenEntries(d).forEach(e=>out.push([e[0],_fmtCoils(e[1])]));
   out.push(["TOTAL IND COILS",_fmtCoils(d.total)]);
   return out;
 }
