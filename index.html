@@ -241,6 +241,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openQuotDashboard()" style="font-size:11px;padding:4px 10px;background:#0b6e6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📊 Quotations Dashboard</button>
       <button type="button" onclick="openCashBillLedger()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📒 Cash Bill Ledger</button>
+      <button type="button" onclick="openDocLedger()" style="font-size:11px;padding:4px 10px;background:#0b5a8a;color:#fff;border:none;border-radius:4px;cursor:pointer">📒 Ledger</button>
       <button type="button" onclick="openBulkDisc()" style="font-size:11px;padding:4px 10px;background:#b8590a;color:#fff;border:none;border-radius:4px;cursor:pointer">✏️ Bulk Discount Edit</button>
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
@@ -6985,6 +6986,155 @@ window.cbLgExcel=function(){
   else if(LG.view==="cust"){const g=custGroups(filtered());name="Customer-wise";data=[["Customer","Bills","Billed","Received / Adjusted","Pending (Cash Bills)","Customer Ledger Balance"]].concat(g.map(x=>[x.name,x.n,x.amt,x.paid,x.pend,x.led]));}
   else{name="All Bills";data=[["Date","Bill No","Customer","Bill Amount","Received / Adjusted","Pending","Status","Age (days)"]].concat(filtered().map(r=>[dmy(r.doc_date),r.doc_no,r.cust_name,r._amt,r._paid,r._pend,r._st,r._age]));}
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);XLSX.writeFile(wb,"SSE_CashBillLedger_"+name.replace(/\s+/g,"")+".xlsx");
+};
+})();
+</script>
+
+
+<!-- ===== LEDGER — ONE SIMPLE PAGE (Quotation + Proforma + Indent + Return together; read-only) ===== -->
+<div id="dlPage" class="no-print" style="display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1500;overflow:auto;font-family:inherit">
+  <div style="position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1a3c6e,#2a5298);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <strong style="font-size:16px;margin-right:auto">📒 Ledger</strong>
+    <button type="button" onclick="dlSetView('docs')" id="dlV_docs" class="cbLgTab">All Entries</button>
+    <button type="button" onclick="dlSetView('cust')" id="dlV_cust" class="cbLgTab">Customer-wise</button>
+    <button type="button" onclick="dlReload()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">⟳ Refresh</button>
+    <button type="button" onclick="dlPrint()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">🖨️ Print</button>
+    <button type="button" onclick="dlExcel()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">📥 Excel</button>
+    <button type="button" onclick="dlClose()" style="background:#c0392b;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700">✕ Close</button>
+  </div>
+  <div style="max-width:1250px;margin:0 auto;padding:14px 16px 40px">
+    <div id="dlFilters" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <input type="text" id="dlSearch" placeholder="Search doc no / customer…" oninput="dlRender()" style="flex:1;min-width:200px;font-size:13px;padding:8px 10px;border:1px solid #c5d3e8;border-radius:6px">
+      <select id="dlType" onchange="dlRender()" style="font-size:12px;padding:8px;border:1px solid #c5d3e8;border-radius:6px"><option value="">All types</option><option value="QTN">📄 Quotation</option><option value="PI">🧾 Proforma</option><option value="IND">📋 Indent</option><option value="RET">↩️ Return</option></select>
+      <select id="dlStatus" onchange="dlRender()" style="font-size:12px;padding:8px;border:1px solid #c5d3e8;border-radius:6px"><option value="">All status</option><option value="Quoted">Quoted</option><option value="Confirmed">Confirmed</option><option value="Cancelled">Cancelled</option></select>
+      <label style="font-size:11px;color:#5a6a85">From <input type="date" id="dlFrom" onchange="dlRender()" style="font-size:12px;padding:6px;border:1px solid #c5d3e8;border-radius:6px"></label>
+      <label style="font-size:11px;color:#5a6a85">To <input type="date" id="dlTo" onchange="dlRender()" style="font-size:12px;padding:6px;border:1px solid #c5d3e8;border-radius:6px"></label>
+    </div>
+    <div id="dlCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px"></div>
+    <div id="dlBody" style="background:#fff;border:1px solid #c5d3e8;border-radius:8px;overflow:auto"></div>
+  </div>
+</div>
+<style>#dlBody table{width:100%;border-collapse:collapse;font-size:12.5px}#dlBody th{background:#1a3c6e;color:#fff;padding:8px;text-align:left;position:sticky;top:0;white-space:nowrap}
+#dlBody td{padding:7px 8px;border-bottom:1px solid #e3eaf5;vertical-align:top}#dlBody tr:hover td{background:#f5f9ff}#dlBody .r{text-align:right;white-space:nowrap}</style>
+<script>
+(function(){
+const DL={rows:[],loaded:false,view:"docs",cust:null};
+const TN={QTN:"Quotation",PI:"Proforma",IND:"Indent",RET:"Return"};
+const TC={QTN:"#2a5298",PI:"#6a1b9a",IND:"#b36b00",RET:"#c0392b"};
+const nrm=s=>String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+const r2=n=>Math.round((+n||0)*100)/100;
+const inr=n=>"₹ "+(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dmy=d=>{d=String(d||"").slice(0,10);const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d);return m?m[3]+"-"+m[2]+"-"+m[1]:(d||"-");};
+const balTxt=b=>inr(Math.abs(b))+(b<-0.005?" Cr":b>0.005?" Dr":"");
+async function pagesAll(sel,filt){
+  let out=[],from=0;
+  for(;;){
+    const {data,error}=await filt(sb.from("quotations").select(sel)).order("id",{ascending:true}).range(from,from+999);
+    if(error)throw error;
+    out=out.concat(data||[]);
+    if(!data||data.length<1000)break;
+    from+=1000;
+  }
+  return out;
+}
+function info(r){
+  let j={};try{const x=JSON.parse(r.remarks||"{}");if(x&&typeof x==="object")j=x;}catch(_){}
+  if(r.doc_type==="RET")return (j.retRef?"Against bill: "+j.retRef:"No bill linked")+(j.retReason?" · "+j.retReason:"");
+  if(r.doc_type==="IND")return (j.indForName?"For: "+j.indForName:"")+(j.indRef?(j.indForName?" · ":"")+"Ref: "+j.indRef:"");
+  return "";
+}
+async function load(){
+  const body=document.getElementById("dlBody");
+  body.innerHTML='<div style="padding:30px;text-align:center;color:#888">Loading ledger…</div>';
+  try{
+    const f=q=>q.in("doc_type",["QTN","PI","IND","RET"]);
+    let rows;
+    try{ rows=await pagesAll("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,doc_status,remarks",f); }
+    catch(e){ rows=await pagesAll("id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,remarks",f); }
+    rows=rows.filter(r=>!/-CMP-/i.test(r.doc_no||""));
+    rows.forEach(r=>{
+      r._key=nrm(r.cust_name)||"(NO NAME)"; r._amt=r2(r.net_payable); r._st=r.doc_status||"Quoted"; r._info=info(r);
+      r._dr=(r._st!=="Cancelled"&&r.doc_type!=="RET")?r._amt:0;      // Quotation / Proforma / Indent = Debit
+      r._cr=(r._st!=="Cancelled"&&r.doc_type==="RET")?r._amt:0;      // Return (credit note) = Credit
+    });
+    rows.sort((a,b)=>String(b.doc_date||"").localeCompare(String(a.doc_date||""))||String(b.doc_no).localeCompare(String(a.doc_no)));
+    DL.rows=rows; DL.loaded=true; render();
+  }catch(e){
+    body.innerHTML='<div style="padding:30px;text-align:center;color:#c0392b">Could not load ledger: '+esc(e.message||e)+'</div>';
+  }
+}
+function filtered(){
+  const q=(document.getElementById("dlSearch").value||"").trim().toLowerCase();
+  const ty=document.getElementById("dlType").value,st=document.getElementById("dlStatus").value;
+  const from=document.getElementById("dlFrom").value,to=document.getElementById("dlTo").value;
+  return DL.rows.filter(r=>{
+    if(ty&&r.doc_type!==ty)return false;
+    if(st&&r._st!==st)return false;
+    if(from&&String(r.doc_date||"")<from)return false;
+    if(to&&String(r.doc_date||"")>to)return false;
+    if(q&&!((r.doc_no||"")+" "+(r.cust_name||"")).toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+const tBadge=t=>'<span style="background:'+TC[t]+';color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">'+TN[t]+'</span>';
+const stBadge=s=>{const c=s==="Confirmed"?"background:#e3f6ea;color:#1b7a4a":s==="Cancelled"?"background:#fdeaea;color:#c0392b":"background:#fff3e0;color:#b36b00";return '<span style="'+c+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">'+s+'</span>';};
+const card=(l,v,col)=>'<div style="background:#fff;border:1px solid #c5d3e8;border-left:4px solid '+col+';border-radius:8px;padding:8px 12px"><div style="font-size:11px;color:#5a6a85;font-weight:700">'+l+'</div><div style="font-size:17px;font-weight:800;color:#1a1a2e">'+v+'</div></div>';
+function tot(list){const t={n:list.length,dr:0,cr:0,QTN:0,PI:0,IND:0,RET:0};list.forEach(r=>{t.dr+=r._dr;t.cr+=r._cr;t[r.doc_type]+=(r._st==="Cancelled"?0:r._amt);});["dr","cr","QTN","PI","IND","RET"].forEach(k=>t[k]=r2(t[k]));t.bal=r2(t.dr-t.cr);return t;}
+function render(){
+  if(!DL.loaded)return;
+  ["docs","cust"].forEach(v=>{const b=document.getElementById("dlV_"+v);if(b)b.classList.toggle("on",DL.view===v);});
+  document.getElementById("dlFilters").style.display=DL.view==="stmt"?"none":"flex";
+  const body=document.getElementById("dlBody"),cards=document.getElementById("dlCards");
+  if(DL.view==="stmt"){renderStmt(body,cards);return;}
+  const list=filtered(),t=tot(list);
+  cards.innerHTML=card("Entries",t.n,"#1a3c6e")+card("Quotation",inr(t.QTN),TC.QTN)+card("Proforma",inr(t.PI),TC.PI)+card("Indent",inr(t.IND),TC.IND)+card("Return (Credit)",inr(t.RET),TC.RET);
+  if(DL.view==="cust"){
+    const m={};list.forEach(r=>{(m[r._key]=m[r._key]||{key:r._key,name:r.cust_name||"(No name)",rows:[]}).rows.push(r);});
+    const g=Object.values(m).map(x=>({...x,t:tot(x.rows)})).sort((a,b)=>a.name.localeCompare(b.name));
+    body.innerHTML='<table><thead><tr><th>#</th><th>Customer</th><th class="r">Entries</th><th class="r">Quotation</th><th class="r">Proforma</th><th class="r">Indent</th><th class="r">Return</th></tr></thead><tbody>'+
+      (g.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><span class="cbLgLink" onclick="dlStmt(\''+encodeURIComponent(x.key)+'\')">'+esc(x.name)+'</span></td><td class="r">'+x.t.n+'</td><td class="r">'+inr(x.t.QTN)+'</td><td class="r">'+inr(x.t.PI)+'</td><td class="r">'+inr(x.t.IND)+'</td><td class="r" style="color:#c0392b">'+inr(x.t.RET)+'</td></tr>').join("")||'<tr><td colspan="7" style="padding:24px;text-align:center;color:#888">No customers match.</td></tr>')+
+      '</tbody><tfoot><tr><td colspan="2" style="padding:8px;font-weight:800">TOTAL</td><td class="r"><b>'+t.n+'</b></td><td class="r"><b>'+inr(t.QTN)+'</b></td><td class="r"><b>'+inr(t.PI)+'</b></td><td class="r"><b>'+inr(t.IND)+'</b></td><td class="r"><b>'+inr(t.RET)+'</b></td></tr></tfoot></table>';
+    return;
+  }
+  body.innerHTML='<table><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Doc No</th><th>Customer</th><th>Details</th><th>Status</th><th class="r">Amount</th></tr></thead><tbody>'+
+    (list.map((r,i)=>'<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+dmy(r.doc_date)+'</td><td>'+tBadge(r.doc_type)+'</td><td><span class="cbLgLink" onclick="dlOpen('+r.id+')">'+esc(r.doc_no)+'</span></td><td><span class="cbLgLink" onclick="dlStmt(\''+encodeURIComponent(r._key)+'\')">'+esc(r.cust_name)+'</span></td><td style="font-size:11.5px;color:#444">'+esc(r._info)+'</td><td>'+stBadge(r._st)+'</td><td class="r" style="font-weight:700'+(r._st==="Cancelled"?';text-decoration:line-through;color:#999':r.doc_type==="RET"?';color:#c0392b':'')+'">'+inr(r._amt)+'</td></tr>').join("")||'<tr><td colspan="8" style="padding:24px;text-align:center;color:#888">No entries match.</td></tr>')+
+    '</tbody></table>';
+}
+function stmtData(key){
+  const rows=DL.rows.filter(r=>r._key===key).sort((a,b)=>String(a.doc_date||"").localeCompare(String(b.doc_date||""))||String(a.doc_no).localeCompare(String(b.doc_no)));
+  let bal=0;
+  const ev=rows.map(r=>{bal=r2(bal+r._dr-r._cr);return {d:String(r.doc_date||"").slice(0,10),ty:r.doc_type,no:r.doc_no,st:r._st,info:r._info,dr:r._dr,cr:r._cr,amt:r._amt,bal};});
+  return {name:rows[0]?rows[0].cust_name:key,ev,t:tot(rows)};
+}
+function renderStmt(body,cards){
+  const s=stmtData(DL.cust);
+  cards.innerHTML='<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px"><button type="button" onclick="dlSetView(\'cust\')" style="background:#fff;border:1px solid #c5d3e8;border-radius:6px;padding:6px 12px;cursor:pointer">← Back</button><b style="font-size:16px;color:#1a3c6e">'+esc(s.name)+' — Ledger</b></div>'+
+    card("Debit (Qtn / PI / Indent)",inr(s.t.dr),"#2a5298")+card("Credit (Returns)",inr(s.t.cr),"#c0392b")+card("Balance",balTxt(s.t.bal),"#1b7a4a");
+  body.innerHTML='<table><thead><tr><th>Date</th><th>Type</th><th>Doc No</th><th>Details</th><th>Status</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Balance</th></tr></thead><tbody>'+
+    (s.ev.map(e=>'<tr><td style="white-space:nowrap">'+dmy(e.d)+'</td><td>'+tBadge(e.ty)+'</td><td>'+esc(e.no)+'</td><td style="font-size:11.5px;color:#444">'+esc(e.info)+'</td><td>'+stBadge(e.st)+'</td><td class="r">'+(e.dr?inr(e.dr):"")+'</td><td class="r">'+(e.cr?inr(e.cr):"")+'</td><td class="r"><b>'+balTxt(e.bal)+'</b></td></tr>').join("")||'<tr><td colspan="8" style="padding:24px;text-align:center;color:#888">No entries.</td></tr>')+
+    '</tbody><tfoot><tr><td colspan="5" style="padding:8px;font-weight:800">TOTAL (cancelled excluded)</td><td class="r"><b>'+inr(s.t.dr)+'</b></td><td class="r"><b>'+inr(s.t.cr)+'</b></td><td class="r"><b>'+balTxt(s.t.bal)+'</b></td></tr></tfoot></table>';
+}
+window.openDocLedger=async function(){document.getElementById("dlPage").style.display="block";document.body.style.overflow="hidden";DL.view="docs";await load();};
+window.dlClose=function(){document.getElementById("dlPage").style.display="none";document.body.style.overflow="";};
+window.dlReload=function(){load();};
+window.dlRender=render;
+window.dlSetView=function(v){DL.view=v;render();};
+window.dlStmt=function(k){DL.cust=decodeURIComponent(k);DL.view="stmt";render();document.getElementById("dlPage").scrollTop=0;};
+window.dlOpen=function(id){dlClose();reopenQuotation(id);};
+function title(){return DL.view==="stmt"?"Ledger — "+stmtData(DL.cust).name:DL.view==="cust"?"Ledger — Customer-wise":"Ledger — All Entries";}
+window.dlPrint=function(){
+  const body=document.getElementById("dlBody").innerHTML.replace(/ onclick="[^"]*"/g,"");
+  const w=window.open("","_blank");if(!w){alert("Please allow pop-ups to print.");return;}
+  w.document.write('<html><head><title>'+esc(title())+'</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:14px}h3{color:#1a3c6e;margin:0 0 8px}table{width:100%;border-collapse:collapse}th{background:#1a3c6e;color:#fff;padding:5px;text-align:left}td{padding:4px 5px;border-bottom:1px solid #ccc}.r{text-align:right}</style></head><body><h3>'+esc(title())+'</h3><div style="margin-bottom:6px;color:#555">Printed '+dmy(new Date().toISOString())+'</div>'+body+'</body></html>');
+  w.document.close();w.focus();setTimeout(()=>w.print(),300);
+};
+window.dlExcel=function(){
+  if(!DL.loaded)return;let data,name;
+  if(DL.view==="stmt"){const s=stmtData(DL.cust);name="Statement";data=[["Ledger — "+s.name],[],["Date","Type","Doc No","Details","Status","Debit","Credit","Balance"]].concat(s.ev.map(e=>[dmy(e.d),TN[e.ty],e.no,e.info,e.st,e.dr||"",e.cr||"",e.bal])).concat([["","","","","TOTAL",s.t.dr,s.t.cr,s.t.bal]]);}
+  else if(DL.view==="cust"){const m={};filtered().forEach(r=>{(m[r._key]=m[r._key]||{name:r.cust_name,rows:[]}).rows.push(r);});name="Customer-wise";data=[["Customer","Entries","Quotation","Proforma","Indent","Return"]].concat(Object.values(m).map(x=>{const t=tot(x.rows);return [x.name,t.n,t.QTN,t.PI,t.IND,t.RET];}));}
+  else{name="All Entries";data=[["Date","Type","Doc No","Customer","Details","Status","Amount"]].concat(filtered().map(r=>[dmy(r.doc_date),TN[r.doc_type],r.doc_no,r.cust_name,r._info,r._st,r._amt]));}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);XLSX.writeFile(wb,"SSE_Ledger_"+name.replace(/\s+/g,"")+".xlsx");
 };
 })();
 </script>
