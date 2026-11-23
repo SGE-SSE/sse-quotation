@@ -216,7 +216,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="CB" onchange="switchDocType(this.value)"> Cash Bill</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="PI" onchange="switchDocType(this.value)"> Proforma Invoice</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="DC" onchange="switchDocType(this.value)"> Delivery Challan</label>
-    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="IND" onchange="switchDocType(this.value)"> Indent</label>
+    <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="IND" onchange="switchDocType(this.value);indMoveCustomerOut()"> Indent</label>
     <label style="font-size:12px;font-weight:600;cursor:pointer"><input type="radio" name="docType" value="RET" onchange="switchDocType(this.value)"> Customer Return</label>
 
   </div>
@@ -2321,6 +2321,9 @@ async function saveQuotation(){
     const f=document.getElementById("indFor").value;
     if(!f){ alert("Please select who this Indent is raised for — Customer Order or Office Stock."); document.getElementById("indFor").focus(); return; }
     if(f==="CUSTOMER" && !document.getElementById("indForName").value.trim()){ alert("Please enter the Customer Name / Site this Indent is for."); document.getElementById("indForName").focus(); return; }
+    const sup=(custName.value||"").trim().toUpperCase().replace(/\s+/g," "), forN=((document.getElementById("indForName").value||"")+"|"+((indPick&&indPick.cust_name)||"")).toUpperCase().split("|").map(x=>x.trim().replace(/\s+/g," ")).filter(Boolean);
+    if(!sup){ alert("Please enter the SUPPLIER name in Supplier Details — this Indent is a purchase request to the supplier."); custName.focus(); return; }
+    if(forN.includes(sup)){ alert("The Supplier Details name is the same as the customer ("+custName.value.trim()+").\n\nPlease enter the SUPPLIER this Indent is to be raised on."); custName.focus(); custName.select(); return; }
   }
   if(currentDocType==="RET"){
     const m=document.getElementById("retMode").value;
@@ -3872,7 +3875,24 @@ function switchDocType(type){
   if(rsb) rsb.style.display=(type==="RET")?"":"none"; if(rdb) rdb.style.display=(type==="RET")?"none":"";
   const cst=document.getElementById("custSectionTitle"); if(cst && (type==="IND" || cst.textContent==="Supplier Details")) cst.textContent=(type==="IND")?"Supplier Details":"Customer Details";
   const phoneLbl=document.getElementById("custPhoneLabel");
-  if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : 'Customer Phone';
+  if(phoneLbl) phoneLbl.innerHTML = (type==="CB") ? 'Customer Phone <span style="color:#c0392b">*</span>' : (type==="IND" ? 'Supplier Phone' : 'Customer Phone');
+  /* Indent = purchase request: the party boxes hold the SUPPLIER, so they must say Supplier, not Customer */
+  try{ const w=type==="IND"?"Supplier":"Customer"; const set=(el,txt)=>{ const l=el&&(el.previousElementSibling&&el.previousElementSibling.tagName==="LABEL"?el.previousElementSibling:(el.parentElement&&el.parentElement.querySelector("label"))); if(l) l.textContent=txt; };
+    set(document.getElementById("custName"),w+" Name"); set(document.getElementById("custGST"),w+" GSTIN"); set(document.getElementById("custAddr"),w+" Address"); }catch(e){}
+}
+/* ---- INDENT: the Supplier Details section must hold the SUPPLIER, never the customer ----
+   Switching a customer quotation to an Indent used to leave the customer's name there, so the indent was raised on the customer.
+   Now the customer name moves into "Indent For" and the Supplier box is cleared for the supplier name. */
+function indMoveCustomerOut(){
+  try{
+    const nm=(custName.value||"").trim(); if(!nm) return;
+    const f=document.getElementById("indFor");
+    if(f && !f.value){ f.value="CUSTOMER"; onIndForChange(); const n=document.getElementById("indForName"); if(n) n.value=nm; }
+    custName.value=""; const a=document.getElementById("custAddr"); if(a) a.value=""; const p=document.getElementById("custPhone"); if(p) p.value="";
+    if(typeof currentPartyId!=="undefined") currentPartyId=null;
+    const s=document.getElementById("saveStatus"); if(s) s.textContent="Customer name moved to 'Indent For'. Enter the SUPPLIER name in Supplier Details.";
+    custName.focus();
+  }catch(e){ console.warn("indMoveCustomerOut",e); }
 }
 /* ---- INDENT: "For whom" (Customer order / Office stock) ---- */
 function onIndForChange(){
