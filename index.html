@@ -240,6 +240,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     <span id="custSectionTitle">Customer Details</span>
     <span class="no-print" style="display:flex;gap:8px">
       <button type="button" onclick="openQuotDashboard()" style="font-size:11px;padding:4px 10px;background:#0b6e6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📊 Quotations Dashboard</button>
+      <button type="button" onclick="openCashBillLedger()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📒 Cash Bill Ledger</button>
       <button type="button" onclick="openBulkDisc()" style="font-size:11px;padding:4px 10px;background:#b8590a;color:#fff;border:none;border-radius:4px;cursor:pointer">✏️ Bulk Discount Edit</button>
       <button type="button" onclick="openDcDashboard()" style="font-size:11px;padding:4px 10px;background:#8a5a00;color:#fff;border:none;border-radius:4px;cursor:pointer">🚚 DC Billing Dashboard</button>
       <button type="button" onclick="openPartyHistory()" style="font-size:11px;padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:4px;cursor:pointer">📜 Party History</button>
@@ -6756,6 +6757,214 @@ addPickedRetItems=function(){
     const st=document.getElementById('saveStatus');if(st)st.textContent+='  Post-bill discount '+inr(adj)+' deducted for '+bill+'.';
   }
   return res;
+};
+})();
+</script>
+
+<!-- ===== CASH BILL LEDGER — FULL PAGE (new, self-contained; read-only) =====
+     Bills from Quotations (doc_type CB) + receipts from Inventory (cash_allocations, ledger_entries credits).
+     Same paid/pending rule as the Paid/Unpaid badge. Views: All Bills | Customer-wise | Customer Statement. -->
+<div id="cbLedgerPage" class="no-print" style="display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1500;overflow:auto;font-family:inherit">
+  <div style="position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#1a3c6e,#2a5298);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <strong style="font-size:16px;margin-right:auto">📒 Cash Bill Ledger</strong>
+    <button type="button" onclick="cbLgSetView('bills')" id="cbLgTab_bills" class="cbLgTab">All Bills</button>
+    <button type="button" onclick="cbLgSetView('cust')" id="cbLgTab_cust" class="cbLgTab">Customer-wise</button>
+    <button type="button" onclick="cbLgReload()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer" title="Reload from database">⟳ Refresh</button>
+    <button type="button" onclick="cbLgPrint()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">🖨️ Print</button>
+    <button type="button" onclick="cbLgExcel()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">📥 Excel</button>
+    <button type="button" onclick="cbLgClose()" style="background:#c0392b;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700">✕ Close</button>
+  </div>
+  <div style="max-width:1200px;margin:0 auto;padding:14px 16px 40px">
+    <div id="cbLgFilters" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <input type="text" id="cbLgSearch" placeholder="Search bill no / customer…" oninput="cbLgRender()" style="flex:1;min-width:200px;font-size:13px;padding:8px 10px;border:1px solid #c5d3e8;border-radius:6px">
+      <select id="cbLgStatus" onchange="cbLgRender()" style="font-size:12px;padding:8px;border:1px solid #c5d3e8;border-radius:6px"><option value="">All status</option><option value="OPEN">⏳ Pending (Unpaid + Part)</option><option value="UNPAID">Unpaid</option><option value="PART">Part paid</option><option value="PAID">Paid</option></select>
+      <label style="font-size:11px;color:#5a6a85">From <input type="date" id="cbLgFrom" onchange="cbLgRender()" style="font-size:12px;padding:6px;border:1px solid #c5d3e8;border-radius:6px"></label>
+      <label style="font-size:11px;color:#5a6a85">To <input type="date" id="cbLgTo" onchange="cbLgRender()" style="font-size:12px;padding:6px;border:1px solid #c5d3e8;border-radius:6px"></label>
+    </div>
+    <div id="cbLgCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px"></div>
+    <div id="cbLgBody" style="background:#fff;border:1px solid #c5d3e8;border-radius:8px;overflow:auto"></div>
+  </div>
+</div>
+<style>.cbLgTab{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer}.cbLgTab.on{background:#fff;color:#1a3c6e;font-weight:700}
+#cbLgBody table{width:100%;border-collapse:collapse;font-size:12.5px}#cbLgBody th{background:#1a3c6e;color:#fff;padding:8px;text-align:left;position:sticky;top:0;white-space:nowrap}
+#cbLgBody td{padding:7px 8px;border-bottom:1px solid #e3eaf5;vertical-align:top}#cbLgBody tr:hover td{background:#f5f9ff}#cbLgBody .r{text-align:right;white-space:nowrap}
+.cbLgLink{color:#1a3c6e;font-weight:700;cursor:pointer;text-decoration:underline}</style>
+<script>
+(function(){
+/* Same rule as the Inventory module's Customer Ledger / Cash Transactions "pending bills":
+   - Cash Bill = DEBIT, payments / returns / discounts = CREDIT (ledger_entries) + cash received (cash_allocations)
+   - credit that names a bill reduces that bill; credit naming no bill of the customer (e.g. return without cash bill, on-account)
+     and credit above a bill's amount are applied to the OLDEST pending bills first. */
+const LG={rows:[],cbAll:[],alloc:[],led:[],C:{},loaded:false,view:"bills",cust:null,open:{}};
+const nrm=s=>String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+const r2=n=>Math.round((+n||0)*100)/100;
+const inr=n=>"₹ "+(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nmatch=(c,p)=>{const n=nrm(c),q=nrm(p);return !!n&&!!q&&(n===q||(q.length>=3&&n.length>=3&&(n.includes(q)||q.includes(n))));};
+const dmy=d=>{d=String(d||"").slice(0,10);const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d);return m?m[3]+"-"+m[2]+"-"+m[1]:(d||"-");};
+const pick=(o,keys)=>{for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return "";};
+async function pagesAll(client,tbl,sel,filt){
+  let out=[],from=0;
+  for(;;){
+    const {data,error}=await filt(client.from(tbl).select(sel)).order("id",{ascending:true}).range(from,from+999);
+    if(error)throw error;
+    out=out.concat(data||[]);
+    if(!data||data.length<1000)break;
+    from+=1000;
+  }
+  return out;
+}
+async function loadAll(){
+  const body=document.getElementById("cbLgBody");
+  body.innerHTML='<div style="padding:30px;text-align:center;color:#888">Loading cash bills and ledger…</div>';
+  try{
+    let rows;
+    try{ rows=await pagesAll(sb,"quotations","id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable,doc_status",q=>q.eq("doc_type","CB")); }
+    catch(e){ rows=await pagesAll(sb,"quotations","id,party_id,doc_type,doc_no,doc_date,cust_name,net_payable",q=>q.eq("doc_type","CB")); }
+    const [al,le]=await Promise.all([
+      pagesAll(invSb,"cash_allocations","*",q=>q.eq("ledger_type","CASHBILL")),
+      pagesAll(invSb,"ledger_entries","*",q=>q.eq("ledger_type","CUSTOMER"))
+    ]);
+    LG.cbAll=rows;
+    LG.rows=rows.filter(r=>(r.doc_status||"Quoted")!=="Cancelled"&&!/-CMP-/i.test(r.doc_no||"")&&r2(r.net_payable)>0.005);
+    LG.alloc=al; LG.led=le; LG.loaded=true;
+    build();
+  }catch(e){
+    body.innerHTML='<div style="padding:30px;text-align:center;color:#c0392b">Could not load the ledger: '+esc(e.message||e)+'</div>';
+  }
+}
+function build(){
+  const today=new Date().toISOString().slice(0,10), groups={};
+  LG.rows.forEach(r=>{r._key=nrm(r.cust_name)||"(NO NAME)";(groups[r._key]=groups[r._key]||[]).push(r);});
+  LG.C={};
+  Object.keys(groups).forEach(key=>{
+    const bills=groups[key],name=bills[0].cust_name||"";
+    const real=LG.led.filter(e=>nmatch(e.party_name,name));
+    const myNos=new Set(bills.map(r=>nrm(r.doc_no)));
+    const syn=[];   // what the Inventory module adds to the Customer Ledger on sync: cash bills without a debit entry, and cash received still held in cash_allocations
+    bills.forEach(r=>{ if(!real.some(e=>(+e.debit||0)>0&&nrm(e.bill_no)===nrm(r.doc_no))) syn.push({date:String(r.doc_date||"").slice(0,10),bill_no:r.doc_no,debit:r2(r.net_payable),credit:0,remarks:"Cash Bill (not yet synced to Customer Ledger)",created_at:"~"}); });
+    LG.alloc.forEach(a=>{ if(nmatch(a.party,name)||myNos.has(nrm(a.bill_no))) syn.push({date:String(pick(a,["alloc_date","allocation_date","txn_date","date","created_at"])).slice(0,10),bill_no:a.bill_no,debit:0,credit:+a.amount||0,remarks:"Cash received"+(a.voucher_no?" — "+a.voucher_no:"")+" (not yet synced)",created_at:"~"}); });
+    const led=real.concat(syn).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.created_at||"").localeCompare(String(b.created_at||"")));
+    const cred=led.filter(e=>(+e.credit||0)>0);
+    /* bills known to this customer (cash bills incl. cancelled/comparison, and any ledger debit) */
+    const known=new Set();
+    LG.cbAll.forEach(r=>{if(r.doc_no&&nmatch(r.cust_name,name))known.add(nrm(r.doc_no));});
+    led.forEach(e=>{if((+e.debit||0)>0&&e.bill_no)known.add(nrm(e.bill_no));});
+    let pool=0,poolDate="";
+    cred.forEach(e=>{if(!e.bill_no||!known.has(nrm(e.bill_no))){pool+=(+e.credit||0);poolDate=poolDate||String(e.date||"").slice(0,10);}});
+    bills.forEach(r=>{
+      const k=nrm(r.doc_no),pays=[];
+      cred.forEach(e=>{if(e.bill_no&&nrm(e.bill_no)===k)pays.push({date:String(e.date||"").slice(0,10),amt:+e.credit||0,note:String(e.remarks||"").replace(/^(RET-SYNC|CB-SYNC)\s*\|\s*/i,"").replace(/\s*\(not yet synced\)/,"")||"Ledger credit"});});
+      pays.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+      r._amt=r2(r.net_payable); r._pays=pays;
+      r._pend=r2(r._amt-r2(pays.reduce((t,p)=>t+p.amt,0)));
+      if(r._pend<-0.005){pool=r2(pool-r._pend);r._pend=0;}   // credit above the bill is carried forward
+    });
+    bills.slice().sort((a,b)=>String(a.doc_date).localeCompare(String(b.doc_date))||String(a.doc_no).localeCompare(String(b.doc_no))).forEach(r=>{
+      if(pool>0.004&&r._pend>0.005){const t=Math.min(pool,r._pend);r._pend=r2(r._pend-t);pool=r2(pool-t);r._pays.push({date:poolDate,amt:t,note:"Credit adjusted (return / payment on account)"});}
+    });
+    bills.forEach(r=>{
+      r._paid=r2(r._amt-r._pend); r._st=r._pend<=0.005?"PAID":r._paid>0.005?"PART":"UNPAID";
+      r._age=r._pend>0.005&&r.doc_date?Math.max(0,Math.floor((new Date(today)-new Date(String(r.doc_date).slice(0,10)))/86400000)):"";
+    });
+    const dr=r2(led.reduce((t,e)=>t+(+e.debit||0),0)),cr=r2(led.reduce((t,e)=>t+(+e.credit||0),0));
+    const unsynced=syn.length;
+    LG.C[key]={name,led,ledBal:r2(dr-cr),dr,cr,adv:r2(pool),unsynced};
+  });
+  LG.rows.sort((a,b)=>String(b.doc_date||"").localeCompare(String(a.doc_date||""))||String(b.doc_no).localeCompare(String(a.doc_no)));
+  render();
+}
+function filtered(){
+  const q=(document.getElementById("cbLgSearch").value||"").trim().toLowerCase();
+  const st=document.getElementById("cbLgStatus").value;
+  const from=document.getElementById("cbLgFrom").value,to=document.getElementById("cbLgTo").value;
+  return LG.rows.filter(r=>{
+    if(from&&String(r.doc_date||"")<from)return false;
+    if(to&&String(r.doc_date||"")>to)return false;
+    if(st==="OPEN"&&r._st==="PAID")return false;
+    if(st&&st!=="OPEN"&&r._st!==st)return false;
+    if(q&&!((r.doc_no||"")+" "+(r.cust_name||"")).toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+const stBadge=s=>{const c=s==="PAID"?"background:#e3f6ea;color:#1b7a4a":s==="PART"?"background:#fff3e0;color:#b36b00":"background:#fdeaea;color:#c0392b";const t=s==="PAID"?"💰 Paid":s==="PART"?"◐ Part paid":"⏳ Unpaid";return '<span style="'+c+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">'+t+'</span>';};
+const card=(l,v,col)=>'<div style="background:#fff;border:1px solid #c5d3e8;border-left:4px solid '+col+';border-radius:8px;padding:8px 12px"><div style="font-size:11px;color:#5a6a85;font-weight:700">'+l+'</div><div style="font-size:17px;font-weight:800;color:#1a1a2e">'+v+'</div></div>';
+const balTxt=b=>inr(Math.abs(b))+(b<-0.005?" (Adv)":"");
+function custGroups(list){
+  const m={};
+  list.forEach(r=>{const g=m[r._key]=m[r._key]||{key:r._key,name:r.cust_name||"(No name)",n:0,amt:0,paid:0,pend:0};g.n++;g.amt+=r._amt;g.paid+=r._paid;g.pend+=r._pend;});
+  return Object.values(m).map(g=>({...g,amt:r2(g.amt),paid:r2(g.paid),pend:r2(g.pend),led:(LG.C[g.key]||{}).ledBal||0})).sort((a,b)=>b.pend-a.pend||a.name.localeCompare(b.name));
+}
+function render(){
+  if(!LG.loaded)return;
+  ["bills","cust"].forEach(v=>{const b=document.getElementById("cbLgTab_"+v);if(b)b.classList.toggle("on",LG.view===v);});
+  document.getElementById("cbLgFilters").style.display=LG.view==="stmt"?"none":"flex";
+  const body=document.getElementById("cbLgBody"),cards=document.getElementById("cbLgCards");
+  if(LG.view==="stmt"){ renderStatement(body,cards); return; }
+  const list=filtered();
+  const tot=list.reduce((t,r)=>({a:t.a+r._amt,p:t.p+r._paid,d:t.d+r._pend}),{a:0,p:0,d:0});
+  cards.innerHTML=card("Bills",list.length,"#1a3c6e")+card("Total Billed",inr(tot.a),"#2a5298")+card("Received / Adjusted",inr(tot.p),"#1b7a4a")+card("Pending",inr(tot.d),"#c0392b")+
+    card("Unpaid / Part / Paid",list.filter(r=>r._st==="UNPAID").length+" / "+list.filter(r=>r._st==="PART").length+" / "+list.filter(r=>r._st==="PAID").length,"#b36b00");
+  if(LG.view==="cust"){
+    const g=custGroups(list);
+    const lt=g.reduce((t,x)=>t+x.led,0);
+    body.innerHTML='<table><thead><tr><th>#</th><th>Customer</th><th class="r">Bills</th><th class="r">Billed</th><th class="r">Received / Adjusted</th><th class="r">Pending (Cash Bills)</th><th class="r" title="Balance in Inventory → Customer Ledger">Customer Ledger Balance</th></tr></thead><tbody>'+
+      (g.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><span class="cbLgLink" onclick="cbLgStmt(\''+encodeURIComponent(x.key)+'\')">'+esc(x.name)+'</span></td><td class="r">'+x.n+'</td><td class="r">'+inr(x.amt)+'</td><td class="r">'+inr(x.paid)+'</td><td class="r" style="font-weight:700;color:'+(x.pend>0.005?"#c0392b":"#1b7a4a")+'">'+inr(x.pend)+'</td><td class="r" style="font-weight:700">'+balTxt(x.led)+'</td></tr>').join("")||'<tr><td colspan="7" style="padding:24px;text-align:center;color:#888">No customers match.</td></tr>')+
+      '</tbody><tfoot><tr><td colspan="3" style="padding:8px;font-weight:800">TOTAL</td><td class="r"><b>'+inr(tot.a)+'</b></td><td class="r"><b>'+inr(tot.p)+'</b></td><td class="r"><b>'+inr(tot.d)+'</b></td><td class="r"><b>'+balTxt(lt)+'</b></td></tr></tfoot></table>';
+    return;
+  }
+  body.innerHTML='<table><thead><tr><th>#</th><th>Date</th><th>Bill No</th><th>Customer</th><th class="r">Bill Amount</th><th class="r">Received / Adjusted</th><th class="r">Pending</th><th>Status</th><th class="r">Age (days)</th></tr></thead><tbody>'+
+    (list.map((r,i)=>{
+      const op=LG.open[r.id];
+      let h='<tr><td>'+(i+1)+'</td><td style="white-space:nowrap">'+dmy(r.doc_date)+'</td><td><span class="cbLgLink" onclick="cbLgOpenBill('+r.id+')">'+esc(r.doc_no)+'</span> <span style="cursor:pointer;color:#5a6a85" title="Show receipts" onclick="cbLgToggle('+r.id+')">'+(op?"▾":"▸")+'</span></td><td><span class="cbLgLink" onclick="cbLgStmt(\''+encodeURIComponent(r._key)+'\')">'+esc(r.cust_name)+'</span></td><td class="r">'+inr(r._amt)+'</td><td class="r">'+inr(r._paid)+'</td><td class="r" style="font-weight:700;color:'+(r._pend>0.005?"#c0392b":"#1b7a4a")+'">'+inr(r._pend)+'</td><td>'+stBadge(r._st)+'</td><td class="r">'+(r._age===""?"-":r._age)+'</td></tr>';
+      if(op) h+='<tr><td></td><td colspan="8" style="background:#f8fafd">'+(r._pays.length?r._pays.map(p=>'<div>• '+dmy(p.date)+' &nbsp; <b>'+inr(p.amt)+'</b> &nbsp; '+esc(p.note)+'</div>').join(""):'<i style="color:#888">No receipts yet</i>')+'</td></tr>';
+      return h;
+    }).join("")||'<tr><td colspan="9" style="padding:24px;text-align:center;color:#888">No cash bills match.</td></tr>')+
+    '</tbody><tfoot><tr><td colspan="4" style="padding:8px;font-weight:800">TOTAL</td><td class="r"><b>'+inr(tot.a)+'</b></td><td class="r"><b>'+inr(tot.p)+'</b></td><td class="r"><b>'+inr(tot.d)+'</b></td><td colspan="2"></td></tr></tfoot></table>';
+}
+/* customer statement = the customer's entries from Inventory → Customer Ledger, same order and running balance */
+function stmtData(key){
+  const c=LG.C[key]||{name:key,led:[],ledBal:0,dr:0,cr:0,adv:0,unsynced:0};
+  let bal=0;
+  const ev=c.led.map(e=>{const dr=+e.debit||0,cr=+e.credit||0;bal=r2(bal+dr-cr);return {d:String(e.date||"").slice(0,10),t:String(e.remarks||"").replace(/^(CB-SYNC|RET-SYNC)\s*\|\s*/i,"")||"-",bill:e.bill_no||"",dr,cr,bal};});
+  const pend=r2(LG.rows.filter(r=>r._key===key).reduce((t,r)=>t+r._pend,0));
+  return {name:c.name,ev,dr:c.dr,cr:c.cr,bal:c.ledBal,pend,adv:c.adv,unsynced:c.unsynced};
+}
+function renderStatement(body,cards){
+  const s=stmtData(LG.cust);
+  cards.innerHTML='<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px"><button type="button" onclick="cbLgSetView(\'cust\')" style="background:#fff;border:1px solid #c5d3e8;border-radius:6px;padding:6px 12px;cursor:pointer">← Back</button><b style="font-size:16px;color:#1a3c6e">'+esc(s.name)+' — Customer Ledger</b></div>'+
+    card("Total Billed (Debit)",inr(s.dr),"#2a5298")+card("Received / Credit",inr(s.cr),"#1b7a4a")+card("Customer Ledger Balance",balTxt(s.bal),"#c0392b")+card("Pending on Cash Bills",inr(s.pend),"#b36b00")+
+    (s.unsynced?'<div style="grid-column:1/-1;background:#fff8e6;border:1px solid #f0d68a;border-radius:8px;padding:8px 12px;font-size:12px">ℹ️ '+s.unsynced+' entr'+(s.unsynced>1?'ies':'y')+' below (marked "not yet synced") are still waiting in Inventory. They are included here exactly as the Customer Ledger will show them after it syncs.</div>':'');
+  body.innerHTML='<table><thead><tr><th>Date</th><th>Remarks</th><th>Bill No</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Balance</th></tr></thead><tbody>'+
+    (s.ev.map(e=>'<tr><td style="white-space:nowrap">'+dmy(e.d)+'</td><td>'+esc(e.t)+'</td><td>'+esc(e.bill)+'</td><td class="r">'+(e.dr?inr(e.dr):"")+'</td><td class="r">'+(e.cr?inr(e.cr):"")+'</td><td class="r"><b>'+balTxt(e.bal)+'</b></td></tr>').join("")||'<tr><td colspan="6" style="padding:24px;text-align:center;color:#888">No entries.</td></tr>')+
+    '</tbody><tfoot><tr><td colspan="3" style="padding:8px;font-weight:800">TOTAL</td><td class="r"><b>'+inr(s.dr)+'</b></td><td class="r"><b>'+inr(s.cr)+'</b></td><td class="r"><b>'+balTxt(s.bal)+'</b></td></tr></tfoot></table>';
+}
+window.openCashBillLedger=async function(){
+  document.getElementById("cbLedgerPage").style.display="block";
+  document.body.style.overflow="hidden";
+  LG.view="bills"; await loadAll();
+};
+window.cbLgClose=function(){document.getElementById("cbLedgerPage").style.display="none";document.body.style.overflow="";};
+window.cbLgReload=function(){loadAll();};
+window.cbLgRender=render;
+window.cbLgSetView=function(v){LG.view=v;render();};
+window.cbLgStmt=function(k){LG.cust=decodeURIComponent(k);LG.view="stmt";render();document.getElementById("cbLedgerPage").scrollTop=0;};
+window.cbLgToggle=function(id){LG.open[id]=!LG.open[id];render();};
+window.cbLgOpenBill=function(id){cbLgClose();reopenQuotation(id);};
+window.cbLgPrint=function(){
+  const body=document.getElementById("cbLgBody").innerHTML.replace(/ onclick="[^"]*"/g,"");
+  const title=LG.view==="stmt"?"Customer Ledger — "+stmtData(LG.cust).name:LG.view==="cust"?"Cash Bill Ledger — Customer-wise":"Cash Bill Ledger — All Bills";
+  const w=window.open("","_blank");if(!w){alert("Please allow pop-ups to print.");return;}
+  w.document.write('<html><head><title>'+esc(title)+'</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:14px}h3{color:#1a3c6e;margin:0 0 8px}table{width:100%;border-collapse:collapse}th{background:#1a3c6e;color:#fff;padding:5px;text-align:left}td{padding:4px 5px;border-bottom:1px solid #ccc}.r{text-align:right}</style></head><body><h3>'+esc(title)+'</h3><div style="margin-bottom:6px;color:#555">Printed '+dmy(new Date().toISOString())+'</div>'+body+'</body></html>');
+  w.document.close();w.focus();setTimeout(()=>w.print(),300);
+};
+window.cbLgExcel=function(){
+  if(!LG.loaded)return;
+  let data,name;
+  if(LG.view==="stmt"){const s=stmtData(LG.cust);name="Statement";data=[["Customer Ledger — "+s.name],[],["Date","Remarks","Bill No","Debit","Credit","Balance"]].concat(s.ev.map(e=>[dmy(e.d),e.t,e.bill,e.dr||"",e.cr||"",e.bal])).concat([["","TOTAL","",s.dr,s.cr,s.bal]]);}
+  else if(LG.view==="cust"){const g=custGroups(filtered());name="Customer-wise";data=[["Customer","Bills","Billed","Received / Adjusted","Pending (Cash Bills)","Customer Ledger Balance"]].concat(g.map(x=>[x.name,x.n,x.amt,x.paid,x.pend,x.led]));}
+  else{name="All Bills";data=[["Date","Bill No","Customer","Bill Amount","Received / Adjusted","Pending","Status","Age (days)"]].concat(filtered().map(r=>[dmy(r.doc_date),r.doc_no,r.cust_name,r._amt,r._paid,r._pend,r._st,r._age]));}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),name);XLSX.writeFile(wb,"SSE_CashBillLedger_"+name.replace(/\s+/g,"")+".xlsx");
 };
 })();
 </script>
