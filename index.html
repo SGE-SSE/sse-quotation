@@ -7139,5 +7139,77 @@ window.dlExcel=function(){
 })();
 </script>
 
+
+
+
+
+
+
+
+<!-- ===== INDENT: available stock beside Qty — entry line + each table row (screen only) =====
+     Table rows use a CSS ::after on the Qty cell, so it is NOT part of the cell text: never saved, never printed, never in PDF. -->
+<style>
+body:not(.pdf-export-mode) #qt td.stkq::after{content:"Avl: " attr(data-stk);display:block;font-size:10.5px;font-weight:800;margin-top:2px;white-space:nowrap}
+body:not(.pdf-export-mode) #qt td.stkq.stk-ok::after{color:#1b7a4a}
+body:not(.pdf-export-mode) #qt td.stkq.stk-short::after{color:#c62828}
+body:not(.pdf-export-mode) #qt td.stkq.stk-na::after{color:#888}
+@media print{#qt td.stkq::after{content:none!important;display:none!important}}
+</style>
+<script>
+(function(){
+  const isInd=()=>typeof currentDocType!=="undefined" && currentDocType==="IND";
+  const fmt=n=>{n=+n||0;return Number.isInteger(n)?String(n):String(+n.toFixed(2));};
+
+  /* A) Qty line in the entry panel */
+  let tag=null;
+  function ensure(){
+    if(tag) return tag;
+    const lbl=document.getElementById("qtyLabel"); if(!lbl||!lbl.parentElement) return null;
+    tag=document.createElement("span");
+    tag.id="indStockTag"; tag.className="no-print";
+    tag.style.cssText="display:none;float:right;font-size:12px;font-weight:800;padding:1px 7px;border-radius:10px;margin-top:-1px";
+    lbl.parentElement.insertBefore(tag,lbl);
+    return tag;
+  }
+  function refreshEntry(){
+    const t=ensure(); if(!t) return;
+    if(!isInd()||!brandSel.value||!itemSel.value){ t.style.display="none"; return; }
+    if(!inventoryLoaded){ t.style.display="inline-block"; t.textContent="Available: checking…"; t.style.color="#777"; t.style.background="#eee"; return; }
+    const m=findInventoryMatch(brandSel.value,itemSel.options[itemSel.selectedIndex].text.trim());
+    t.style.display="inline-block";
+    if(!m){ t.textContent="Available: –"; t.style.color="#777"; t.style.background="#eee"; return; }
+    const short=(+qty.value||0)>m.stock;
+    t.textContent="Available: "+fmt(m.stock)+(m.unit?" "+m.unit:"");
+    t.style.color=short?"#c62828":"#1b7a4a"; t.style.background=short?"#fdeaea":"#e8f6ee";
+  }
+
+  /* B) Every row of the items table: "Avl: N" under the Qty number */
+  function refreshRows(){
+    [...tbody.rows].forEach(r=>{
+      const c=r.cells&&r.cells[7]; if(!c) return;
+      if(!isInd()||r.dataset.retDisc){ c.classList.remove("stkq","stk-ok","stk-short","stk-na"); c.removeAttribute("data-stk"); return; }
+      let cls="stk-na",txt="–";
+      if(!inventoryLoaded){ txt="…"; }
+      else{
+        const m=findInventoryMatch(r.cells[1].innerText.trim(),r.cells[3].innerText.trim());
+        if(m){ txt=fmt(m.stock); cls=((parseFloat(c.innerText)||0)>m.stock+1e-9)?"stk-short":"stk-ok"; }
+      }
+      c.classList.remove("stk-ok","stk-short","stk-na"); c.classList.add("stkq",cls);
+      if(c.getAttribute("data-stk")!==txt) c.setAttribute("data-stk",txt);
+    });
+  }
+  function refreshAll(){ try{refreshEntry();}catch(e){} try{refreshRows();}catch(e){} }
+
+  try{ new MutationObserver(()=>refreshRows()).observe(tbody,{childList:true,subtree:true,characterData:true}); }catch(e){}
+  const _badge=updateStockBadge;
+  updateStockBadge=function(){ const r=_badge.apply(this,arguments); refreshAll(); return r; };
+  const _sw=switchDocType;
+  switchDocType=function(){ const r=_sw.apply(this,arguments); refreshAll(); return r; };
+  const _ld=loadInventoryStock;
+  loadInventoryStock=async function(){ const r=await _ld.apply(this,arguments); refreshAll(); return r; };
+  document.getElementById("qty").addEventListener("input",refreshAll);
+})();
+</script>
+
 </body>
 </html>
