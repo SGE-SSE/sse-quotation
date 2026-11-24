@@ -1609,11 +1609,17 @@ async function findInventoryItemId(brand,name){
   return hit.id;
 }
 
-async function insertStockMovementOut(itemId,location,qty,note){
-  const { error } = await invSb.from("stock_movements").insert({
-    item_id:itemId, location, qty:-Math.abs(qty), type:"OUT", note
-  });
-  if(error) throw error;
+/* Stock OUT goes into the SAME "transactions" ledger the Godown page and the Indent "Goods received"
+   step use (type "OUT", positive qty). The item id already belongs to the chosen location
+   (Godown / Office items are separate rows), so the stock drops at exactly that location.
+   (Older code wrote to a "stock_movements" table that does not exist — that is why stock never reduced.) */
+async function insertStockMovementOut(itemId,location,qty,note,extra){
+  extra=extra||{};
+  const txn={item_id:itemId,type:"OUT",qty:Math.abs(qty),date:extra.date||new Date().toISOString().slice(0,10),customer:extra.customer||"",note};
+  const op=extra.operator||localStorage.getItem("sge_operator")||"";
+  if(op) txn.operator=op;
+  const res=await fetch(_SB+"transactions",{method:"POST",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(txn)});
+  if(!res.ok) throw new Error(String(await res.text()).slice(0,120));
 }
 
 /* ===== CUSTOMER RETURN -> STOCK IN =====
@@ -1727,12 +1733,14 @@ async function reduceStockFromQuotation(btn){
   const original=btn?btn.textContent:"";
   if(btn){ btn.disabled=true; btn.textContent="⏳ Reducing…"; }
   let done=0; const failed=[];
+  const outDate=(qdate.value||new Date().toISOString().slice(0,10)), outCust=(custName.value||"").trim(), outNo=(qno.value||"");
+  const outNote="Quotation "+outNo+" – stock reduced from "+location;
   try{
     for(const r of plan){
       try{
         const itemId=await findInventoryItemId(r.brand,r.desc,location);
         if(!itemId){ failed.push(r.desc+" — item id not found"); continue; }
-        await insertStockMovementOut(itemId,location,r.qty,"Reduced via Quotation tool");
+        await insertStockMovementOut(itemId,location,r.qty,outNote,{date:outDate,customer:outCust});
         done++;
       }catch(e){ failed.push(r.desc+" — "+e.message); }
     }
@@ -1748,7 +1756,7 @@ async function reduceStockFromQuotation(btn){
       else if(isMissingColumnError(markErr)) console.warn("Stock reduced, but couldn't record it on the quotation — run the Supabase migration to enable double-reduction protection.");
     }
     let msg=done+" item(s) reduced from "+location+" ✓";
-    if(failed.length) msg+="\n\n"+failed.length+" failed:\n"+failed.join("\n")+"\n\n(Likely means the stock_movements table/column names differ from my guess — send me this exact text and I'll fix it.)";
+    if(failed.length) msg+="\n\n"+failed.length+" failed:\n"+failed.join("\n")+"";
     alert(msg);
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=original; }
@@ -4279,13 +4287,31 @@ async function indDel(no){
 const _SB="https://ibawonlchzxmocoxkirz.supabase.co/rest/v1/";
 const _nb=b=>(typeof normBrand==="function")?normBrand(b):_nk(b);
 const _nk=s=>{let t=String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); if(t==="UNKNOWNBRAND"||t==="NA"||t==="NONE") t=""; return t;};
+/* Asks WHERE the stock should go (Godown / Office). Own overlay with a very high z-index so it shows above the Pending Indents window. */
+function pickStockLocation(title){
+  return new Promise(resolve=>{
+    const o=document.createElement("div"); o.className="no-print";
+    o.style.cssText="position:fixed;inset:0;background:rgba(20,20,30,.55);z-index:200000;display:flex;align-items:center;justify-content:center;padding:16px";
+    o.innerHTML='<div style="background:#fff;color:#1a1a1a;width:100%;max-width:340px;border-radius:10px;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">'+
+      '<strong style="font-size:15px;color:#1a3c6e;display:block;margin-bottom:16px">'+(title||"Which location?")+'</strong>'+
+      '<div style="display:flex;gap:10px;justify-content:center">'+
+      '<button type="button" data-loc="GODOWN" style="background:#1a3c6e;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">🏭 GODOWN</button>'+
+      '<button type="button" data-loc="OFFICE" style="background:#1b7a4a;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12.5px">🏢 OFFICE</button></div>'+
+      '<button type="button" data-loc="" style="margin-top:16px;background:none;border:1px solid #c5d3e8;color:#5a6a85;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">Cancel</button></div>';
+    o.querySelectorAll("button").forEach(b=>b.onclick=()=>{ o.remove(); resolve(b.getAttribute("data-loc")||null); });
+    document.body.appendChild(o);
+  });
+}
 let _rcv=null;
 const _rcEsc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 async function openReceive(no){
   const x=_indRows.find(r=>r.no===no); if(!x) return;
+  const loc=await pickStockLocation("Receive this material into which location?");
+  if(!loc) return;
+  const locName=loc==="OFFICE"?"Office":"Godown";
   let inv=[];
   try{
-    /* Supabase caps one response at 1000 rows (limit=5000 is ignored), so page with a stable order. */
+    /* Supabase caps one response at 1000 rows, so page with a stable order. */
     let all=[], from=0; const seen=new Set();
     while(true){
       const res=await fetch(_SB+"item_stock_fast?select=id,name,brand,location&order=name,id",{headers:{..._IH,Range:from+"-"+(from+999)}});
@@ -4295,8 +4321,8 @@ async function openReceive(no){
       if(page.length<1000) break;
       from+=1000;
     }
-    inv=all.filter(i=>String(i.location||"GODOWN").trim().toUpperCase()==="GODOWN");
-  }catch(e){ alert("Could not read Godown items: "+e.message); return; }
+    inv=all.filter(i=>String(i.location||"GODOWN").trim().toUpperCase()===loc);
+  }catch(e){ alert("Could not read "+locName+" items: "+e.message); return; }
   const rc=x.received||{};
   const rows=(x.items||[]).map((it,k)=>{
     const cand=inv.filter(i=>_nk(i.name)===_nk(it.desc)&&(!it.line||_nb(i.brand)===_nb(it.line)));
@@ -4304,21 +4330,21 @@ async function openReceive(no){
     const rem=Math.max(0,+(it.qty-(rc[k]||0)).toFixed(2));
     return {k,it,m,rem,done:rem<=0};
   });
-  _rcv={x,rows,inv};
+  _rcv={x,rows,inv,loc,locName};
   const picker=r=>{
     if(r.m||r.done) return "";
     let pool=inv.filter(i=>!r.it.line||_nb(i.brand)===_nb(r.it.line));
     if(!pool.length) pool=inv;
     pool=pool.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
-    return '<select id="rc-m-'+r.k+'" style="width:100%;margin-top:4px;font-size:11.5px"><option value="">— name not matched: pick the Godown item —</option>'+
+    return '<select id="rc-m-'+r.k+'" style="width:100%;margin-top:4px;font-size:11.5px"><option value="">— name not matched: pick the '+locName+' item —</option><option value="__new__">➕ Not in '+locName+' yet — create this item there</option>'+
       pool.map(i=>'<option value="'+_rcEsc(i.id)+'">'+_rcEsc(i.name)+(i.brand?' ['+_rcEsc(i.brand)+']':'')+'</option>').join("")+'</select>';
   };
   let h=document.getElementById("rcvBox"); if(h) h.remove();
   h=document.createElement("div"); h.id="rcvBox"; h.className="no-print";
   h.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px";
   h.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:940px;width:100%;max-height:92vh;overflow:auto;padding:14px">'+
-   '<b style="font-size:15px">Goods received – '+_rcEsc(x.no)+' ('+_rcEsc(x.supplier)+')</b>'+
-   '<div style="font-size:11.5px;color:#555;margin:6px 0">Enter the quantity that <b>actually arrived</b> in <i>Received now</i>. Less than the balance = <b>partial receipt</b> (the rest stays pending). Untick items that did not arrive. Stock IN is added to the <b>Godown</b>.</div>'+
+   '<b style="font-size:15px">Goods received – '+_rcEsc(x.no)+' ('+_rcEsc(x.supplier)+')</b> <span style="margin-left:8px;padding:3px 10px;border-radius:10px;font-size:11.5px;font-weight:700;color:#fff;background:'+(loc==="OFFICE"?"#1b7a4a":"#1a3c6e")+'">'+(loc==="OFFICE"?"🏢 OFFICE":"🏭 GODOWN")+'</span>'+
+   '<div style="font-size:11.5px;color:#555;margin:6px 0">Enter the quantity that <b>actually arrived</b> in <i>Received now</i>. Less than the balance = <b>partial receipt</b> (the rest stays pending). Untick items that did not arrive. Stock IN is added to the <b>'+locName.toUpperCase()+'</b>.</div>'+
    '<div style="display:flex;gap:8px;margin:6px 0"><button type="button" onclick="rcFill()">Receive full balance (all)</button><button type="button" onclick="rcClear()">Clear all</button></div>'+
    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th></th><th style="padding:6px">Item</th><th style="padding:6px">Ordered</th><th style="padding:6px">Already recd</th><th style="padding:6px">Balance</th><th style="padding:6px">Received now</th><th style="padding:6px">This delivery</th></tr>'+
    rows.map(r=>'<tr style="border-top:1px solid #ddd;vertical-align:top"><td style="padding:6px"><input type="checkbox" id="rc-ck-'+r.k+'" '+(r.done?'disabled':(r.m?'checked':''))+' onchange="rcCalc('+r.k+')"></td>'+
@@ -4357,27 +4383,36 @@ function rcCalc(k){
 }
 async function confirmReceive(){
   if(!_rcv) return;
-  const {x,rows,inv}=_rcv, date=document.getElementById("rc-date").value, by=document.getElementById("rc-by").value.trim();
+  const {x,rows,inv,loc,locName}=_rcv, date=document.getElementById("rc-date").value, by=document.getElementById("rc-by").value.trim();
   const todo=[], missing=[];
   rows.forEach(r=>{
     if(r.done) return;
     if(!document.getElementById("rc-ck-"+r.k).checked) return;
     const q=parseFloat(document.getElementById("rc-q-"+r.k).value)||0; if(q<=0) return;
     let m=r.m;
-    if(!m){ const s=document.getElementById("rc-m-"+r.k); const v=s?s.value:""; m=v?inv.find(i=>String(i.id)===v):null; }
+    if(!m){ const s=document.getElementById("rc-m-"+r.k); const v=s?s.value:""; m=(v==="__new__")?{id:null,isNew:true,name:r.it.desc,brand:r.it.line||""}:(v?inv.find(i=>String(i.id)===v):null); }
     if(!m){ missing.push(r.it.desc); return; }
     todo.push({...r,m,q});
   });
-  if(missing.length){ alert("Pick the matching Godown item for:\n"+missing.join("\n")); return; }
+  if(missing.length){ alert("Pick the matching "+locName+" item for:\n"+missing.join("\n")); return; }
   const close=document.getElementById("rc-close").checked;
   if(!todo.length&&!close){ alert("Nothing to add. Enter a quantity, or tick 'Close this indent'."); return; }
   const lines=todo.map(r=>{ const b=+(r.rem-r.q).toFixed(2); return "• "+r.it.desc+" : "+r.q+(b>0?"   (balance "+b+" still pending)":b<0?"   (+"+(-b)+" more than ordered)":"   (complete)"); });
-  const msg=todo.length?"Add Stock IN to GODOWN for "+todo.length+" item(s)?\n\n"+lines.join("\n")+"\n\nThis cannot be undone from here."+(close?"\n\nThe indent will be CLOSED.":""):"Close this indent without adding any stock?";
+  const msg=todo.length?"Add Stock IN to "+locName.toUpperCase()+" for "+todo.length+" item(s)?\n\n"+lines.join("\n")+"\n\nThis cannot be undone from here."+(close?"\n\nThe indent will be CLOSED.":""):"Close this indent without adding any stock?";
   if(!confirm(msg)) return;
   const btn=document.getElementById("rc-ok"); btn.disabled=true; btn.textContent="Adding…";
   const rc={...(x.received||{})}; const fails=[];
   for(const r of todo){
     const b=+(r.rem-r.q).toFixed(2);
+    if(r.m.isNew){
+      try{
+        const unit=(typeof mapUnitToInventory==="function")?mapUnitToInventory(r.it.unit):(r.it.unit||"NOS");
+        const cat=(typeof guessInventoryCategory==="function")?guessInventoryCategory(r.it.desc):"Other";
+        const cr=await fetch(_SB+"items",{method:"POST",headers:{..._IH,Prefer:"return=representation"},body:JSON.stringify({name:r.it.desc,category:cat,unit,opening_stock:0,min_stock:0,brand:r.it.line||"",location:loc})});
+        if(!cr.ok) throw new Error(await cr.text());
+        const made=await cr.json(); r.m={id:(Array.isArray(made)?made[0]:made).id};
+      }catch(e){ fails.push(r.it.desc+": could not create item in "+locName+" – "+String(e.message).slice(0,80)); continue; }
+    }
     const txn={item_id:r.m.id,type:"IN",qty:r.q,date,supplier:x.supplier,note:"Indent "+x.no+(b>0?" – partial receipt, balance "+b:" – received")+" – bill pending"};
     if(by){ txn.operator=by; localStorage.setItem("sge_operator",by); }
     try{
@@ -4391,7 +4426,7 @@ async function confirmReceive(){
   await fetch(_IB+"?no=eq."+encodeURIComponent(x.no),{method:"PATCH",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify({received:rc,status})});
   document.getElementById("rcvBox").remove(); _rcv=null;
   if(fails.length) alert("Some items failed and were NOT added:\n"+fails.join("\n"));
-  else alert("Stock IN added. Status: "+status+(status==="PARTIAL RECEIVED"?"\nThe balance stays in PENDING INDENTS – use 'Receive balance' when it arrives.":""));
+  else alert("Stock IN added to "+locName.toUpperCase()+". Status: "+status+(status==="PARTIAL RECEIVED"?"\nThe balance stays in PENDING INDENTS – use 'Receive balance' when it arrives.":""));
   if(typeof refreshStockQuiet==="function") refreshStockQuiet();
   if(typeof load==="function"){ try{load(true);}catch(e){} }
   indRefresh();
@@ -4423,7 +4458,7 @@ function renderIndentTracker(){
   }).join("");
   m.innerHTML='<div style="background:#fff;color:#1a1a1a;border-radius:10px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">📋 Indents – Bill Pending Tracker (live)</b><button onclick="document.getElementById(\'indTrk\').remove()">✕ Close</button></div>'+
    (_indErr?'<div style="background:#fdecea;color:#a32;padding:8px;border-radius:6px;font-size:12px;margin-bottom:8px">Database table not ready: '+_indErr+'<br>Run the SQL for the "indents" table in Supabase once.</div>':'')+
-   '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Material arrived (fully <b>or partly</b>)? Click <b>Goods received</b> and enter the quantity that came – Stock IN is added to the Godown and the balance stays pending as <b>PARTIAL RECEIVED</b>. When the supplier bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
+   '<div style="font-size:11.5px;color:#555;margin-bottom:8px">Material arrived (fully <b>or partly</b>)? Click <b>Goods received</b> and enter the quantity that came – Stock IN is added to the Godown or Office (you choose each time) and the balance stays pending as <b>PARTIAL RECEIVED</b>. When the supplier bill comes, click <b>Bill received</b> and enter the bill no.</div>'+
    (a.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:#f3f3f3;text-align:left"><th style="padding:6px">Indent</th><th style="padding:6px">Supplier</th><th style="padding:6px">For (Customer / Office)</th><th style="padding:6px">Items</th><th style="padding:6px">Status</th><th style="padding:6px">Action</th></tr>'+rows+'</table></div>':'<p>No indents raised yet.</p>')+'</div>';
 }
 window.addEventListener("load",()=>{
