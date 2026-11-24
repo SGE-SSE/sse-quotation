@@ -1681,7 +1681,7 @@ async function addReturnToStock(btn){
 
 async function reduceStockFromQuotation(btn){
   if(currentDocType==="RET"){ alert("This is a Customer Return — use ↩️ ADD RETURN TO STOCK (returned goods come back INTO stock)."); return; }
-  if(currentDocType==="IND"){ alert("This is an Indent (a purchase request) — stock is added when the material is received (📋 PENDING INDENTS → Goods received), never reduced."); return; }
+  /* Indent pages are allowed to reduce stock too (same Saved + Confirmed + not-already-reduced rules and the same Godown/Office question as a quotation). */
   const rows=collectRowsForReduce();
   if(!rows.length){ alert("No items in the quotation table to reduce."); return; }
 
@@ -1707,6 +1707,7 @@ async function reduceStockFromQuotation(btn){
 
   const location=await pickReduceLocation();
   if(!location) return; // cancelled
+  if(currentDocType==="IND" && !confirm("This is an INDENT. Reduce stock for its "+rows.length+" item(s) from "+location+"?\n\n"+rows.map(r=>"• "+r.desc+" : "+r.qty).join("\n"))) return;
 
   if(!inventoryLoaded) await loadInventoryStock();
 
