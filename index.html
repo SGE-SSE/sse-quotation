@@ -410,7 +410,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
         <option value="FR">FR</option>
         <option value="FR-LSH">FR-LSH</option>
         <option value="FRLS">FRLS</option>
-        <option value="ZHFR">ZHFR</option>
+        <option value="ZHFR">ZHFR</option><option value="HRFR">HRFR</option><option value="LFFR">LFFR</option>
       </select>
     </div>
   </div>
@@ -1036,7 +1036,7 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
           <option value="FR">FR</option>
           <option value="FR-LSH">FR-LSH</option>
           <option value="FRLS">FRLS</option>
-          <option value="ZHFR">ZHFR</option>
+          <option value="ZHFR">ZHFR</option><option value="HRFR">HRFR</option><option value="LFFR">LFFR</option>
         </select>
       </div>
       <div><label>Qty</label><input type="number" id="cmpItemQty" min="0" value="1" style="font-weight:bold"></div>
@@ -6615,6 +6615,18 @@ function findCur(desc,brandText){
 const dispB=b=>{try{return getDisplayBrand(b);}catch(_){return b;}};
 const norm=n=>key(n).replace(/\bLF\b/g,'').replace(/\s+/g,' ').trim();
 const sizeOf=n=>{const m=String(n||'').match(/(\d+(?:\.\d+)?)\s*SQMM/i);return m?parseFloat(m[1]):null;};
+/* WIRE TYPE RULES per coil length: 300 m is made in FR-LSH only; 90 m and 180 m come in FR, FR-LSH, FRLS, HRFR, ZHFR, LFFR */
+const WTRE=/\b(FR-?LSH|FRLS|ZHFR|HRFR|LFFR|FR)\b/i;
+const normWT=w=>{w=String(w||'').toUpperCase();return w==='FRLSH'?'FR-LSH':w;};
+const wtOf=s=>{const m=String(s||'').match(WTRE);return m?normWT(m[1]):'';};
+const wtAllowed=L=>L===300?['FR-LSH']:['FR','FR-LSH','FRLS','HRFR','ZHFR','LFFR'];
+function wtDefault(L,curWT){
+  const a=wtAllowed(L);
+  if(!curWT)return a.length===1?a[0]:'';
+  if(a.indexOf(curWT)>-1)return curWT;
+  return a[a.length-1];
+}
+const withWT=(suffix,wt)=>{const rest=String(suffix||'').replace(WTRE,' ').replace(/\s+/g,' ').trim();return (wt?' '+wt:'')+(rest?' '+rest:'');};
 /* other coil lengths of the same product, searched across ALL price-list groups of the same brand:
    tier 1 = identical name (only length differs, same group); tier 2 = same name ignoring LF, any group; tier 3 = same brand + same SQMM size (name differs - shown with a warning) */
 function siblings(cur){
@@ -6643,12 +6655,14 @@ function ctx(r){
   const oldCoilMrp=(!isNaN(rawMrp)&&rawMrp>0)?(unit==='MTRS'?rawMrp*curLen:rawMrp):listMrp;
   let d=parseFloat(r.dataset.discRaw)||0;
   if(mode==='net'){const rt=parseFloat(c[10].innerText)||0,coilRt=unit==='MTRS'?rt*curLen:rt;d=oldCoilMrp>0?(1-coilRt/oldCoilMrp)*100:0;}
-  return {cur,sibs,unit,curLen,qty,mode,d,suffix:desc.slice(cur.item.name.length),desc};
+  const suffix=desc.slice(cur.item.name.length);
+  return {cur,sibs,unit,curLen,qty,mode,d,suffix,desc,curWT:wtOf(suffix),wtSel:{}};
 }
 function vals(x,item,qty){
   const L=lenOf(item.name),cm=+item.mrp,cr=cm-(cm*x.d/100);
   const isM=x.unit==='MTRS',pm=(cr/L).toFixed(2),fr=isM?+pm:cr,dm=isM?(cm/L).toFixed(2):cm;
-  return {item,L,qty,cr,fr,dm,pm,amt:fr*qty};
+  const wt=(x.wtSel&&x.wtSel[L]!==undefined)?x.wtSel[L]:wtDefault(L,x.curWT);
+  return {item,L,qty,cr,fr,dm,pm,amt:fr*qty,wt};
 }
 function plan(x,sib,how){
   const T=x.qty*x.curLen,L=lenOf(sib.name),notes=[],lines=[];
@@ -6669,7 +6683,7 @@ function plan(x,sib,how){
 function setRow(r,x,v){
   const c=r.cells,showMrp=c[8].innerText.trim()!=='-',showPm=c[11].style.display!=='none';
   c[2].innerText=escItemCode(v.item.itemCode)||'-';
-  c[3].innerText=v.item.name+x.suffix;
+  c[3].innerText=v.item.name+withWT(x.suffix,v.wt);
   if(v.item.hsn)c[5].innerText=v.item.hsn;
   c[7].innerText=v.qty;
   c[8].innerText=showMrp?v.dm:'-';
@@ -6696,14 +6710,21 @@ window.convLen=function(button){
   b.appendChild(h);
   const row=document.createElement('div');b.appendChild(row);
   const out=document.createElement('div');out.style.marginTop='10px';b.appendChild(out);
-  x.sibs.forEach(s=>{const bt=btn(lenOf(s.name)+' m  ·  '+s.name+'  ·  MRP '+inr(s.mrp)+'   ['+s._b+']'+(s._t===3?'   ⚠ name differs, please check':''),()=>preview(x,r,s,out,'up'));bt.style.display='block';bt.style.textAlign='left';bt.style.width='100%';row.appendChild(bt);});
+  x.sibs.forEach(s=>{const bt=btn(lenOf(s.name)+' m  ·  '+s.name+'  ·  MRP '+inr(s.mrp)+'   ['+s._b+']'+(s._t===3?'   ⚠ name differs, please check':'')+(lenOf(s.name)===300?'   (FR-LSH only)':''),()=>preview(x,r,s,out,'up'));bt.style.display='block';bt.style.textAlign='left';bt.style.width='100%';row.appendChild(bt);});
   const foot=document.createElement('div');foot.style.marginTop='12px';foot.appendChild(btn('Close',close));b.appendChild(foot);
 };
+function wtCell(item,v){
+  const L=lenOf(item.name),a=wtAllowed(L);
+  if(a.length===1)return '<div style="font-size:11px;color:#b36b00">'+L+' m is available in '+a[0]+' only</div>';
+  return '<div style="font-size:11px;margin-top:2px">Wire type: <select data-wtl="'+L+'" style="font-size:11px;padding:1px 3px">'+
+    ['',...a].map(o=>'<option value="'+o+'"'+(o===v.wt?' selected':'')+'>'+(o||'— None —')+'</option>').join('')+'</select></div>';
+}
 function preview(x,r,sib,out,how){
   const p=plan(x,sib,how);out.innerHTML='';
   const L=lenOf(sib.name),T=x.qty*x.curLen;
   const before=(parseFloat(r.cells[12].innerText)||0);
   let h='<div style="border-top:1px solid #ddd;padding-top:10px">';
+  { const nw=wtDefault(L,x.curWT); if(x.curWT!==nw&&!(x.wtSel&&x.wtSel[L]!==undefined)) h+='<div style="margin-bottom:6px;color:#b36b00">Wire type changes <b>'+(x.curWT||'none')+' → '+nw+'</b>, because '+L+' m is made in '+nw+' only.</div>'; }
   if(x.unit==='MTRS')h+='<div style="margin-bottom:6px">Quantity stays <b>'+x.qty+' m</b>. The rate per metre changes to the '+L+' m item\'s price.</div>';
   else if(p.exact)h+='<div style="margin-bottom:6px;color:#1b7a4a">'+T+' m ÷ '+L+' m = <b>'+(T/L)+' coil(s)</b>. Exact match.</div>';
   else{
@@ -6711,12 +6732,13 @@ function preview(x,r,sib,out,how){
   }
   h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:#f1f1f1"><th style="text-align:left;padding:4px">Item</th><th style="padding:4px">Qty</th><th style="padding:4px;text-align:right">MRP</th><th style="padding:4px;text-align:right">Rate</th><th style="padding:4px;text-align:right">Amount</th></tr>';
   let tot=0;
-  p.lines.forEach(l=>{const v=vals(x,l.item,l.qty);tot+=v.amt;h+='<tr><td style="padding:4px;border-bottom:1px solid #eee">'+l.item.name+x.suffix+'</td><td style="padding:4px;text-align:center;border-bottom:1px solid #eee">'+l.qty+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+(+l.item.mrp).toLocaleString('en-IN')+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.fr)+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.amt)+'</td></tr>';});
+  p.lines.forEach(l=>{const v=vals(x,l.item,l.qty);tot+=v.amt;h+='<tr><td style="padding:4px;border-bottom:1px solid #eee">'+l.item.name+withWT(x.suffix,v.wt)+wtCell(l.item,v)+'</td><td style="padding:4px;text-align:center;border-bottom:1px solid #eee">'+l.qty+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+(+l.item.mrp).toLocaleString('en-IN')+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.fr)+'</td><td style="padding:4px;text-align:right;border-bottom:1px solid #eee">'+inr(v.amt)+'</td></tr>';});
   if(!p.lines.length)h+='<tr><td colspan="5" style="padding:6px;color:#c0392b">No full coil possible with this choice.</td></tr>';
   h+='</table>';
   if(p.notes.length)h+='<div style="margin-top:6px;color:#b36b00">'+p.notes.join(' ')+'</div>';
   h+='<div style="margin-top:6px">Line total: '+inr(before)+' → <b>'+inr(tot)+'</b></div></div>';
   out.innerHTML=h;
+  out.querySelectorAll('select[data-wtl]').forEach(se=>{se.onchange=()=>{x.wtSel[+se.getAttribute('data-wtl')]=se.value;preview(x,r,sib,out,how);};});
   const hw=out.querySelector('#cvHow');
   if(hw)[['up','Round up'],['down','Round down'],['split','Keep remainder in smaller coils']].forEach(o=>{const bb=btn(o[1],()=>preview(x,r,sib,out,o[0]),how===o[0]);hw.appendChild(bb);});
   const act=document.createElement('div');act.style.marginTop='10px';
