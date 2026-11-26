@@ -742,10 +742,11 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
     </div>
     <div style="padding:14px 18px;border-bottom:1px solid #eee">
       <input type="text" id="itemSearchInput" placeholder="Type item name… e.g. 100 watt flood light" autocomplete="off"
-        oninput="itemSearchBrand='';itemSearchType='';onItemSearchInput()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
+        oninput="itemSearchBrand='';itemSearchType='';itemSearchParty='';onItemSearchInput()" style="width:100%;padding:9px 10px;border:1px solid #c5d3e8;border-radius:6px;font-size:13px">
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
         <select id="itemSearchTypeSel" onchange="itemSearchType=this.value;runItemSearch()" style="flex:1;min-width:140px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:6px;background:#fff;color:#1a1a2e;font-weight:600"><option value="">All documents</option></select>
         <select id="itemSearchBrandSel" onchange="itemSearchBrand=this.value;runItemSearch()" style="flex:1;min-width:140px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:6px;background:#fff;color:#1a1a2e;font-weight:600"><option value="">All brands</option></select>
+        <select id="itemSearchPartySel" onchange="itemSearchParty=this.value;runItemSearch()" style="flex:1;min-width:140px;padding:7px 8px;font-size:12.5px;border:1.5px solid #6a1b9a;border-radius:6px;background:#fff;color:#1a1a2e;font-weight:600"><option value="">All parties</option></select>
       </div>
       <div id="itemSearchMeta" style="font-size:11px;color:#888;margin-top:6px"></div>
     </div>
@@ -2955,6 +2956,7 @@ async function previewQuotDash(id){
 let itemSearchCache = null;
 let itemSearchTimer = null;
 let itemSearchBrand = "";   // brand chosen in the popup's Brand drop-down ("" = all brands)
+let itemSearchParty = "";   // party (customer) chosen in the popup's Party drop-down ("" = all parties)
 let itemSearchType  = "";   // document type chosen in the popup's Document drop-down ("" = all)
 const ITEM_DOC_LABELS = { QTN:"Quotation", CB:"Cash Bill", PI:"Proforma Invoice", DC:"Delivery Challan", IND:"Indent", RET:"Return" };
 const itemDocLabel = t => ITEM_DOC_LABELS[t] || t || "Other";
@@ -2962,7 +2964,8 @@ const itemDocLabel = t => ITEM_DOC_LABELS[t] || t || "Other";
 async function openItemSearch(){
   document.getElementById("itemSearchModal").style.display="flex";
   document.getElementById("itemSearchInput").value="";
-  itemSearchBrand=""; itemSearchType="";
+  itemSearchBrand=""; itemSearchType=""; itemSearchParty="";
+  document.getElementById("itemSearchPartySel").innerHTML='<option value="">All parties</option>';
   document.getElementById("itemSearchBrandSel").innerHTML='<option value="">All brands</option>';
   document.getElementById("itemSearchTypeSel").innerHTML='<option value="">All documents</option>';
   document.getElementById("itemSearchMeta").innerText="";
@@ -3060,10 +3063,23 @@ function runItemSearch(){
     hits.length=0; kept.forEach(h=>hits.push(h));
   }
 
+  // Party drop-down — customers found in the matches (after document + brand filters), with counts
+  const partyOf=h=>(h.custName||"").toString().trim()||"(No party name)";
+  const partyCount={};
+  hits.forEach(h=>{ const p=partyOf(h); partyCount[p]=(partyCount[p]||0)+1; });
+  const partyKeys=Object.keys(partyCount).sort((a,b)=>a.localeCompare(b));
+  if(itemSearchParty && !partyCount[itemSearchParty]) itemSearchParty="";
+  const partySel_=document.getElementById("itemSearchPartySel");
+  partySel_.innerHTML=`<option value="">All parties (${hits.length})</option>`+partyKeys.map(p=>`<option value="${p.replace(/"/g,'&quot;')}"${p===itemSearchParty?" selected":""}>${p} (${partyCount[p]})</option>`).join("");
+  if(itemSearchParty){
+    const kept=hits.filter(h=>partyOf(h)===itemSearchParty);
+    hits.length=0; kept.forEach(h=>hits.push(h));
+  }
+
   if(!hits.length){ list.innerHTML = `<div style="text-align:center;color:#888;padding:30px 10px">No quotation found with an item matching "<b>${qRaw}</b>".</div>`; return; }
 
   // Most recent first (cache is already newest-first, so preserve that order).
-  document.getElementById("itemSearchMeta").innerText = `${hits.length} match(es) for "${qRaw}" across ${itemSearchCache.length} document(s)${itemSearchType?" · "+itemDocLabel(itemSearchType):""}${itemSearchBrand?" · brand: "+itemSearchBrand:""}.`;
+  document.getElementById("itemSearchMeta").innerText = `${hits.length} match(es) for "${qRaw}" across ${itemSearchCache.length} document(s)${itemSearchType?" · "+itemDocLabel(itemSearchType):""}${itemSearchBrand?" · brand: "+itemSearchBrand:""}${itemSearchParty?" · party: "+itemSearchParty:""}.`;
   list.innerHTML = `<div style="display:flex;flex-direction:column;gap:9px">` + hits.map(h=>`
     <div style="border:1px solid #c5d3e8;border-radius:9px;padding:10px 13px;background:#f8fafd">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
