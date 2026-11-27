@@ -772,6 +772,21 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
   </div>
 </div>
 
+<!-- INDENT DUPLICATE MODAL — an Indent for the same supplier + same customer/quotation already exists -->
+<div id="indDupModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1160;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;width:100%;max-width:500px;max-height:90vh;overflow:auto;border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,.35)">
+    <div style="background:linear-gradient(135deg,#e65100,#f08a24);color:#fff;padding:14px 18px">
+      <strong style="font-size:15px">⚠ An Indent already exists</strong>
+      <div style="font-size:12px;opacity:.95;margin-top:2px">Same supplier and same customer / quotation — saving again would create a duplicate.</div>
+    </div>
+    <div style="padding:16px 18px">
+      <div id="indDupList" style="margin-bottom:12px"></div>
+      <button onclick="indDupSaveNew()" style="width:100%;background:#185FA5;color:#fff;border:none;padding:12px;border-radius:7px;cursor:pointer;font-size:13.5px;font-weight:700;margin-bottom:8px">🆕 Save as New Indent<br><span style="font-weight:400;font-size:11px;opacity:.9">Gets its own fresh serial number</span></button>
+      <button onclick="closeIndDupModal()" style="width:100%;background:none;color:#888;border:none;padding:8px;cursor:pointer;font-size:12.5px">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT ROW MODAL -->
 <!-- BULK EDIT DISCOUNT — inside the quotation currently open in the editor -->
 <div id="bulkRowModal" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(20,20,30,.60);z-index:1100;align-items:center;justify-content:center;padding:12px" onclick="if(event.target===this)closeBulkRowDisc()">
@@ -1271,6 +1286,7 @@ let lastIndentMeta = {};
 // doc_status / stock_reduced / stock_reduced_at / stock_reduced_location on
 // the "quotations" table (see migration note near saveQuotation()).
 let currentQuotationId = null;
+let _savedDocType = null;   // doc type of the record currently loaded/saved (so switching type never overwrites it)
 let currentStockReduced = false;
 let currentStockReducedAt = null;
 let currentStockReducedLocation = null;
@@ -2352,7 +2368,76 @@ async function saveQuotation(){
     document.getElementById("saveChoiceModal").style.display="flex";
     return;
   }
+  if(currentDocType==="IND"){
+    const dups=await findDuplicateIndents();
+    if(dups.length){ showIndDupModal(dups); return; }
+  }
   await performInsertNewQuotation();
+}
+
+/* ===== INDENT: avoid duplicates — Replace existing Indent OR Save as new ===== */
+let _indDups=[];
+async function findDuplicateIndents(){
+  try{
+    const sup=(custName.value||"").trim(); if(!sup) return [];
+    const esc=sup.replace(/[\\%_]/g,"\\$&");
+    const { data, error } = await sb.from("quotations").select("*").eq("doc_type","IND").ilike("cust_name", esc);
+    if(error||!data) return [];
+    const forVal=(document.getElementById("indFor")||{}).value||"";
+    const forName=((document.getElementById("indForName")||{}).value||"").trim().toUpperCase();
+    const ref=indPick?indPick.doc_no:"";
+    return data.filter(r=>{
+      let j={}; try{ j=JSON.parse(r.remarks||"{}"); }catch(e){}
+      if(ref && j.indRef===ref) return true;
+      if(forVal==="OFFICE") return j.indFor==="OFFICE";
+      return !!forName && String(j.indForName||"").trim().toUpperCase()===forName;
+    });
+  }catch(e){ console.warn("Indent duplicate check skipped:",e.message); return []; }
+}
+function showIndDupModal(list){
+  _indDups=list;
+  const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  document.getElementById("indDupList").innerHTML=list.map((r,i)=>{
+    const n=Array.isArray(r.items)?r.items.length:0;
+    return '<div style="border:1px solid #f0c060;background:#fff7e6;border-radius:8px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-size:12.5px;font-weight:700;color:#1a3c6e;word-break:break-all">'+esc(r.doc_no)+'</div>'+
+      '<div style="font-size:11.5px;color:#555;margin:2px 0 8px">'+esc(r.doc_date||"")+' · '+n+' item(s)</div>'+
+      '<button onclick="indDupReplace('+i+')" style="width:100%;background:#1b7a4a;color:#fff;border:none;padding:10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">🔁 Replace this Indent<br><span style="font-weight:400;font-size:11px;opacity:.9">Same indent number — no new serial used</span></button></div>';
+  }).join("");
+  document.getElementById("indDupModal").style.display="flex";
+}
+function closeIndDupModal(){ document.getElementById("indDupModal").style.display="none"; }
+function indDupSaveNew(){ closeIndDupModal(); performInsertNewQuotation(); }
+function indDupReplace(i){
+  const r=_indDups[i]; if(!r) return;
+  closeIndDupModal();
+  currentQuotationId=r.id; _savedDocType="IND";
+  currentStockReduced=!!r.stock_reduced; currentStockReducedAt=r.stock_reduced_at||null; currentStockReducedLocation=r.stock_reduced_location||null;
+  qno.value=r.doc_no;
+  performUpdateExistingQuotation();
+}
+/* Keep PENDING INDENTS in step when an Indent document is replaced (only while still BILL PENDING with nothing received) */
+async function indSyncTracker(docNo){
+  try{
+    const its=[];
+    [...tbody.rows].forEach(r=>{
+      const c=r.cells; if(!c||c.length<8) return;
+      const qty=parseFloat(c[7].innerText)||0; if(!qty) return;
+      const colourRaw=c[4].innerText.trim();
+      its.push({line:c[1].innerText.trim(), code:(c[2].innerText||"").trim().replace(/^-$/,""), desc:c[3].innerText.trim(),
+        colour:(colourRaw&&colourRaw!=='-'&&colourRaw!=='—')?colourRaw:"-", unit:c[6].innerText.trim(), qty, qtnQty:(r.dataset&&r.dataset.qtnQty)||""});
+    });
+    if(!its.length) return;
+    const res=await fetch(_IB+"?no=eq."+encodeURIComponent(docNo)+"&select=*",{headers:_IH});
+    const rows=res.ok?await res.json():[];
+    if(!rows.length){ recordIndentFromDoc(docNo); return; }
+    const row=rows[0], got=row.received&&Object.keys(row.received).length;
+    if(row.status!=="BILL PENDING"||got){ alert("Indent updated.\n\nNote: its Pending Indents entry is already "+row.status+(got?" (goods partly received)":"")+", so that entry was left unchanged."); return; }
+    const body={supplier:(custName.value||"").trim()||"INDENT", qno:(indPick&&indPick.doc_no)||"", cust:getIndForLabel(),
+      items:its.map(x=>({line:x.line,code:x.code,desc:x.desc,colour:x.colour,unit:x.unit,qty:x.qty,qtnQty:x.qtnQty||""}))};
+    await fetch(_IB+"?no=eq."+encodeURIComponent(docNo),{method:"PATCH",headers:{..._IH,Prefer:"return=minimal"},body:JSON.stringify(body)});
+    indRefresh();
+  }catch(e){ console.warn("Indent tracker sync skipped:",e.message); }
 }
 function closeSaveChoiceModal(){ document.getElementById("saveChoiceModal").style.display="none"; }
 function chooseSaveAsNew(){ closeSaveChoiceModal(); performInsertNewQuotation(); }
@@ -2421,6 +2506,7 @@ async function performUpdateExistingQuotation(){
     status.textContent = `Updated ${qno.value} ✓ (same document — no new serial used)`;
     setTimeout(()=>status.textContent="", 5000);
     if(currentDocType==="DC") renderDcBillingStatus(currentQuotationId, JSON.parse(remarksVal));
+    if(currentDocType==="IND") await indSyncTracker(qno.value);
     try{
       if(currentDocType!=="IND"){
       const final=computeShortfalls();
@@ -2501,7 +2587,7 @@ async function performInsertNewQuotation(){
       }
       if(!saveErr){
         lastErr = null;
-        currentQuotationId = savedRow?.id || null;
+        currentQuotationId = savedRow?.id || null; _savedDocType = currentDocType;
         currentStockReduced = false; currentStockReducedAt = null; currentStockReducedLocation = null;
         break;
       }
@@ -3353,7 +3439,7 @@ async function reopenQuotation(id){
   // Restore this record's Status + stock-reduction history so REDUCE STOCK
   // enforces "Confirmed only, once only" against the actual saved state.
   window._edPayQ={doc_type:q.doc_type,doc_no:q.doc_no,net_payable:q.net_payable,cust_name:q.cust_name,doc_status:q.doc_status};
-  currentQuotationId=q.id;
+  currentQuotationId=q.id; _savedDocType=q.doc_type;
   currentStockReduced=!!q.stock_reduced;
   currentStockReducedAt=q.stock_reduced_at||null;
   currentStockReducedLocation=q.stock_reduced_location||null;
@@ -3877,6 +3963,8 @@ const DOC_TYPES={
 };
 let currentDocType="QTN";
 function switchDocType(type){
+  /* A saved record of another type (e.g. a quotation) must never be overwritten by an Indent etc. — switching type starts a NEW document */
+  if(currentQuotationId && _savedDocType && type!==_savedDocType){ currentQuotationId=null; _savedDocType=null; currentStockReduced=false; currentStockReducedAt=null; currentStockReducedLocation=null; }
   currentDocType=type;
   const d=DOC_TYPES[type];
   document.getElementById("docSectionTitle").innerText=d.section;
