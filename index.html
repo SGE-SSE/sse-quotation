@@ -155,11 +155,43 @@ body.dc-mode #qt th:nth-child(13), body.dc-mode #qt td:nth-child(13){ display:no
 <div class="card" id="printArea">
 
 <div class="company-header">
-  <h2>⚡ SAI GANESH ELECTRICALS – SSE</h2>
+  <h2 id="firmTitle">⚡ SAI GANESH ELECTRICALS – SSE</h2>
   <div class="tagline">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
   <div class="contact">DASARI KRISHNA &nbsp;|&nbsp; PH: 9885750057 &nbsp;|&nbsp; Email: <a href="mailto:krishnadsge@gmail.com">krishnadsge@gmail.com</a></div>
   <div class="deal-line">✦ Wires &bull; Cables &bull; Switches &bull; Lighting &bull; Cable Trays &bull; Metal Boxes ✦</div>
+  <div class="no-print" style="margin-top:10px"><label style="display:inline;color:#fff;font-size:12px;margin-right:6px">🏢 Firm:</label><select id="firmSelect" onchange="onFirmChange(this.value)" style="width:auto;font-weight:700;padding:5px 8px"><option value="SGE">SAI GANESH ELECTRICALS – SSE</option><option value="EESHA">EESHA'S LIGHTS</option></select></div>
 </div>
+<script>
+/* Two firms share the same address, proprietor, contact, numbering and everything else — only the firm NAME differs.
+   The choice is remembered in this browser and used on the screen header, printed/PDF documents, indents and Excel exports. */
+const FIRMS={SGE:"SAI GANESH ELECTRICALS – SSE", EESHA:"EESHA'S LIGHTS"};
+let currentFirm="SGE";
+try{ const f=localStorage.getItem("SSE_FIRM"); if(f && FIRMS[f]) currentFirm=f; }catch(e){}
+function firmName(){ return FIRMS[currentFirm]||FIRMS.SGE; }
+/* Each firm has its OWN document numbers and counters: SAI GANESH = SGE-SSE-..., EESHA'S LIGHTS = ESL-...
+   The firm of a saved document is read from its number, so nothing extra has to be stored in the database. */
+function firmPrefix(k){ return (k||currentFirm)==="EESHA" ? "ESL-" : "SGE-SSE-"; }
+function firmOfDocNo(no){ return /^ESL-/i.test(String(no||"").trim()) ? "EESHA" : "SGE"; }
+function onFirmChange(k){
+  const sel=document.getElementById("firmSelect");
+  try{
+    if(currentQuotationId && firmOfDocNo(qno.value)!==k){
+      if(!confirm("This saved document ("+qno.value+") belongs to "+FIRMS[firmOfDocNo(qno.value)]+".\n\nSwitching to "+FIRMS[k]+" will start a NEW document with "+FIRMS[k]+"'s own number. The saved one stays unchanged.\n\nContinue?")){ if(sel) sel.value=currentFirm; return; }
+      currentQuotationId=null; _savedDocType=null; currentStockReduced=false; currentStockReducedAt=null; currentStockReducedLocation=null;
+      qno.value="(assigned on Save)";
+    }
+  }catch(e){}
+  setFirm(k);
+}
+function setFirm(k){
+  if(!FIRMS[k]) k="SGE"; currentFirm=k;
+  try{ localStorage.setItem("SSE_FIRM",k); }catch(e){}
+  const t=document.getElementById("firmTitle"); if(t) t.textContent="⚡ "+firmName();
+  const sel=document.getElementById("firmSelect"); if(sel) sel.value=k;
+  document.title=(k==="EESHA"?"EESHA'S LIGHTS":"SSE")+" – Quotation Builder";
+}
+setFirm(currentFirm);
+</script>
 <div id="docTypeBanner" style="display:none;text-align:center;padding:6px;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #1a3c6e;color:#1a3c6e;background:#f0f4fb"></div>
 
 <!-- ===== DELETE REASON + DELETED QUOTATIONS MODALS ===== -->
@@ -1864,7 +1896,7 @@ function buildIndentDocPages(){
     return `
       <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px;${last?"":"page-break-after:always"}">
         <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
-          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
+          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">${firmName()}</div>
           <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
           <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
           <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">Material Indent / Purchase Order — ${esc(g)}</div>
@@ -1975,9 +2007,10 @@ async function checkInventoryNow(btn){
    Counter is kept in this browser's localStorage since the indent itself
    isn't saved to any database — it's just a print-and-send document. */
 function getNextIndentNo(){
-  const seq=(parseInt(localStorage.getItem("SSE_INDENT_SEQ")||"0",10)||0)+1;
-  localStorage.setItem("SSE_INDENT_SEQ",String(seq));
-  return "SGE-SSE-IND-"+String(seq).padStart(3,"0");
+  const key=(currentFirm==="EESHA")?"ESL_INDENT_SEQ":"SSE_INDENT_SEQ";
+  const seq=(parseInt(localStorage.getItem(key)||"0",10)||0)+1;
+  localStorage.setItem(key,String(seq));
+  return firmPrefix()+"IND-"+String(seq).padStart(3,"0");
 }
 
 // Groups indent items by SUPPLIER, not raw brand-catalog line — almost
@@ -2063,7 +2096,7 @@ function buildIndentPages(lastShortfalls,lastUntracked,tag){
     return `
       <div style="font-family:Arial,sans-serif;color:#1a1a1a;padding:14px;${isLastPage?"":"page-break-after:always"}">
         <div style="text-align:center;border-bottom:3px solid #185FA5;padding-bottom:10px;margin-bottom:14px">
-          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">SAI GANESH ELECTRICALS – SSE</div>
+          <div style="font-size:19px;font-weight:800;letter-spacing:1px;color:#185FA5">${firmName()}</div>
           <div style="font-size:11px;color:#555">PLOT NO.19/P, SHOP NO.9, GROUND FLOOR, RAGHAVENDRA COLONY, SUCHITRA, HYDERABAD</div>
           <div style="font-size:11px;color:#555">DASARI KRISHNA | PH: 9885750057 | krishnadsge@gmail.com</div>
           <div style="font-size:15px;font-weight:700;margin-top:8px;text-transform:uppercase">${tag?tag+" — ":""}Material Indent / Purchase Order — ${brand}</div>
@@ -2387,6 +2420,7 @@ async function findDuplicateIndents(){
     const forName=((document.getElementById("indForName")||{}).value||"").trim().toUpperCase();
     const ref=indPick?indPick.doc_no:"";
     return data.filter(r=>{
+      if(firmOfDocNo(r.doc_no)!==currentFirm) return false;
       let j={}; try{ j=JSON.parse(r.remarks||"{}"); }catch(e){}
       if(ref && j.indRef===ref) return true;
       if(forVal==="OFFICE") return j.indFor==="OFFICE";
@@ -2541,7 +2575,7 @@ async function performInsertNewQuotation(){
     let statusColumnsMissing=false; // set true the first time Supabase reports the new columns don't exist yet
     for(let attempt=0; attempt<20; attempt++){
       const serial = baseSerial + attempt;
-      docNo = `SGE-SSE-${currentDocType}-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
+      docNo = `${firmPrefix()}${currentDocType}-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
       const corePayload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: qdate.value || new Date().toISOString().slice(0,10),
@@ -2647,7 +2681,7 @@ async function saveCmpQuotation(){
     let statusColumnsMissingCmp=false;
     for(let attempt=0; attempt<20; attempt++){
       const serial = baseSerial + attempt;
-      docNo = `SGE-SSE-${currentDocType}-CMP-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
+      docNo = `${firmPrefix()}${currentDocType}-CMP-${String(serial).padStart(3,"0")}/${fy.label}/${custFullName}`;
       const corePayload = {
         party_id: partyId, doc_type: currentDocType, doc_no: docNo,
         doc_date: cmpDateEl.value || new Date().toISOString().slice(0,10),
@@ -3433,7 +3467,7 @@ async function reopenQuotation(id){
   const { data: q, error } = await sb.from("quotations").select("*").eq("id", id).single();
   if(error){ alert("Could not load that quotation."); return; }
   switchDocType(q.doc_type);
-  qno.value=q.doc_no; qdate.value=q.doc_date; custName.value=q.cust_name||"";
+  qno.value=q.doc_no; setFirm(firmOfDocNo(q.doc_no)); qdate.value=q.doc_date; custName.value=q.cust_name||"";
   custGST.value=q.cust_gst||""; custAddr.value=q.cust_addr||"";
   currentPartyId=q.party_id; gstToggle.checked=q.gst_applied;
   // Restore this record's Status + stock-reduction history so REDUCE STOCK
@@ -5689,7 +5723,7 @@ function buildDeliveryChallanHTML(){
   return `
     <div style="font-family:Arial,sans-serif;color:#000;padding:16px;background:#fff">
       <div style="text-align:center;font-size:17px;font-weight:800;letter-spacing:1px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:4px">DELIVERY CHALLAN</div>
-      <div style="text-align:center;font-size:16px;font-weight:800;margin-top:6px">SAI GANESH ELETRICALS-SSE</div>
+      <div style="text-align:center;font-size:16px;font-weight:800;margin-top:6px">${firmName()}</div>
       <div style="text-align:center;font-size:11px;margin-top:2px">#Plot No. 19, Shop No. 9, Ground Floor, Raghavendra Colony, Suchitra, Quthbullapur Mandal</div>
       <div style="text-align:center;font-size:11px;margin-bottom:10px">Medchal,Malkajgiri, Hyd. ,Ph:9885750057, E-mail: Krishnadsge@gmail.com</div>
       <div style="width:100%;overflow:hidden;border:1px solid #000;margin-bottom:14px;font-size:12px;box-sizing:border-box">
@@ -5722,7 +5756,7 @@ function buildDeliveryChallanHTML(){
         </tr></thead>
         <tbody>${itemRows}${padRows}</tbody>
       </table>
-      <div style="text-align:right;font-weight:700;margin-top:30px;font-size:12.5px">For SAI GANESH ELETRICALS-SSE</div>
+      <div style="text-align:right;font-weight:700;margin-top:30px;font-size:12.5px">For ${firmName()}</div>
       <div style="display:flex;justify-content:space-between;margin-top:60px;font-size:12px">
         <div style="border-top:1px solid #000;padding-top:4px;width:220px;text-align:center">RECEIVER'S SIGN WITH SEAL</div>
         <div style="border-top:1px solid #000;padding-top:4px;width:220px;text-align:center">Authorised Signatory</div>
@@ -5792,7 +5826,7 @@ function exportDeliveryChallanPDF(){
 function exportFileName(){
   const docNoVal = (qno.value||"").trim();
   // Doc number format: SGE-SSE-{TYPE-}{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
-  const m = docNoVal.match(/^SGE-SSE-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
+  const m = docNoVal.match(/^(?:SGE-SSE|ESL)-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
   if(m){
     const serial = m[1];
     const custPart = m[2].trim();
@@ -5806,7 +5840,7 @@ function exportFileName(){
 function exportExcel(){
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
   const custAttnVal=document.getElementById("custAttn")?.value.trim()||"";
-  let data=[["SAI GANESH ELECTRICALS – SSE"],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Item Code","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
+  let data=[[firmName()],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Item Code","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
   [...tbody.rows].forEach(r=>data.push([...r.cells].slice(0,13).map(c=>c.innerText)));
   data.push(...indWireExcelRows());
   data.push([]);
@@ -6486,7 +6520,7 @@ function calcCmpTotals(){
 function cmpExportFileName(){
   const docNoVal = (document.getElementById("cmpQno").value||"").trim();
   // Doc number format: SGE-SSE-{TYPE-}{serial}/{FY}/{CUSTOMER NAME} — filename just needs "CUSTOMER NAME serial"
-  const m = docNoVal.match(/^SGE-SSE-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
+  const m = docNoVal.match(/^(?:SGE-SSE|ESL)-(?:[A-Z]+-)*0*(\d+)\/[^/]+\/(.+)$/i);
   if(m){
     const serial = m[1];
     const custPart = m[2].trim();
@@ -6511,7 +6545,7 @@ function exportCmpExcel(){
 
   const brands=hasB3?brandNames:brandNames.slice(0,2);
   let data=[
-    ["SAI GANESH ELECTRICALS – SSE — PRICE COMPARISON"],
+    [firmName()+" — PRICE COMPARISON"],
     ["Quotation No",document.getElementById("cmpQno").value,"Date",document.getElementById("cmpDate").value],
     ["Customer",document.getElementById("cmpCust").value,"GSTIN",document.getElementById("cmpGST").value],
     ["Address",document.getElementById("cmpAddr")?.value||"","Kind Attn",document.getElementById("cmpAttn")?.value||""],
@@ -6651,11 +6685,12 @@ switchDocType=function(){window._edPayQ=null;const el=document.getElementById('c
    New rule: next serial = HIGHEST serial ever used in this FY + 1, looking at live bills AND the deleted-bills log,
    and never lower than the old count-based number. */
 getNextDocSerial=async function(partyId,docType,fy){
-  const start=DOC_SERIAL_START[docType]||1;
-  const re=new RegExp('^SGE-SSE-'+docType+'-(\\d+)(?:\\D|$)');
+  const pfx=firmPrefix();
+  const start=(currentFirm==="EESHA")?1:(DOC_SERIAL_START[docType]||1);   // EESHA'S LIGHTS starts every series at 001
+  const re=new RegExp('^'+pfx+docType+'-(\\d+)(?:\\D|$)');
   const serialOf=no=>{const m=re.exec(String(no||'').trim());return m?parseInt(m[1],10):0;};
   // old count-based number (lower bound)
-  let q=sb.from("quotations").select("id",{count:"exact",head:true}).eq("doc_type",docType).gte("doc_date",fy.startStr).lt("doc_date",fy.endExclusiveStr);
+  let q=sb.from("quotations").select("id",{count:"exact",head:true}).eq("doc_type",docType).like("doc_no",pfx+"%").gte("doc_date",fy.startStr).lt("doc_date",fy.endExclusiveStr);
   if(docType==="QTN")q=q.eq("party_id",partyId);
   const {count,error}=await q;
   if(error)throw error;
