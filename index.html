@@ -1847,7 +1847,7 @@ function recordIndentFromDoc(docNo){
 }
 /* ---- INDENT document: prints in the plain indent layout (no prices) — same look as the indent
    raised from the stock-shortage banner. One page per supplier group; uses the document's own Indent No. ---- */
-function buildIndentDocPages(){
+function buildIndentDocPages(onlyGroup){
   const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const rows=[];
   [...tbody.rows].forEach(r=>{
@@ -1864,7 +1864,9 @@ function buildIndentDocPages(){
   if(!rows.length) return "";
   const groups={};
   rows.forEach(x=>{ const g=indentSupplierGroupFor(x.line); (groups[g]=groups[g]||[]).push(x); });
-  const names=Object.keys(groups).sort();
+  let names=Object.keys(groups).sort();
+  if(onlyGroup==="__names") return names;
+  if(onlyGroup) names=names.filter(n=>n===onlyGroup);
   const docNo=(qno.value||"").trim();
   const d=qdate.value?new Date(qdate.value+"T00:00:00"):new Date();
   const dateStr=d.toLocaleDateString("en-IN");
@@ -1966,43 +1968,60 @@ function _printIndentDocument(){
   holder.document.close();
 }
 function _exportIndentDocumentPDF(){
-  const pages=buildIndentDocPages();
-  if(!pages){ alert("Add at least one item before exporting the Indent."); return; }
+  const names=buildIndentDocPages("__names");
+  if(!names||!names.length){ alert("Add at least one item before exporting the Indent."); return; }
   const el=document.getElementById("printArea");
   const originalHTML=el.innerHTML, originalStyle=el.getAttribute("style")||"";
-  el.innerHTML=pages;
-  el.style.boxShadow="none"; el.style.borderRadius="0"; el.style.background="#fff"; el.style.overflow="visible"; el.style.maxWidth="100%";
-  const opt={ margin:8, filename:exportFileName()+".pdf",
-    html2canvas:{ scale:2, useCORS:true, windowWidth:el.scrollWidth, scrollX:0, scrollY:0 },
-    jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" },
-    pagebreak:{ mode:["css","legacy"], avoid:["tr","thead"] } };
-  html2pdf().set(opt).from(el).save().then(()=>{ el.innerHTML=originalHTML; el.setAttribute("style",originalStyle); });
+  const base=exportFileName();
+  const safe=n=>String(n).replace(/[\\/:*?"<>|]/g,"-");
+  (async()=>{
+    try{
+      for(const g of names){
+        el.innerHTML=buildIndentDocPages(g);
+        el.style.boxShadow="none"; el.style.borderRadius="0"; el.style.background="#fff"; el.style.overflow="visible"; el.style.maxWidth="100%";
+        const opt={ margin:8, filename:base+" - "+safe(g)+" INDENT.pdf",
+          html2canvas:{ scale:2, useCORS:true, windowWidth:el.scrollWidth, scrollX:0, scrollY:0 },
+          jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" },
+          pagebreak:{ mode:["css","legacy"], avoid:["tr","thead"] } };
+        await html2pdf().set(opt).from(el).save();
+        await new Promise(r=>setTimeout(r,600));
+      }
+    } finally { el.innerHTML=originalHTML; el.setAttribute("style",originalStyle); }
+    if(names.length>1) alert(names.length+" brand-wise indent PDFs downloaded:\n\n"+names.join("\n")+"\n\n(If your browser asks, allow multiple downloads.)");
+  })();
 }
-function dismissIndentBanner(){ document.getElementById("indentBanner").style.display="none"; }
-
-// Stand-alone stock check — usable ANY time, including after reopening a
-// quotation from Party History days/weeks later, without needing to hit
-// Save (which would just create a brand-new duplicate document). Always
-// re-fetches live stock first, since it may have moved since this
-// quotation was originally saved.
-async function checkInventoryNow(btn){
-  if(!tbody.rows.length){ alert("No items in the table to check."); return; }
-  const original=btn?btn.textContent:"";
-  if(btn){ btn.disabled=true; btn.textContent="⏳ Checking…"; }
-  try{
-    await loadInventoryStock();
-    const result=computeShortfalls();
-    showIndentBanner(result, qno.value||"", 0);
-    if(!result.shortfalls.length && !result.untracked.length){
-      alert("✓ Stock check complete — every item on this quotation has enough stock right now.");
-    }
-  }catch(e){
-    alert("Could not check inventory: "+e.message);
-  }finally{
-    if(btn){ btn.disabled=false; btn.textContent=original; }
-  }
+/* Excel: one indent workbook per brand / supplier group */
+function exportIndentExcelBrandWise(){ askIndentRates(_exportIndentExcelBrandWise); }
+function _exportIndentExcelBrandWise(){
+  const showRates=(window._indRates!==false);
+  const groups={};
+  [...tbody.rows].forEach(r=>{
+    const c=r.cells; if(!c||c.length<8) return;
+    const qty=parseFloat(c[7].innerText)||0; if(!qty) return;
+    const g=indentSupplierGroupFor(c[1].innerText.trim());
+    (groups[g]=groups[g]||[]).push(c);
+  });
+  const names=Object.keys(groups).sort();
+  if(!names.length){ alert("Add at least one item before exporting the Indent."); return; }
+  const base=exportFileName();
+  const safe=n=>String(n).replace(/[\\/:*?"<>|]/g,"-");
+  const num=v=>parseFloat(String(v==null?"":v).replace(/[₹,\s]/g,""))||0;
+  names.forEach((g,i)=>setTimeout(()=>{
+    const head=["S.No","Brand / Line","Item Code","Description","Colour","Unit","Qty"].concat(showRates?["Net Rate","Amount"]:[]);
+    const data=[[firmName()],["Material Indent / Purchase Order — "+g],[],["Indent No",qno.value,"Date",qdate.value],["Supplier",(names.length===1&&custName.value)?custName.value:g],[],head];
+    let total=0;
+    groups[g].forEach((c,k)=>{
+      const row=[k+1,c[1].innerText.trim(),c[2].innerText.trim(),c[3].innerText.trim(),c[4].innerText.trim(),c[6].innerText.trim(),c[7].innerText.trim()];
+      if(showRates){ row.push(c[10]?c[10].innerText.trim():"",c[12]?c[12].innerText.trim():""); total+=num(c[12]&&c[12].innerText); }
+      data.push(row);
+    });
+    if(showRates){ data.push([]); data.push(["","","","","","","","Total (excl. GST)",total.toFixed(2)]); }
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),safe(g).slice(0,31));
+    XLSX.writeFile(wb,base+" - "+safe(g)+" INDENT.xlsx");
+  },i*700));
+  if(names.length>1) setTimeout(()=>alert(names.length+" brand-wise indent Excel files downloaded:\n\n"+names.join("\n")+"\n\n(If your browser asks, allow multiple downloads.)"),names.length*700+300);
 }
-
 /* Sequential indent numbers, e.g. SGE-SSE-IND-001, SGE-SSE-IND-002...
    Counter is kept in this browser's localStorage since the indent itself
    isn't saved to any database — it's just a print-and-send document. */
@@ -5838,6 +5857,7 @@ function exportFileName(){
 }
 
 function exportExcel(){
+  if(currentDocType==="IND"){ exportIndentExcelBrandWise(); return; }
   const remarksTxt=document.getElementById("remarksInput")?.value.trim()||"";
   const custAttnVal=document.getElementById("custAttn")?.value.trim()||"";
   let data=[[firmName()],[],["Quotation No",qno.value,"Date",qdate.value],["Customer",custName.value,"GSTIN",custGST.value],["Kind Attn",custAttnVal],[],["S.No","Brand","Item Code","Description","Colour","HSN Code","Unit","Qty","MRP","Disc%","Net Rate","Per Mtr Rate","Amount"]];
